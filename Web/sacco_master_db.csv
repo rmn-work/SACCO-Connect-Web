@@ -1,0 +1,2 @@
+ID,Nom,Prénom,Age,Sexe,Téléphone,PIN,Colline,Quartier,Avenue,Maison,Groupe,Rôle,Solde_Epargne,Solde_Social,Pret_Actuel,Amendes,Statut_Presence,Derniere_Connexion,Date_Adhesion,Dernier_P,Prochain_P
+0,SYSTEM,Admin,0,0,admin,1234,0,0,0,0,G-Alpha,Membre,50000,0,0,0,0,23:43,0,0,0

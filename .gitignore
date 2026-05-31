@@ -1,0 +1,16 @@
+# Fichiers système et IDE
+.DS_Store
+.idea/
+Web/.idea/
+
+# Les deux environnements virtuels (racine et dossier Web)
+.venv/
+Web/venv/
+
+# Le fichier secret (une fois déplacé dans Web)
+Web/.env
+
+# Documents locaux générés
+*.pdf
+*.jpg
+*.png
