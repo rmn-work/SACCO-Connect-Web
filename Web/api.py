@@ -37,6 +37,7 @@ DB_CONFIG = {
 }
 
 if os.path.exists("./static"):
+    os.makedirs("./static/documents", exist_ok=True)
     app.mount("/documents", StaticFiles(directory="./static/documents"), name="documents")
 
 # ==========================================================
@@ -59,7 +60,6 @@ def get_db_cursor():
 # ==========================================================
 # 3. MODELES PYDANTIC
 # ==========================================================
-# --- AUTHENTIFICATION & INSCRIPTION ---
 class LoginRequest(BaseModel):
     telephone: str
     pin: str
@@ -83,7 +83,7 @@ class GroupeCreate(BaseModel):
     secretaire_nom: str
 
 class GroupSettingsRequest(BaseModel):
-    date_reunion_prochaine: date  # Changé en date pour plus de rigueur
+    date_reunion_prochaine: date
     montant_hebdo: int
 
 class MembreUpdate(BaseModel):
