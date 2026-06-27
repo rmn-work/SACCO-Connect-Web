@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Query, Request, Depends, APIRouter, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 
@@ -26,6 +27,15 @@ app = FastAPI(
     title="SACCO Connect Burundi",
     description="Back-end unifié pour l'application mobile et l'interface de la SACCO FinTech",
     version="1.1.0"
+)
+
+# Ajout du Middleware CORS pour autoriser le futur site web
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Pour l'instant on autorise tout. On mettra l'URL exacte du site Web Render plus tard.
+    allow_credentials=True,
+    allow_methods=["*"],  # Autorise les requêtes POST (login), GET, etc.
+    allow_headers=["*"],  # Autorise tous les headers (notamment pour les tokens d'authentification)
 )
 
 DB_CONFIG = {
