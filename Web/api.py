@@ -15,7 +15,24 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from datetime import timedelta
+import hashlib
+
+
+# Configuration de sécurité
+SECRET_KEY = os.getenv("JWT_SECRET", "une_cle_tres_longue_et_secrete_a_changer_en_production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # Expiration dans 7 jours (pratique pour le mobile)
+
+# Gestionnaire de mots de passe (Remplace hashlib)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Définition du schéma de sécurité (FastAPI va chercher le token ici)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 # ==========================================================
 # 1. CONFIGURATION INITIALE
@@ -66,6 +83,28 @@ def get_db_cursor():
         cursor.close()
         conn.close()
 
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_cursor)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalide")
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalide ou expiré")
+
+    cursor.execute("SELECT * FROM membres WHERE id = %s", (user_id,))
+    user = cursor.fetchone()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable")
+    return user
 
 # ==========================================================
 # 3. MODELES PYDANTIC
@@ -156,7 +195,6 @@ def log_audit_api(user: str, action: str, details: str):
     finally:
         cursor.close()
         conn.close()
-
 
 # class SaccoPDF(FPDF):
 #     def __init__(self):
@@ -253,12 +291,12 @@ def startup_db_setup():
             cursor.execute(
                 "INSERT INTO groupes (id, nom_groupe, montant_hebdo, is_active) VALUES (1, 'Groupe Alpha', 5000, 1)")
 
-        # Initialisation des comptes de test
-        pin_standard_hash = hashlib.sha256("1234".encode()).hexdigest()
-        pin_admin_hash = hashlib.sha256("SACCO_Bujumbura-BBIN".encode()).hexdigest()
+        pin_standard_hash = pwd_context.hash("1234")
+        mot_de_passe = "tanganyika25"[:72]
+        pin_admin_hash = pwd_context.hash(mot_de_passe)
 
         comptes_test = [
-            {"nom": "ADMIN", "prenom": "Système", "telephone": "admin", "role": "admin_sys", "pin": pin_admin_hash,
+            {"nom": "ADMIN", "prenom": "Système", "telephone": "tanganyika", "role": "admin_sys", "pin": pin_admin_hash,
              "groupe_id": None},
             {"nom": "MEMBRE", "prenom": "Raphael", "telephone": "0000", "role": "membre", "pin": pin_standard_hash,
              "groupe_id": 1},
@@ -270,16 +308,16 @@ def startup_db_setup():
 
         for c in comptes_test:
             cursor.execute("""
-                INSERT INTO membres (nom, prenom, telephone, pin, role, groupe_id, is_active, doit_changer_pin)
-                VALUES (%s, %s, %s, %s, %s, %s, 1, 0)
-                ON CONFLICT (telephone) 
-                DO UPDATE SET pin = EXCLUDED.pin, role = EXCLUDED.role, groupe_id = EXCLUDED.groupe_id, is_active = 1
-            """, (c['nom'], c['prenom'], c['telephone'], c['pin'], c['role'], c['groupe_id']))
+                        INSERT INTO membres (nom, prenom, telephone, pin, role, groupe_id, is_active, doit_changer_pin)
+                        VALUES (%s, %s, %s, %s, %s, %s, 1, 0)
+                        ON CONFLICT (telephone) 
+                        DO UPDATE SET pin = EXCLUDED.pin, role = EXCLUDED.role, groupe_id = EXCLUDED.groupe_id, is_active = 1
+                    """, (c['nom'], c['prenom'], c['telephone'], c['pin'], c['role'], c['groupe_id']))
 
         local_conn.commit()
         cursor.close()
         local_conn.close()
-        print("✅ Base de données initialisée et comptes de test synchronisés.")
+        print("✅ Base de données initialisée et compte Administrateur Système configuré.")
     except Exception as e:
         print(f"❌ Erreur critique lors de l'initialisation de la base : {e}")
 
@@ -291,47 +329,69 @@ def startup_db_setup():
 def read_root():
     return {
         "status": "En ligne",
-        "projet": "SACCO Connect Burundi",
+        "projet": "SACCO Connect",
         "database": "Connectée avec succès ✅"
     }
 
 
 @app.post("/auth/login")
-def login(data: LoginRequest, cursor=Depends(get_db_cursor)):
-    h_pin = hashlib.sha256(data.pin.encode()).hexdigest()
-    cursor.execute("SELECT * FROM membres WHERE telephone=%s AND pin=%s", (data.telephone, h_pin))
+def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
+    cursor.execute("SELECT * FROM membres WHERE telephone=%s", (form_data.username,))
     user_data = cursor.fetchone()
+    hashed_password_attempt = hashlib.sha256(form_data.password.encode()).hexdigest()
 
-    if not user_data:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identifiants incorrects.")
+    if not user_data or hashed_password_attempt != user_data['pin']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Identifiants incorrects.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     if user_data.get('is_active') == 0:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce compte est archivé ou bloqué.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Ce compte est archivé ou bloqué."
+        )
 
     heure_connexion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("UPDATE membres SET last_login = %s WHERE id = %s", (heure_connexion, user_data['id']))
-    return {"status": "success", "user": dict(user_data)}
+
+    access_token = create_access_token(
+        data={"sub": str(user_data['id']), "role": user_data['role']}
+    )
+    return {"access_token": access_token, "token_type": "bearer", "role": user_data['role']}
 
 
 @app.post("/auth/inscription")
 def inscription(data: InscriptionPayload, cursor=Depends(get_db_cursor)):
-    hp = hashlib.sha256("1234".encode()).hexdigest()
-    cursor.execute(
-        """INSERT INTO membres (nom, prenom, age, sexe, telephone, cni, pin, role, is_active, colline, quartier, avenue, maison) 
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s, 1, %s, %s, %s, %s)""",
-        (data.nom, data.prenom, data.age, data.sexe, data.telephone, data.cni, hp, 'membre',
-         data.colline, data.quartier, data.avenue, data.maison)
-    )
-    return {"status": "success", "message": "✅ Inscription réussie !"}
+    hp = pwd_context.hash("1234")
+    try:
+        cursor.execute(
+            """INSERT INTO membres (nom, prenom, age, sexe, telephone, cni, pin, role, is_active, colline, quartier, avenue, maison) 
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s, 1, %s, %s, %s, %s)""",
+            (data.nom, data.prenom, data.age, data.sexe, data.telephone, data.cni, hp, 'membre',
+             data.colline, data.quartier, data.avenue, data.maison)
+        )
+        return {"status": "success", "message": "✅ Inscription réussie !"}
+    except psycopg2.IntegrityError:
+        raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé.")
 
 
 # ==========================================================
 # 7. DASHBOARD ET GESTION DU PROFIL
 # ==========================================================
 @app.get('/membres/{membre_id}/dashboard')
-def get_membre_dashboard(membre_id: int, cursor=Depends(get_db_cursor)):
+def get_membre_dashboard(
+        membre_id: int,
+        current_user: dict = Depends(get_current_user),
+        cursor=Depends(get_db_cursor)
+):
+    if current_user['id'] != membre_id and current_user['role'] not in ['admin', 'admin_sys']:
+        raise HTTPException(status_code=403, detail="Accès non autorisé à ce profil.")
+
     cursor.execute("SELECT * FROM membres WHERE id = %s", (membre_id,))
     membre = cursor.fetchone()
+
     if not membre:
         raise HTTPException(status_code=404, detail="Membre introuvable.")
 
@@ -357,17 +417,67 @@ def get_membre_dashboard(membre_id: int, cursor=Depends(get_db_cursor)):
 
 
 @app.get('/membres/{membre_id}/previsions-ia')
-def get_previsions_ia(membre_id: int, cursor=Depends(get_db_cursor)):
-    cursor.execute("SELECT montant_epargne FROM historique_epargne WHERE membre_id = %s", (membre_id,))
-    rows = cursor.fetchall()
-    pred_epargne = (sum([r['montant_epargne'] for r in rows]) / len(rows)) * 1.05 if rows else 50000.0
+def get_previsions_ia(
+        membre_id: int,
+        current_user: dict = Depends(get_current_user),
+        cursor=Depends(get_db_cursor)
+):
+    if current_user['id'] != membre_id and current_user['role'] not in ['admin', 'admin_sys']:
+        raise HTTPException(status_code=403, detail="Accès non autorisé à ces prévisions.")
 
-    cursor.execute("SELECT solde_epargne FROM membres WHERE id = %s", (membre_id,))
-    solde = cursor.fetchone()
-    pred_credit = float(solde['solde_epargne'] or 0) * 3 if solde else 0
+    cursor.execute("SELECT solde_epargne, credit_restant, groupe_id FROM membres WHERE id = %s", (membre_id,))
+    membre = cursor.fetchone()
+    if not membre:
+        raise HTTPException(status_code=404, detail="Membre introuvable.")
+    cursor.execute(
+        "SELECT status FROM presences WHERE membre_id = %s ORDER BY id DESC LIMIT 10",
+        (membre_id,)
+    )
 
-    return {"prediction_epargne": round(pred_epargne, 2), "capacite_credit_estimee": round(pred_credit, 2),
-            "devise": "BIF"}
+    presences = cursor.fetchall()
+    total_reunions = len(presences)
+    jours_presents = sum(1 for p in presences if p['status'] == 'P')
+    taux_presence = (jours_presents / total_reunions) if total_reunions > 0 else 1.0
+
+    cursor.execute(
+        "SELECT montant_epargne FROM historique_epargne WHERE membre_id = %s ORDER BY date_reunion DESC LIMIT 12",
+        (membre_id,)
+    )
+    historique = cursor.fetchall()
+
+    if historique:
+        total_poids = 0
+        somme_ponderee = 0
+        for index, row in enumerate(historique):
+            poids = len(historique) - index
+            somme_ponderee += row['montant_epargne'] * poids
+            total_poids += poids
+
+        moyenne_ponderee_hebdo = somme_ponderee / total_poids
+        pred_epargne_mensuelle = moyenne_ponderee_hebdo * 4 * taux_presence
+    else:
+        cursor.execute("SELECT montant_hebdo FROM groupes WHERE id = %s", (membre['groupe_id'],))
+        groupe = cursor.fetchone()
+        montant_base = groupe['montant_hebdo'] if groupe else 5000
+        pred_epargne_mensuelle = montant_base * 4
+    solde_epargne = float(membre['solde_epargne'] or 0)
+    credit_restant = float(membre['credit_restant'] or 0)
+
+    capacite_theorique = solde_epargne * 3
+    capacite_reelle_estimee = (capacite_theorique * taux_presence) - credit_restant
+    capacite_reelle_estimee = max(0.0, capacite_reelle_estimee)
+
+    score_endettement = 50 if capacite_theorique == 0 else (1 - min(1.0,
+                                                                    credit_restant / max(1.0, capacite_theorique))) * 50
+    score_sante = (taux_presence * 50) + score_endettement
+
+    return {
+        "prediction_epargne_mensuelle": round(pred_epargne_mensuelle, 2),
+        "capacite_credit_estimee": round(capacite_reelle_estimee, 2),
+        "taux_assiduite_pourcent": round(taux_presence * 100, 1),
+        "score_credit_scoring": round(score_sante, 1),
+        "devise": "BIF"
+    }
 
 
 @app.post("/upload-pdf/")
@@ -394,11 +504,9 @@ def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
 def create_demande_sociale(membre_id: int, data: DemandeSocialeInput, cursor=Depends(get_db_cursor)):
     if data.montant_demande <= 0:
         raise HTTPException(status_code=400, detail="Le montant doit être supérieur à 0 BIF.")
-
     cursor.execute("SELECT id FROM membres WHERE id = %s", (membre_id,))
     if not cursor.fetchone():
         raise HTTPException(status_code=404, detail="Membre introuvable.")
-
     date_actuelle = datetime.now().strftime("%Y-%m-%d")
     cursor.execute(
         "INSERT INTO demandes_sociales (membre_id, montant_demande, motif, date_demande) VALUES (%s, %s, %s, %s)",
@@ -418,16 +526,13 @@ def get_mes_demandes_prets(membre_id: int, cursor=Depends(get_db_cursor)):
 def create_demande_credit(membre_id: int, data: DemandePretInput, cursor=Depends(get_db_cursor)):
     if data.montant <= 0:
         raise HTTPException(status_code=400, detail="Le montant doit être > 0.")
-
     cursor.execute("SELECT solde_epargne FROM membres WHERE id = %s", (membre_id,))
     membre = cursor.fetchone()
     if not membre:
         raise HTTPException(status_code=404, detail="Membre introuvable.")
-
     max_loan = int(membre['solde_epargne'] * 3)
     if data.montant > max_loan:
         raise HTTPException(status_code=400, detail=f"Maximum autorisé : {max_loan} BIF.")
-
     cursor.execute(
         """INSERT INTO prets (membre_id, montant, motif, reste_a_payer, status, date_demande, taux_interet_applique) 
            VALUES (%s, %s, %s, %s, 'EN ATTENTE', %s, %s)""",
@@ -435,7 +540,6 @@ def create_demande_credit(membre_id: int, data: DemandePretInput, cursor=Depends
          data.taux_interet_applique)
     )
     return {"status": "success", "message": "✅ Demande transmise avec taux personnalisé."}
-
 
 @app.post("/api/credits/{credit_id}/appliquer-penalite")
 def appliquer_penalite(credit_id: int, payload: PenaliteSchema, cursor=Depends(get_db_cursor)):
@@ -457,7 +561,6 @@ def appliquer_penalite(credit_id: int, payload: PenaliteSchema, cursor=Depends(g
 
     return {"status": "success", "message": f"Pénalité de {penalite_totale} BIF appliquée."}
 
-
 # ==========================================================
 # 9. GESTION DES REUNIONS & SAISIES HEBDOMADAIRES (UNIFIÉ)
 # ==========================================================
@@ -477,8 +580,6 @@ def get_membres_groupe_pour_flutter(group_id: int, cursor=Depends(get_db_cursor)
     cursor.execute("SELECT id, nom, prenom FROM membres WHERE groupe_id = %s AND is_active = 1 ORDER BY nom ASC",
                    (group_id,))
     rows = cursor.fetchall()
-
-    # Formate directement la liste pour l'interface de saisie Flutter
     return [{
         "id": row['id'],
         "nom": f"{row['nom']} {row['prenom']}",
@@ -495,20 +596,15 @@ def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=
     groupe = cursor.fetchone()
     taux_amende = groupe.get('taux_amende', 0) if groupe else 0
     heure_actuelle = datetime.now().strftime("%H:%M:%S")
-
     for saisie in data.saisies:
         amende_appliquee = taux_amende if saisie.amende else 0
         final_epargne = max(0, float(saisie.epargne - amende_appliquee))
         final_social = float(saisie.social)
-
-        # Mise à jour des soldes cumulés du membre
         cursor.execute("""
             UPDATE membres 
             SET solde_epargne = solde_epargne + %s, caisse_sociale = caisse_sociale + %s, status_presence = %s 
             WHERE id = %s
         """, (final_epargne, final_social, saisie.presence, saisie.id))
-
-        # Enregistrement dans l'historique officiel (Noms de colonnes corrigés !)
         cursor.execute("""
             INSERT INTO historique_epargne (membre_id, groupe_id, date_reunion, heure_enregistrement, montant_epargne, montant_social, enregistre_par) 
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -520,7 +616,6 @@ def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=
                    (data.date_reunion_actuelle, data.date_reunion_prochaine, groupe_id))
 
     return {"status": "success", "message": "✅ Réunion et saisies enregistrées avec succès !"}
-
 
 # ==========================================================
 # 10. ADMINISTRATION BUREAU EXECUTIF
@@ -571,7 +666,6 @@ def valider_demande(payload: dict, cursor=Depends(get_db_cursor)):
             (statut, date_validation, id_demande))
         pret = cursor.fetchone()
         if approuver and pret:
-            # Correction : Utilisation des vraies colonnes credit_en_cours et credit_restant
             cursor.execute("""
                 UPDATE membres 
                 SET credit_en_cours = credit_en_cours + %s, 
@@ -624,8 +718,6 @@ def get_credits_retard(cursor=Depends(get_db_cursor)):
         "mois_retard": 1
     } for p in cursor.fetchall()]}
 
-
-# Endpoint Unique et Propre pour la modification de la cotisation hebdomadaire
 @app.put('/groupes/{groupe_id}/modifier-cotisation')
 def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest, cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT role, groupe_id FROM membres WHERE id = %s", (payload.admin_id,))
@@ -641,6 +733,5 @@ def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest,
     if payload.nouveau_montant < 0:
         raise HTTPException(status_code=400, detail="❌ Le montant ne peut pas être négatif.")
 
-    # Correction : colonne 'montant_hebdo' ciblée correctement
     cursor.execute("UPDATE groupes SET montant_hebdo = %s WHERE id = %s", (payload.nouveau_montant, groupe_id))
     return {"status": "success", "message": f"✅ Cotisation du groupe mise à jour à {payload.nouveau_montant} BIF"}
