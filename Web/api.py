@@ -55,6 +55,7 @@ app.add_middleware(
     allow_headers=["*"],  # Autorise tous les headers (notamment pour les tokens d'authentification)
 )
 
+load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
@@ -63,6 +64,9 @@ if DATABASE_URL:
     db_conn_string = DATABASE_URL
 else:
     db_conn_string = f"postgresql://{os.getenv('DB_USER', 'Sacco')}:{os.getenv('DB_PASSWORD', 'sacco2026')}@{os.getenv('DB_HOST', '127.0.0.1')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'sacco_fintech_master')}"
+
+db_conn = psycopg2.connect(db_conn_string)
+engine = create_engine(db_conn_string)
 
 
 # DB_CONFIG = {
