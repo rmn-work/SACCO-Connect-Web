@@ -55,13 +55,23 @@ app.add_middleware(
     allow_headers=["*"],  # Autorise tous les headers (notamment pour les tokens d'authentification)
 )
 
-DB_CONFIG = {
-    "dbname": os.getenv("DB_NAME", "sacco_fintech_master"),
-    "user": os.getenv("DB_USER", "Sacco"),
-    "password": os.getenv("DB_PASSWORD", "sacco2026"),
-    "host": os.getenv("DB_HOST", "127.0.0.1"),
-    "port": os.getenv("DB_PORT", "5432")
-}
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    db_conn_string = DATABASE_URL
+else:
+    db_conn_string = f"postgresql://{os.getenv('DB_USER', 'Sacco')}:{os.getenv('DB_PASSWORD', 'sacco2026')}@{os.getenv('DB_HOST', '127.0.0.1')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'sacco_fintech_master')}"
+
+
+# DB_CONFIG = {
+#     "dbname": os.getenv("DB_NAME", "sacco_fintech_master"),
+#     "user": os.getenv("DB_USER", "Sacco"),
+#     "password": os.getenv("DB_PASSWORD", "sacco2026"),
+#     "host": os.getenv("DB_HOST", "127.0.0.1"),
+#     "port": os.getenv("DB_PORT", "5432")
+# }
 
 if os.path.exists("./static"):
     os.makedirs("./static/documents", exist_ok=True)
@@ -71,7 +81,7 @@ if os.path.exists("./static"):
 # 2. DEPENDANCES DE BASE DE DONNEES UNIFIEES
 # ==========================================================
 def get_db_cursor():
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = psycopg2.connect(db_conn_string)
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     try:
         yield cursor
@@ -230,7 +240,7 @@ def startup_db_setup():
     print("🚀 Initialisation de la base de données PostgreSQL (init_db)...")
 
     try:
-        local_conn = psycopg2.connect(**DB_CONFIG)
+        local_conn = psycopg2.connect(db_conn_string)
         cursor = local_conn.cursor()
 
         # Table Groupes (Uniformisation du nom de la cotisation : montant_hebdo)
