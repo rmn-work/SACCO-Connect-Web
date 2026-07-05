@@ -22,7 +22,6 @@ from passlib.context import CryptContext
 from datetime import timedelta
 import hashlib
 
-
 # Configuration de sécurité
 SECRET_KEY = os.getenv("JWT_SECRET", "une_cle_tres_longue_et_secrete_a_changer_en_production")
 ALGORITHM = "HS256"
@@ -56,17 +55,15 @@ app.add_middleware(
 )
 
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+db_conn_string = os.environ.get("DATABASE_URL")
+if not db_conn_string:
+    print("⚠️ DATABASE_URL non trouvée, passage en mode local.")
+    db_conn_string = "postgresql://Sacco:sacco2026@127.0.0.1:5432/sacco_fintech_master"
 
-if DATABASE_URL:
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    db_conn_string = DATABASE_URL
-else:
-    db_conn_string = f"postgresql://{os.getenv('DB_USER', 'Sacco')}:{os.getenv('DB_PASSWORD', 'sacco2026')}@{os.getenv('DB_HOST', '127.0.0.1')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'sacco_fintech_master')}"
+if db_conn_string.startswith("postgres://"):
+    db_conn_string = db_conn_string.replace("postgres://", "postgresql://", 1)
 
 db_conn = psycopg2.connect(db_conn_string)
-engine = create_engine(db_conn_string)
 
 
 # DB_CONFIG = {
