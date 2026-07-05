@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart'; // Import pour le QR Code
+import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
 
 class ProfilScreen extends StatefulWidget {
@@ -216,6 +216,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
               children: [
                 Text("Président : ${groupe['president'] ?? 'Non défini'}", style: const TextStyle(fontWeight: FontWeight.w500)),
                 Text("Secrétaire : ${groupe['secretaire'] ?? 'Non défini'}", style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text("Administration du Systéme : ${groupe['admin_sys'] ?? 'Non défini'}", style: const TextStyle(fontWeight: FontWeight.w500)),
               ],
             ),
             const SizedBox(height: 30),

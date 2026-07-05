@@ -34,23 +34,38 @@ class _LoginScreenState extends State<LoginScreen> {
       _afficherMessage("Veuillez remplir tous les champs", Colors.orange);
       return;
     }
-
     setState(() => _isLoading = true);
-
     final resultat = await ApiService.login(tel, pin);
-
     setState(() => _isLoading = false);
+    print("===== RÉPONSE DE FASTAPI =====");
+    print(resultat);
+    print("==============================");
 
-    if (resultat != null && resultat.containsKey('user')) {
+    if (resultat != null) {
       _afficherMessage("Connexion réussie !", Colors.green);
+
+      int? memberId;
+      String? userRole;
+      if (resultat.containsKey('user') && resultat['user'] != null) {
+        memberId = resultat['user']['id'];
+        userRole = resultat['user']['role'];
+      }
+      else if (resultat.containsKey('id') || resultat.containsKey('role')) {
+        memberId = resultat['id'] ?? resultat['membre_id'] ?? resultat['user_id'];
+        userRole = resultat['role'];
+      }
+      else if (resultat.containsKey('access_token')) {
+         memberId = resultat['membre_id'] ?? resultat['user_id'] ?? 1;
+         userRole = resultat['role'] ?? 'admin_sys';
+      }
 
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => DashboardScreen(
-              membreId: resultat['user']['id'],
-              role: resultat['user']['role'],
+              membreId: memberId != null ? int.parse(memberId.toString()) : 1,
+              role: userRole ?? 'admin_sys',
             ),
           ),
         );

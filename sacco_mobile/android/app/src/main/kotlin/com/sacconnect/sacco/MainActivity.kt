@@ -1,4 +1,4 @@
-package com.example.sacco_mobile
+package com.sacconnect.sacco
 
 import io.flutter.embedding.android.FlutterActivity
 

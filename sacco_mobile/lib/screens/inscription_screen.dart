@@ -132,7 +132,7 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _validerInscription,
-                child: const Text('Valider mon inscription')
+                child: const Text('Valider l inscription')
               ),
             ],
           ),

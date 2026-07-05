@@ -1,26 +1,36 @@
 import 'dart:io';
 
 class Config {
-  // Définition des environnements
+  // Configuration pour le développement local (Mac / Émulateur Android)
   static const String _localHost = "127.0.0.1";
   static const String _androidEmulatorHost = "10.0.2.2";
   static const String _serverPort = "8000";
 
-  // Tu pourras facilement ajouter une URL de production ici plus tard
+  // URL du serveur distant sur Render
+  static const String _renderUrl = "https://sacco-connect-nqyo.onrender.com";
+
+  // URL finale en production
   static const String _productionUrl = "https://api.sacco-connect.bi";
 
-  static bool isProduction = false; // Bascule cette variable pour la mise en ligne
+  // PASSER À 'false' pour vos tests locaux sur l'émulateur (utilisera 10.0.2.2:8000)
+  // PASSER À 'true' pour que l'application cible Render ou la production
+  static bool isProduction = false;
+  //static bool isProduction = true; la ligne a active avant de le deploiement et desactivé false
 
   static String get baseUrl {
     if (isProduction) {
-      return _productionUrl;
+      return _renderUrl; // pointera sur Render sur Internet
     }
 
+    // En local : bascule automatiquement sur 10.0.2.2 (Android) ou 127.0.0.1 (macOS/iOS)
     final host = Platform.isAndroid ? _androidEmulatorHost : _localHost;
     return "http://$host:$_serverPort";
   }
 
-  // Optionnel : Ajout d'un helper pour les endpoints API
+  // En-points API unifiés
   static String get loginUrl => "$baseUrl/auth/login";
-  static String dashboardUrl(int membreId) => "$baseUrl/membres/$membreId/dashboard";
+
+  static String dashboardUrl(int membreId) {
+    return "$baseUrl/membres/$membreId/dashboard";
+  }
 }

@@ -8,6 +8,7 @@ import 'portefeuille_pret_screen.dart';
 import 'saisie_hebdomadaire_screen.dart';
 import 'tableau_groupe_screen.dart';
 import 'scanner_presence_screen.dart';
+import 'inscription_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int membreId;
@@ -58,7 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final int userGroupId = _portefeuilleData?['groupe_id'] ?? 1;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Fond clair moderne pour faire ressortir les éléments
+      backgroundColor: const Color(0xFFF8FAFC), // Fond clair moderne
       appBar: AppBar(
         title: const Text(
           'SACCO CONNECT',
@@ -83,7 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // 1. LE LOGO EN ARRIÈRE-PLAN (Watermark / Filigrane)
                 Center(
                   child: Opacity(
-                    opacity: 0.06, // Discret pour ne pas gêner la lecture du texte
+                    opacity: 0.06,
                     child: Image.asset(
                       'assets/images/la_confiance.png',
                       width: MediaQuery.of(context).size.width * 0.85,
@@ -107,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9), // Transparent pour entrevoir le logo
+                            color: Colors.white.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.grey.shade200),
                           ),
@@ -186,7 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Icons.gavel,
                             'Validation des Prêts',
                             'Valider ou rejeter les demandes en attente',
-                            secondaryColor, // Orange harmonieux
+                            secondaryColor,
                             ValidationPretsScreen(membreId: widget.membreId),
                           ),
                           _buildMenuCard(
@@ -217,16 +218,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Icons.table_chart,
                             'Tableau du Groupe',
                             'Consulter l\'état général et l\'épargne de tous les membres',
-                            primaryColor, // Rappel bleu
+                            primaryColor,
                             TableauGroupeScreen(groupId: userGroupId),
                           ),
+
+                          // --- LA CARTE MISE À JOUR ICI ---
                           _buildMenuCard(
                             Icons.edit_document,
                             'Enregistrer un membre',
                             'Ajouter un nouveau dossier au système',
                             primaryColor,
-                            ActionsPlaceholderScreen(title: 'Inscription Nouveau Membre'),
+                            const InscriptionScreen(), // Redirection directe vers votre formulaire réel
                           ),
+
                           _buildMenuCard(
                             Icons.list_alt,
                             'Registre des réunions',
@@ -288,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   '$pret BIF',
                   style: TextStyle(
-                    color: secondaryColor, // L'orange fait ressortir le montant à payer
+                    color: secondaryColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),

@@ -2,6 +2,9 @@ name: sacco_mobile
 description: "A new Flutter project."
 publish_to: 'none'
 
+# La version de l'application (version_nom + version_code). Obligatoire pour les stores !
+version: 1.0.0+5
+
 environment:
   sdk: ^3.12.1
 
@@ -17,9 +20,17 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  change_app_package_name: ^1.1.0  # Outil pour nettoyer le "com.example"
+  flutter_launcher_icons: ^0.13.1  # Outil pour générer les icônes d'un coup
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
+
+# Configuration automatique des icônes de l'application
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/la_confiance.png" # Utilise votre logo en filigrane actuel

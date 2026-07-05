@@ -12,19 +12,26 @@ class ApiService {
   // ==========================================
   // --- AUTHENTIFICATION ET PROFIL ---
   // ==========================================
-
   static Future<Map<String, dynamic>?> login(String telephone, String pin) async {
     try {
       final response = await http.post(
         Uri.parse(Config.loginUrl),
-        headers: _headers,
-        body: jsonEncode({"telephone": telephone, "pin": pin}),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: {
+          "username": telephone,
+          "password": pin,
+        },
       );
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
+      } else {
+        print("Échec de connexion. Code: ${response.statusCode}, Réponse: ${response.body}");
+        return null;
       }
-      return null;
     } catch (e) {
       print("Erreur réseau lors du login : $e");
       return null;
@@ -208,7 +215,8 @@ class ApiService {
   static Future<bool> validerPret(int idDemande, bool approuver, int adminId, String type) async {
     try {
       final response = await http.post(
-        Uri.parse("http://127.0.0.1:8000/admin/valider-demande"),
+        // On utilise la configuration globale Config.baseUrl ici aussi !
+        Uri.parse("${Config.baseUrl}/admin/valider-demande"),
         headers: _headers,
         body: jsonEncode({
           "id": idDemande,
