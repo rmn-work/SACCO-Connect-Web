@@ -11,7 +11,7 @@ from psycopg2.extensions import register_adapter, AsIs
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Query, Request, Depends, APIRouter, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -108,37 +108,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable")
     return user
-
-
-# ==========================================================
-# PROTECTION BCRYPT : ROUTE DE CONNEXION MOBILE
-# ==========================================================
-@app.post("/auth/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
-    cursor.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
-    user = cursor.fetchone()
-
-    if not user:
-        raise HTTPException(status_code=400, detail="Identifiants incorrects")
-
-    hash_en_base = user['pin']
-
-    # PROTECTION : Vérification de la compatibilité Bcrypt avant de comparer
-    if hash_en_base and hash_en_base.startswith('$2b$'):
-        try:
-            if not pwd_context.verify(form_data.password, hash_en_base):
-                raise HTTPException(status_code=400, detail="Code PIN incorrect")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erreur de sécurité lors de la vérification : {e}")
-    else:
-        raise HTTPException(status_code=400, detail="Compte non migré. Veuillez contacter l'administrateur.")
-
-    if user.get('is_active') == 0:
-        raise HTTPException(status_code=400, detail="Ce compte est archivé ou bloqué.")
-
-    # Si tout est bon, on génère le token
-    access_token = create_access_token(data={"sub": str(user['id']), "role": user['role']})
-    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # --- SCHÉMAS PYDANTIC ---
@@ -327,8 +296,9 @@ def startup_db_setup():
     except Exception as e:
         print(f"❌ Erreur critique lors de l'initialisation de la base : {e}")
 
+
 # ==========================================================
-# 6. ENDPOINTS GLOBAUX & AUTHENTIFICATION
+# 6. ENDPOINTS GLOBAUX & AUTHENTIFICATION (UNIQUE ET PROPRE)
 # ==========================================================
 @app.get('/')
 def read_root():
@@ -338,44 +308,72 @@ def read_root():
         "database": "Connectée avec succès ✅"
     }
 
-auth_router = APIRouter()
+
+@app.get("/privacy-policy", response_class=HTMLResponse)
+async def privacy_policy():
+    return """
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Politique de confidentialité - Sacco Connect</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 40px; max-width: 800px; margin: auto; color: #333; }
+            h1 { color: #0284c7; }
+        </style>
+    </head>
+    <body>
+        <h1>Politique de confidentialité de Sacco Connect</h1>
+        <p>Dernière mise à jour : Juillet 2026</p>
+
+        <p>L'application <strong>Sacco Connect</strong> accorde une grande importance à la protection de vos données personnelles. Cette politique de confidentialité explique quelles informations nous collectons et comment nous les utilisons.</p>
+
+        <h2>1. Données collectées</h2>
+        <p>Nous collectons uniquement les informations nécessaires au fonctionnement de votre compte de coopérative (numéro de téléphone, identifiants de connexion sécurisés et données de transactions).</p>
+
+        <h2>2. Utilisation des données</h2>
+        <p>Vos données sont exclusivement utilisées pour l'authentification sécurisée sur l'application et la gestion de vos services financiers au sein de la coopérative.</p>
+
+        <h2>3. Sécurité</h2>
+        <p>Toutes les communications entre l'application mobile et notre serveur sur Render sont chiffrées via HTTPS. Les mots de passe et données sensibles font l'objet d'un hachage sécurisé (Bcrypt).</p>
+
+        <h2>4. Contact</h2>
+        <p>Pour toute question concernant vos données, vous pouvez contacter l'administrateur de votre Sacco.</p>
+    </body>
+    </html>
+    """
 
 
-@auth_router.post("/login")
+@app.post("/auth/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
-    cursor.execute("SELECT * FROM membres WHERE telephone=%s", (form_data.username,))
-    user_data = cursor.fetchone()
+    cursor.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
+    user = cursor.fetchone()
 
-    if not user_data:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Identifiants incorrects.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    if not user:
+        raise HTTPException(status_code=400, detail="Identifiants incorrects")
 
-    if not pwd_context.verify(form_data.password, user_data['pin']):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Identifiants incorrects.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    hash_en_base = user['pin']
 
-    if user_data.get('is_active') == 0:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Ce compte est archivé ou bloqué."
-        )
+    if hash_en_base and hash_en_base.startswith('$2b$'):
+        try:
+            if not pwd_context.verify(form_data.password, hash_en_base):
+                raise HTTPException(status_code=400, detail="Code PIN incorrect")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Erreur de sécurité lors de la vérification : {e}")
+    else:
+        raise HTTPException(status_code=400, detail="Compte non migré. Veuillez contacter l'administrateur.")
+
+    if user.get('is_active') == 0:
+        raise HTTPException(status_code=403, detail="Ce compte est archivé ou bloqué.")
 
     heure_connexion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute("UPDATE membres SET last_login = %s WHERE id = %s", (heure_connexion, user_data['id']))
+    cursor.execute("UPDATE membres SET last_login = %s WHERE id = %s", (heure_connexion, user['id']))
 
-    access_token = create_access_token(
-        data={"sub": str(user_data['id']), "role": user_data['role']}
-    )
-    return {"access_token": access_token, "token_type": "bearer", "role": user_data['role']}
+    access_token = create_access_token(data={"sub": str(user['id']), "role": user['role']})
+    return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
 
 
-@auth_router.post("/inscription")
+@app.post("/auth/inscription")
 def inscription(data: InscriptionPayload, cursor=Depends(get_db_cursor)):
     hp = pwd_context.hash("1234")
     try:
@@ -390,20 +388,8 @@ def inscription(data: InscriptionPayload, cursor=Depends(get_db_cursor)):
         raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé.")
 
 
-@auth_router.post("/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
-    cursor.execute("SELECT id, nom, prenom, role, groupe_id, pin FROM membres WHERE telephone = %s",
-                   (form_data.username,))
-    user = cursor.fetchone()
-
-    if user and pwd_context.verify(form_data.password, user[5]):
-        return {"status": "success", "message": "Connexion réussie"}
-    else:
-        raise HTTPException(status_code=400, detail="Identifiants incorrects")
-
-
 # ==========================================================
-# 7. DASHBOARD ET GESTION DU PROFIL (Reste inchangé)
+# 7. DASHBOARD ET GESTION DU PROFIL
 # ==========================================================
 @app.get('/membres/{membre_id}/dashboard')
 def get_membre_dashboard(
@@ -584,6 +570,7 @@ def appliquer_penalite(credit_id: int, payload: PenaliteSchema, cursor=Depends(g
 
     return {"status": "success", "message": f"Pénalité de {penalite_totale} BIF appliquée."}
 
+
 # ==========================================================
 # 9. GESTION DES REUNIONS & SAISIES HEBDOMADAIRES (UNIFIÉ)
 # ==========================================================
@@ -637,9 +624,10 @@ def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=
                   data.enregistre_par))
 
     cursor.execute("UPDATE groupes SET date_reunion_derniere = %s, date_reunion_prochaine = %s WHERE id = %s",
-                   (data.date_reunion_actuelle, data.date_reunion_prochaine, groupe_id))
+                   (str(data.date_reunion), str(data.date_prochaine_reunion), groupe_id))
 
     return {"status": "success", "message": "✅ Réunion et saisies enregistrées avec succès !"}
+
 
 # ==========================================================
 # 10. ADMINISTRATION BUREAU EXECUTIF
@@ -752,3 +740,9 @@ def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest,
         raise HTTPException(status_code=400, detail="❌ Le montant ne peut pas être négatif.")
     cursor.execute("UPDATE groupes SET montant_hebdo = %s WHERE id = %s", (payload.nouveau_montant, groupe_id))
     return {"status": "success", "message": f"✅ Cotisation du groupe mise à jour à {payload.nouveau_montant} BIF"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
