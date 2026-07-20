@@ -344,6 +344,42 @@ async def privacy_policy():
     """
 
 
+@app.get("/delete-account", response_class=HTMLResponse)
+async def delete_account_instructions():
+    return """
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Suppression de compte - Sacco Connect</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 40px; max-width: 800px; margin: auto; color: #333; }
+            h1 { color: #0284c7; }
+        </style>
+    </head>
+    <body>
+        <h1>Suppression de compte et de données - Sacco Connect</h1>
+        <p>Dernière mise à jour : Juillet 2026</p>
+
+        <p>Si vous souhaitez supprimer votre compte ainsi que les données associées au sein de l'application <strong>Sacco Connect</strong>, veuillez suivre la procédure ci-dessous :</p>
+
+        <h2>Procédure de suppression :</h2>
+        <ol>
+            <li>Contactez l'administrateur ou le bureau exécutif de votre coopérative (SACCO).</li>
+            <li>Fournissez votre numéro de téléphone enregistré pour authentifier votre demande.</li>
+            <li>L'administrateur procédera à la désactivation de votre profil dans le système.</li>
+        </ol>
+
+        <h2>Données conservées :</h2>
+        <p>Les données liées aux transactions financières et aux historiques d'épargne peuvent être conservées conformément aux exigences légales et aux statuts de la coopérative.</p>
+
+        <h2>Contact</h2>
+        <p>Pour toute assistance, rapprochez-vous de l'administration de votre Sacco.</p>
+    </body>
+    </html>
+    """
+
+
 @app.post("/auth/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
