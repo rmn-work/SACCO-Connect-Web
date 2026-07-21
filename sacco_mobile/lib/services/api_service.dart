@@ -1,39 +1,60 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
-import 'config.dart';
+import '../services/config.dart';
+import 'authenticated_client.dart';
 
 class ApiService {
-  // En-têtes par défaut
+  static const String productionUrl = "https://sacco-connect.onrender.com";
+  static final AuthenticatedClient _client = AuthenticatedClient();
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000';
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8000';
+    } else {
+      return 'http://127.0.0.1:8000';
+    }
+  }
+
   static Map<String, String> get _headers => {
         "Content-Type": "application/json",
         "Accept": "application/json",
       };
 
-  // ==========================================
-  // --- AUTHENTIFICATION ET PROFIL ---
-  // ==========================================
+  static Uri get loginUri => Uri.parse('$baseUrl/auth/login');
+  static Uri get membresUri => Uri.parse('$baseUrl/membres');
+  static Uri get groupesUri => Uri.parse('$baseUrl/groupes');
+
+  static String _url(String endpoint) {
+    return "$baseUrl$endpoint";
+  }
+
   static Future<Map<String, dynamic>?> login(String telephone, String pin) async {
+    print("Tentative de connexion vers : $loginUri");
     try {
       final response = await http.post(
-        Uri.parse(Config.loginUrl),
+        loginUri,
         headers: {
-          "Accept": "application/json",
           "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": "application/json",
         },
         body: {
           "username": telephone,
           "password": pin,
         },
-      );
+      ).timeout(const Duration(seconds: 10));
+
+      print("Status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
-      } else {
-        print("Échec de connexion. Code: ${response.statusCode}, Réponse: ${response.body}");
-        return null;
       }
+      return null;
     } catch (e) {
-      print("Erreur réseau lors du login : $e");
+      print("Erreur lors de la connexion: $e");
       return null;
     }
   }
@@ -53,8 +74,8 @@ class ApiService {
     try {
       String sexeCode = (sexe == 'Masculin') ? 'M' : 'F';
 
-      final response = await http.post(
-        Uri.parse('${Config.baseUrl}/auth/inscription'),
+      final response = await _client.post(
+        Uri.parse(_url('/auth/inscription')),
         headers: _headers,
         body: jsonEncode({
           "nom": nom,
@@ -71,7 +92,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print("Erreur inscription: $e");
       return false;
     }
   }
@@ -79,8 +99,8 @@ class ApiService {
   static Future<Map<String, dynamic>?> getPortefeuille(dynamic membreId) async {
     try {
       final int idConforme = int.parse(membreId.toString());
-      final response = await http.get(
-        Uri.parse(Config.dashboardUrl(idConforme)),
+      final response = await _client.get(
+        Uri.parse('$baseUrl/membres/$idConforme/portefeuille'),
         headers: _headers,
       );
 
@@ -94,10 +114,28 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>?> getDashboardData(int membreId) async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/membres/$membreId/dashboard'),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        print("Erreur serveur: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Erreur réseau lors de la récupération du dashboard: $e");
+      return null;
+    }
+  }
+
   static Future<Map<String, dynamic>?> getProfilComplet(int membreId) async {
     try {
-      final response = await http.get(
-        Uri.parse('${Config.baseUrl}/membres/$membreId/profil-complet'),
+      final response = await _client.get(
+        Uri.parse('$baseUrl/membres/$membreId/profil-complet'),
         headers: _headers,
       );
 
@@ -111,10 +149,6 @@ class ApiService {
     }
   }
 
-  // ==========================================
-  // --- GESTION DES CRÉDITS ET HISTORIQUE ---
-  // ==========================================
-
   static Future<bool> demanderCredit({
     required int membreId,
     required int montant,
@@ -122,8 +156,8 @@ class ApiService {
     required double tauxInteretApplique,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('${Config.baseUrl}/membres/$membreId/demande-credit'),
+      final response = await _client.post(
+        Uri.parse('$baseUrl/membres/$membreId/demande-credit'),
         headers: _headers,
         body: jsonEncode({
           'montant': montant,
@@ -144,8 +178,8 @@ class ApiService {
     required String motif,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('${Config.baseUrl}/membres/$membreId/demande-sociale'),
+      final response = await _client.post(
+        Uri.parse('$baseUrl/membres/$membreId/demande-sociale'),
         headers: _headers,
         body: jsonEncode({
           'montant_demande': montant,
@@ -161,8 +195,8 @@ class ApiService {
 
   static Future<List<dynamic>> getMesDemandesPrets(int membreId) async {
     try {
-      final response = await http.get(
-        Uri.parse('${Config.baseUrl}/membres/$membreId/mes-demandes-prets'),
+      final response = await _client.get(
+        Uri.parse('$baseUrl/membres/$membreId/mes-demandes-prets'),
         headers: _headers,
       );
       if (response.statusCode == 200) {
@@ -181,7 +215,10 @@ class ApiService {
 
   static Future<List<dynamic>> getHistoriqueEpargne(int membreId) async {
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/membres/$membreId/historique/'), headers: _headers);
+      final response = await _client.get(
+        Uri.parse('$baseUrl/membres/$membreId/historique/'),
+        headers: _headers
+      );
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map && decoded.containsKey('data')) return List<dynamic>.from(decoded['data']);
@@ -193,13 +230,12 @@ class ApiService {
     return [];
   }
 
-  // ==========================================
-  // --- ADMINISTRATION BUREAU EXECUTIF ---
-  // ==========================================
-
   static Future<List<dynamic>> getPretsEnAttente() async {
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/admin/prets-en-attente'), headers: _headers);
+      final response = await _client.get(
+        Uri.parse('$baseUrl/admin/prets-en-attente'),
+        headers: _headers
+      );
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         return (decoded is Map && decoded.containsKey('data'))
@@ -214,13 +250,12 @@ class ApiService {
 
   static Future<bool> validerPret(int idDemande, bool approuver, int adminId, String type) async {
     try {
-      final response = await http.post(
-        // On utilise la configuration globale Config.baseUrl ici aussi !
-        Uri.parse("${Config.baseUrl}/admin/valider-demande"),
+      final response = await _client.post(
+        Uri.parse("$baseUrl/admin/valider-demande"),
         headers: _headers,
         body: jsonEncode({
           "id": idDemande,
-          "type": type, // 'CREDIT' ou 'SOCIAL'
+          "type": type,
           "approuver": approuver,
           "admin_id": adminId
         }),
@@ -234,7 +269,10 @@ class ApiService {
 
   static Future<Map<String, dynamic>?> getRapportsGlobaux() async {
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/admin/rapports'), headers: _headers);
+      final response = await _client.get(
+        Uri.parse('$baseUrl/admin/rapports'),
+        headers: _headers
+      );
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         return (decoded is Map) ? Map<String, dynamic>.from(decoded['data'] ?? decoded) : null;
@@ -247,7 +285,10 @@ class ApiService {
 
   static Future<List<dynamic>> getCreditsEnRetard() async {
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/admin/credits-en-retard'), headers: _headers);
+      final response = await _client.get(
+        Uri.parse('$baseUrl/admin/credits-en-retard'),
+        headers: _headers
+      );
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         return (decoded is Map && decoded.containsKey('data'))
@@ -262,8 +303,8 @@ class ApiService {
 
   static Future<bool> appliquerPenalite(int creditId, double taux, int adminId, int moisRetard) async {
     try {
-      final response = await http.post(
-        Uri.parse('${Config.baseUrl}/api/credits/$creditId/appliquer-penalite'),
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/credits/$creditId/appliquer-penalite'),
         headers: _headers,
         body: jsonEncode({
           "taux_penalite_mensuel": taux,

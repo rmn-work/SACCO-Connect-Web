@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.sacconnect.sacco"
+    namespace = "com.saccoconnect.mobile"
     compileSdk = flutter.compileSdkVersion
 
     // On aligne Java sur la version 21
@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.sacconnect.sacco"
+        applicationId = "com.saccoconnect.mobile"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

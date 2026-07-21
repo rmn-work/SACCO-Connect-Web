@@ -2,8 +2,7 @@ name: sacco_mobile
 description: "A new Flutter project."
 publish_to: 'none'
 
-# La version de l'application (version_nom + version_code). Obligatoire pour les stores !
-version: 1.0.0+5
+version: 1.0.0+8
 
 environment:
   sdk: ^3.12.1
@@ -13,24 +12,29 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   http: ^1.6.0
-  qr_flutter: ^4.1.0  # Permet de générer le badge QR Code
+  qr_flutter: ^4.1.0
   mobile_scanner: ^7.2.0
+  go_router: ^17.3.0
+  flutter_secure_storage: ^10.3.1
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  change_app_package_name: ^1.1.0  # Outil pour nettoyer le "com.example"
-  flutter_launcher_icons: ^0.13.1  # Outil pour générer les icônes d'un coup
+  change_app_package_name: ^1.1.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
+    - assets/images/la_confiance.png
+    - assets/images/logo_2.png
 
-# Configuration automatique des icônes de l'application
+
 flutter_launcher_icons:
-  android: "launcher_icon"
+  image_path: "assets/images/la_confiance.png"
+  android: true
   ios: true
-  image_path: "assets/images/la_confiance.png" # Utilise votre logo en filigrane actuel
+  min_sdk_android: 21
