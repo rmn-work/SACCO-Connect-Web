@@ -98,8 +98,10 @@ class ApiService {
           "maison": maison
         }),
       );
-      return response.statusCode == 200;
+
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
+      print("Erreur inscription : $e");
       return false;
     }
   }

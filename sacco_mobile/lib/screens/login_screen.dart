@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-//import 'package:http/http.dart' as http;
-//import 'dart:convert';
 import '../providers/auth_notifier.dart';
 import '../services/api_service.dart';
 
@@ -100,11 +98,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           backgroundColor: Colors.green,
         ),
       );
-      _tabController.index = 0;
+      _tabController.index = 0; // Basculer vers l'onglet Connexion
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Erreur lors de l'inscription (vérifiez que le numéro n'existe pas déjà)"),
+          content: Text("Erreur lors de l'inscription. Vérifiez vos informations."),
           backgroundColor: Colors.red
         ),
       );

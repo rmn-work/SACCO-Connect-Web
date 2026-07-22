@@ -409,7 +409,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_d
     return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
 
 
-@app.post("/auth/inscription")
+# --- ROUTE D'INSCRIPTION ---
+@app.post("/auth/inscription", status_code=status.HTTP_201_CREATED)
 def inscription(data: InscriptionPayload, cursor=Depends(get_db_cursor)):
     hp = pwd_context.hash("1234")
     try:
