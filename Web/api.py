@@ -20,6 +20,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import timedelta
+from typing import Optional
 
 load_dotenv()
 
@@ -47,7 +48,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- CONFIGURATION BASE DE DONNÉES HARMONISÉE ---
 database_url = os.getenv("DATABASE_URL")
 
 if database_url:
@@ -70,8 +70,6 @@ if not os.path.exists("./static/documents"):
     os.makedirs("./static/documents", exist_ok=True)
 app.mount("/documents", StaticFiles(directory="./static/documents"), name="documents")
 
-
-# --- FONCTIONS DE BASE ---
 def get_db_cursor():
     conn = psycopg2.connect(db_conn_string)
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -85,14 +83,12 @@ def get_db_cursor():
         cursor.close()
         conn.close()
 
-
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
 
 def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_cursor)):
     try:
@@ -117,16 +113,16 @@ class LoginRequest(BaseModel):
 
 
 class InscriptionPayload(BaseModel):
-    nom: str
-    prenom: str
-    age: int
-    sexe: str
     telephone: str
-    cni: str
-    colline: str
-    quartier: str
-    avenue: str
-    maison: str
+    colline: Optional[str] = None
+    quartier: Optional[str] = None
+    avenue: Optional[str] = None
+    maison: Optional[str] = None
+    nom: Optional[str] = "Non renseigné"
+    prenom: Optional[str] = "Membre"
+    age: Optional[int] = 0
+    sexe: Optional[str] = "M"
+    cni: Optional[str] = "0000"
 
 
 class GroupeCreate(BaseModel):
@@ -187,10 +183,6 @@ class CotisationUpdateRequest(BaseModel):
     nouveau_montant: int
     admin_id: int
 
-
-# ==========================================================
-# 4. FONCTIONS UTILITAIRES ET LOGS
-# ==========================================================
 def log_audit_api(user: str, action: str, details: str):
     conn = psycopg2.connect(db_conn_string)
     cursor = conn.cursor()
@@ -206,10 +198,6 @@ def log_audit_api(user: str, action: str, details: str):
         cursor.close()
         conn.close()
 
-
-# ==========================================================
-# INITIALISATION DE LA BASE AU DÉMARRAGE
-# ==========================================================
 @app.on_event("startup")
 def startup_db_setup():
     print("🚀 Initialisation de la base de données PostgreSQL (init_db)...")
@@ -296,10 +284,6 @@ def startup_db_setup():
     except Exception as e:
         print(f"❌ Erreur critique lors de l'initialisation de la base : {e}")
 
-
-# ==========================================================
-# 6. ENDPOINTS GLOBAUX & AUTHENTIFICATION (UNIQUE ET PROPRE)
-# ==========================================================
 @app.get('/')
 def read_root():
     return {
@@ -307,7 +291,6 @@ def read_root():
         "projet": "SACCO Connect",
         "database": "Connectée avec succès ✅"
     }
-
 
 @app.get("/privacy-policy", response_class=HTMLResponse)
 async def privacy_policy():
@@ -342,7 +325,6 @@ async def privacy_policy():
     </body>
     </html>
     """
-
 
 @app.get("/delete-account", response_class=HTMLResponse)
 async def delete_account_instructions():
@@ -379,7 +361,6 @@ async def delete_account_instructions():
     </html>
     """
 
-
 @app.post("/auth/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
@@ -408,8 +389,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_d
     access_token = create_access_token(data={"sub": str(user['id']), "role": user['role']})
     return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
 
-
-# --- ROUTE D'INSCRIPTION ---
 @app.post("/auth/inscription", status_code=status.HTTP_201_CREATED)
 def inscription(data: InscriptionPayload, cursor=Depends(get_db_cursor)):
     hp = pwd_context.hash("1234")
@@ -417,17 +396,14 @@ def inscription(data: InscriptionPayload, cursor=Depends(get_db_cursor)):
         cursor.execute(
             """INSERT INTO membres (nom, prenom, age, sexe, telephone, cni, pin, role, is_active, colline, quartier, avenue, maison) 
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s, 1, %s, %s, %s, %s)""",
-            (data.nom, data.prenom, data.age, data.sexe, data.telephone, data.cni, hp, 'membre',
+            (data.nom or "Non renseigné", data.prenom or "Membre", data.age or 0, data.sexe or "M",
+             data.telephone, data.cni or "0000", hp, 'membre',
              data.colline, data.quartier, data.avenue, data.maison)
         )
         return {"status": "success", "message": "✅ Inscription réussie !"}
     except psycopg2.IntegrityError:
         raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé.")
 
-
-# ==========================================================
-# 7. DASHBOARD ET GESTION DU PROFIL
-# ==========================================================
 @app.get('/membres/{membre_id}/dashboard')
 def get_membre_dashboard(
         membre_id: int,
@@ -457,7 +433,6 @@ def get_membre_dashboard(
         "cotisation_hebdo_fixee": groupe_data['montant_hebdo'] if groupe_data else 0,
         "devise": "BIF"
     }
-
 
 @app.get('/membres/{membre_id}/previsions-ia')
 def get_previsions_ia(
@@ -524,11 +499,9 @@ def get_previsions_ia(
         "devise": "BIF"
     }
 
-
 @app.post("/upload-pdf/")
 async def upload_pdf(file: UploadFile = File(...)):
     return {"filename": file.filename}
-
 
 @app.get('/membres/{membre_id}/historique/')
 def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
@@ -541,10 +514,6 @@ def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
     cursor.execute(query, (membre_id,))
     return cursor.fetchall()
 
-
-# ==========================================================
-# 8. DEMANDES SOCIALES ET CRÉDITS
-# ==========================================================
 @app.post('/membres/{membre_id}/demande-sociale')
 def create_demande_sociale(membre_id: int, data: DemandeSocialeInput, cursor=Depends(get_db_cursor)):
     if data.montant_demande <= 0:
@@ -559,13 +528,11 @@ def create_demande_sociale(membre_id: int, data: DemandeSocialeInput, cursor=Dep
     )
     return {"status": "success", "message": "✅ Demande de secours social envoyée."}
 
-
 @app.get('/membres/{membre_id}/mes-demandes-prets')
 def get_mes_demandes_prets(membre_id: int, cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT id, montant, motif, status, date_demande FROM prets WHERE membre_id = %s ORDER BY id DESC",
                    (membre_id,))
     return {"data": cursor.fetchall()}
-
 
 @app.post('/membres/{membre_id}/demande-credit')
 def create_demande_credit(membre_id: int, data: DemandePretInput, cursor=Depends(get_db_cursor)):
@@ -585,7 +552,6 @@ def create_demande_credit(membre_id: int, data: DemandePretInput, cursor=Depends
          data.taux_interet_applique)
     )
     return {"status": "success", "message": "✅ Demande transmise avec taux personnalisé."}
-
 
 @app.post("/api/credits/{credit_id}/appliquer-penalite")
 def appliquer_penalite(credit_id: int, payload: PenaliteSchema, cursor=Depends(get_db_cursor)):
@@ -607,10 +573,6 @@ def appliquer_penalite(credit_id: int, payload: PenaliteSchema, cursor=Depends(g
 
     return {"status": "success", "message": f"Pénalité de {penalite_totale} BIF appliquée."}
 
-
-# ==========================================================
-# 9. GESTION DES REUNIONS & SAISIES HEBDOMADAIRES (UNIFIÉ)
-# ==========================================================
 @app.get("/membres/actifs/{groupe_id}")
 def get_active_members(groupe_id: int, role: str = Query(...), cursor=Depends(get_db_cursor)):
     if role == "admin_sys":
@@ -620,7 +582,6 @@ def get_active_members(groupe_id: int, role: str = Query(...), cursor=Depends(ge
             "SELECT id, nom, prenom, telephone, solde_epargne, solde_pret FROM membres WHERE groupe_id = %s AND is_active = 1",
             (groupe_id,))
     return cursor.fetchall()
-
 
 @app.get("/groupes/{group_id}/membres-formater")
 def get_membres_groupe_pour_flutter(group_id: int, cursor=Depends(get_db_cursor)):
@@ -635,7 +596,6 @@ def get_membres_groupe_pour_flutter(group_id: int, cursor=Depends(get_db_cursor)
         "caisse": 0.0,
         "amende": False
     } for row in rows]
-
 
 @app.post('/groupes/{groupe_id}/saisie-hebdo')
 def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=Depends(get_db_cursor)):
@@ -665,10 +625,6 @@ def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=
 
     return {"status": "success", "message": "✅ Réunion et saisies enregistrées avec succès !"}
 
-
-# ==========================================================
-# 10. ADMINISTRATION BUREAU EXECUTIF
-# ==========================================================
 @app.get('/admin/prets-en-attente')
 def get_prets_en_attente(cursor=Depends(get_db_cursor)):
     query = """
@@ -681,7 +637,6 @@ def get_prets_en_attente(cursor=Depends(get_db_cursor)):
     """
     cursor.execute(query)
     data = cursor.fetchall()
-
     for row in data:
         cursor.execute("SELECT nom, prenom, telephone FROM membres WHERE id = %s", (row['membre_id'],))
         membre = cursor.fetchone()
@@ -690,7 +645,6 @@ def get_prets_en_attente(cursor=Depends(get_db_cursor)):
         row['telephone'] = membre['telephone'] if membre else ""
 
     return {"status": "success", "data": data}
-
 
 @app.post('/admin/valider-demande')
 def valider_demande(payload: dict, cursor=Depends(get_db_cursor)):
@@ -728,7 +682,6 @@ def valider_demande(payload: dict, cursor=Depends(get_db_cursor)):
 
     return {"status": "success", "message": f"Demande {statut} avec succès."}
 
-
 @app.get('/admin/rapports')
 def get_rapports_globaux(cursor=Depends(get_db_cursor)):
     cursor.execute("""
@@ -746,7 +699,6 @@ def get_rapports_globaux(cursor=Depends(get_db_cursor)):
         }
     }
 
-
 @app.get('/admin/credits-en-retard')
 def get_credits_retard(cursor=Depends(get_db_cursor)):
     cursor.execute("""
@@ -763,7 +715,6 @@ def get_credits_retard(cursor=Depends(get_db_cursor)):
         "mois_retard": 1
     } for p in cursor.fetchall()]}
 
-
 @app.put('/groupes/{groupe_id}/modifier-cotisation')
 def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest, cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT role, groupe_id FROM membres WHERE id = %s", (payload.admin_id,))
@@ -777,7 +728,6 @@ def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest,
         raise HTTPException(status_code=400, detail="❌ Le montant ne peut pas être négatif.")
     cursor.execute("UPDATE groupes SET montant_hebdo = %s WHERE id = %s", (payload.nouveau_montant, groupe_id))
     return {"status": "success", "message": f"✅ Cotisation du groupe mise à jour à {payload.nouveau_montant} BIF"}
-
 
 if __name__ == "__main__":
     import uvicorn
