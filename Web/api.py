@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import qrcode
 from fpdf import FPDF
 import psycopg2
+from psycopg2 import pool
 from psycopg2.extensions import register_adapter, AsIs
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -40,13 +41,8 @@ app = FastAPI(
 origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
 origins = [origin.strip() for origin in origins_str.split(",")]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"],
+    allow_headers=["*"],)
 
 database_url = os.getenv("DATABASE_URL")
 
@@ -65,13 +61,19 @@ else:
     }
     db_conn_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
     print("⚠️ DATABASE_URL non trouvée, API en mode local.")
+try:
+    db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, db_conn_string)
+    if db_pool:
+        print("✅ Pool de connexions PostgreSQL créé avec succès.")
+except Exception as e:
+    print(f"❌ Erreur lors de la création du pool de connexions : {e}")
 
 if not os.path.exists("./static/documents"):
     os.makedirs("./static/documents", exist_ok=True)
 app.mount("/documents", StaticFiles(directory="./static/documents"), name="documents")
 
 def get_db_cursor():
-    conn = psycopg2.connect(db_conn_string)
+    conn = db_pool.getconn()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     try:
         yield cursor
@@ -81,11 +83,11 @@ def get_db_cursor():
         raise
     finally:
         cursor.close()
-        conn.close()
+        db_pool.putconn(conn)
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -105,12 +107,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable")
     return user
 
-
-# --- SCHÉMAS PYDANTIC ---
 class LoginRequest(BaseModel):
     telephone: str
     pin: str
-
 
 class InscriptionPayload(BaseModel):
     telephone: str
@@ -124,23 +123,19 @@ class InscriptionPayload(BaseModel):
     sexe: Optional[str] = "M"
     cni: Optional[str] = "0000"
 
-
 class GroupeCreate(BaseModel):
     nom_groupe: str
     president_nom: str
     secretaire_nom: str
 
-
 class GroupSettingsRequest(BaseModel):
     date_reunion_prochaine: date
     montant_hebdo: int
-
 
 class MembreUpdate(BaseModel):
     role: str
     groupe_id: int
     admin_nom: str
-
 
 class MembreSaisieInput(BaseModel):
     membre_id: int
@@ -149,42 +144,36 @@ class MembreSaisieInput(BaseModel):
     caisse_sociale: float
     amende: bool
 
-
 class SaisieHebdomadaireRequest(BaseModel):
     date_reunion: date
     date_prochaine_reunion: date
     enregistre_par: str
     enregistrements: List[MembreSaisieInput]
 
-
 class DemandeSocialeInput(BaseModel):
     montant_demande: int
     motif: str
-
 
 class DemandePretInput(BaseModel):
     montant: int
     motif: str
     taux_interet_applique: float = 5.0
 
-
 class ValidationPretSchema(BaseModel):
     approuver: bool
     admin_id: int
-
 
 class PenaliteSchema(BaseModel):
     taux_penalite_mensuel: float
     admin_id: int
     mois_retard: int
 
-
 class CotisationUpdateRequest(BaseModel):
     nouveau_montant: int
     admin_id: int
 
 def log_audit_api(user: str, action: str, details: str):
-    conn = psycopg2.connect(db_conn_string)
+    conn = db_pool.getconn()
     cursor = conn.cursor()
     try:
         cursor.execute(
@@ -196,7 +185,13 @@ def log_audit_api(user: str, action: str, details: str):
         print(f"⚠️ Échec du log d'audit : {e}")
     finally:
         cursor.close()
-        conn.close()
+        db_pool.putconn(conn)
+
+@app.on_event("shutdown")
+def shutdown_db_pool():
+    if db_pool:
+        db_pool.closeall()
+        print("🛑 Pool de connexions PostgreSQL fermé avec succès.")
 
 @app.on_event("startup")
 def startup_db_setup():
@@ -731,5 +726,4 @@ def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest,
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
