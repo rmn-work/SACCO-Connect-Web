@@ -22,6 +22,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import timedelta
 from typing import Optional
+from pydintic import validator
 
 load_dotenv()
 
@@ -122,6 +123,12 @@ class InscriptionPayload(BaseModel):
     age: Optional[int] = 0
     sexe: Optional[str] = "M"
     cni: Optional[str] = "0000"
+
+    @validator('age', pre=True, allow_reuse=True)
+    def empty_str_to_int(cls, v):
+        if v == "" or v is None:
+            return 0
+        return int(v)
 
 class GroupeCreate(BaseModel):
     nom_groupe: str
