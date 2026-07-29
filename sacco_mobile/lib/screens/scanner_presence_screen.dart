@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
 
 class ScannerPresenceScreen extends StatefulWidget {
   final int adminId;
@@ -36,15 +37,15 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
       int? membreId = int.tryParse(cleanId);
 
       if (membreId == null) {
-        throw Exception("Format de QR Code invalide");
+        throw Exception("invalid_qr_format".tr());
       }
 
       // Simulation de la validation réseau
       await Future.delayed(const Duration(milliseconds: 600));
 
-      _afficherSuccesScan("Membre #$membreId marqué PRÉSENT avec succès !");
+      _afficherSuccesScan("Membre #$membreId ${"member_marked_present".tr()}");
     } catch (e) {
-      _afficherErreurScan("Erreur de validation : ${e.toString()}");
+      _afficherErreurScan("${"validation_error".tr()} : ${e.toString()}");
     }
   }
 
@@ -60,7 +61,7 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 64),
             const SizedBox(height: 16),
-            const Text('Émargement Réussi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('success_title'.tr(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 24),
@@ -73,7 +74,7 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
                 Navigator.pop(context);
                 _relancerCamera();
               },
-              child: const Text('Scanner le membre suivant', style: TextStyle(color: Colors.white)),
+              child: Text('scan_next_member'.tr(), style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -113,16 +114,16 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scanner Présences', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text('scanner_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // Bouton Basculer Flash (v7.2.0 supporté)
+          // Bouton Basculer Flash
           IconButton(
             icon: const Icon(Icons.flash_on, color: Colors.white),
             onPressed: () => cameraController.toggleTorch(),
           ),
-          // Bouton Inverser Caméra Avant/Arrière (v7.2.0 supporté)
+          // Bouton Inverser Caméra Avant/Arrière
           IconButton(
             icon: const Icon(Icons.cameraswitch, color: Colors.white),
             onPressed: () => cameraController.switchCamera(),
@@ -156,10 +157,10 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
                 color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'Placez le QR Code du badge d\'un membre à l\'intérieur du cadre pour valider sa présence.',
+              child: Text(
+                'scan_instruction'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
             ),
           ),

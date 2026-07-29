@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
 import '../services/api_service.dart';
 
 class GroupeScreen extends StatefulWidget {
@@ -43,7 +44,7 @@ class _GroupeScreenState extends State<GroupeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon Groupe Sacco', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('group_screen_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -68,9 +69,9 @@ class _GroupeScreenState extends State<GroupeScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Groupe Solidaire #$groupeId', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text('${'solidarity_group'.tr()} #$groupeId', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 4),
-                              Text('Statut Présence Réunion : $presence', style: TextStyle(color: Colors.grey[700])),
+                              Text('${'presence_status'.tr()} : $presence', style: TextStyle(color: Colors.grey[700])),
                             ],
                           ),
                         ],
@@ -78,11 +79,11 @@ class _GroupeScreenState extends State<GroupeScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text('Règles du Groupe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('group_rules'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  _buildRuleTile('La présence aux réunions hebdomadaires est obligatoire.'),
-                  _buildRuleTile('Les cotisations à la caisse sociale se font à chaque séance.'),
-                  _buildRuleTile('La solidarité est la clé de la caution solidaire pour l\'obtention des crédits.'),
+                  _buildRuleTile('rule_1'.tr()),
+                  _buildRuleTile('rule_2'.tr()),
+                  _buildRuleTile('rule_3'.tr()),
                 ],
               ),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class ProfilScreen extends StatefulWidget {
@@ -39,18 +40,17 @@ class _ProfilScreenState extends State<ProfilScreen> {
     }
 
     if (_profilData == null) {
-      return const Scaffold(
-        body: Center(child: Text("Impossible de charger les données du profil.")),
+      return Scaffold(
+        body: Center(child: Text("error_loading_profil".tr())),
       );
     }
 
-    // Extraction sécurisée des données de la réponse API
     final user = _profilData!['user'] ?? {};
     final groupe = _profilData!['groupe'] ?? {};
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("📄 Résumé de mon profil"),
+        title: Text("profil_title".tr()),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -59,7 +59,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- BANDEAU INFOS LIVE (Météo / Heure) ---
+            // --- BANDEAU DE CONNEXION ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -69,14 +69,60 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 border: Border.all(color: Colors.blue.shade200),
               ),
               child: Text(
-                "📅 Bujumbura | Connecté au système SACCO",
+                "bujumbura_connexion".tr(),
                 style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 20),
 
-            // --- CARTE DE PROFIL (GRISE) ---
+            // --- SECTION SÉLECTEUR DE LANGUE ---
+            Card(
+              elevation: 1,
+              margin: const EdgeInsets.symmetric(vertical: 0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.language, color: Color(0xFF1A529B)),
+                        const SizedBox(width: 12),
+                        Text(
+                          "language_label".tr(),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    DropdownButton<Locale>(
+                      value: context.locale,
+                      underline: const SizedBox(),
+                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF1A529B)),
+                      items: const [
+                        DropdownMenuItem(
+                          value: Locale('fr', 'FR'),
+                          child: Text("🇫🇷 Français"),
+                        ),
+                        DropdownMenuItem(
+                          value: Locale('rn', 'BI'),
+                          child: Text("🇧🇮 Kirundi"),
+                        ),
+                      ],
+                      onChanged: (Locale? newLocale) {
+                        if (newLocale != null) {
+                          context.setLocale(newLocale);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // --- CARTE DE PROFIL ---
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -92,11 +138,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
                   ),
                   const SizedBox(height: 8),
-                  Text("Numéro de Membre ID : #00${user['id'] ?? ''}"),
-                  Text("Groupe ID : #00${user['groupe_id'] ?? '-'}"),
+
+                  Text("${'member_id'.tr()} : #00${user['id'] ?? ''}"),
+                  Text("${'group_id'.tr()} : #00${user['groupe_id'] ?? '-'}"),
                   const Divider(height: 30),
 
-                  // Double colonne pour les détails personnels et localisation
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -104,10 +150,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("🪪 CNI : ${user['cni'] ?? '-'}"),
-                            Text("🎂 Âge : ${user['age'] ?? '-'} ans"),
-                            Text("👫 Sexe : ${user['sexe'] ?? '-'}"),
-                            Text("📞 Tél : ${user['telephone'] ?? '-'}"),
+                            Text("🪪 ${'cni'.tr()} : ${user['cni'] ?? '-'}"),
+                            Text("🎂 ${'age'.tr()} : ${user['age'] ?? '-'} ans"),
+                            Text("👫 ${'sexe'.tr()} : ${user['sexe'] ?? '-'}"),
+                            Text("📞 ${'phone'.tr()} : ${user['telephone'] ?? '-'}"),
                           ],
                         ),
                       ),
@@ -115,33 +161,35 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("📍 Colline : ${user['colline'] ?? '-'}"),
-                            Text("🏠 Quartier : ${user['quartier'] ?? '-'}"),
-                            Text("🛣️ Avenue : ${user['avenue'] ?? '-'}"),
-                            Text("🚪 Maison : ${user['maison'] ?? '-'}"),
+                            Text("📍 ${'colline'.tr()} : ${user['colline'] ?? '-'}"),
+                            Text("🏠 ${'quartier'.tr()} : ${user['quartier'] ?? '-'}"),
+                            Text("🛣️ ${'avenue'.tr()} : ${user['avenue'] ?? '-'}"),
+                            Text("🚪 ${'maison'.tr()} : ${user['maison'] ?? '-'}"),
                           ],
                         ),
                       ),
                     ],
                   ),
+
                   const Divider(height: 30),
-                  Text.rich(
-                    TextSpan(
-                      text: "🛡️ Rôle : ",
-                      children: [
-                        TextSpan(
-                          text: "${user['role'] ?? 'MEMBRE'}".toUpperCase(),
-                          style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
+
+                  Row(
+                    children: [
+                      Text("🛡️ ${'role'.tr()} : ", style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        (user['role'] ?? 'MEMBRE').toUpperCase(),
+                        style: const TextStyle(color: Color(0xFF3498DB), fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 6),
+                  Text("🕒 ${'last_login'.tr()} : ${user['last_login'] ?? 'first_session'.tr()}"),
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // --- ENCADRÉ CALENDRIER & REUNION (ORANGE) ---
+            // --- ENCADRÉ CALENDRIER & REUNION ---
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -154,9 +202,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "📅 Calendrier & Configuration",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
+                  Text(
+                    "calendar_config".tr(),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -165,22 +213,22 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Dernière Réunion", style: TextStyle(color: Colors.grey)),
-                          Text(groupe['date_reunion_derniere'] ?? 'Non définie', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text("last_meeting".tr(), style: const TextStyle(color: Colors.grey)),
+                          Text(groupe['date_reunion_derniere'] ?? 'not_defined'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Prochaine Réunion", style: TextStyle(color: Colors.grey)),
-                          Text(groupe['date_reunion_prochaine'] ?? 'À déterminer', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                          Text("next_meeting".tr(), style: const TextStyle(color: Colors.grey)),
+                          Text(groupe['date_reunion_prochaine'] ?? 'to_determine'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
                         ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "Cotisation Fixée : ${groupe['montant_hebdo'] ?? '5 000'} BIF",
+                    "${'fixed_contribution'.tr()} : ${groupe['montant_hebdo'] ?? '5 000'} BIF",
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
                   ),
                 ],
@@ -188,9 +236,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
             ),
             const SizedBox(height: 24),
 
-            // --- BADGE DE PRÉSENCE NUMÉRIQUE (QR CODE) ---
-            const Text("📲 Votre Badge de Présence Numérique", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const Text("Présentez ce QR Code pour faire valider votre présence.", style: TextStyle(color: Colors.grey, fontSize: 12)),
+            // --- BADGE DE PRÉSENCE NUMÉRIQUE ---
+            Text("📲 ${'digital_badge'.tr()}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text("badge_instruction".tr(), style: const TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 12),
             Center(
               child: Column(
@@ -201,7 +249,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     size: 180.0,
                     gapless: false,
                   ),
-                  Text("Badge de ${user['prenom'] ?? ''} ${user['nom'] ?? ''}", style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
+                  Text("${'badge_of'.tr()} ${user['prenom'] ?? ''} ${user['nom'] ?? ''}", style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
                 ],
               ),
             ),
@@ -209,14 +257,14 @@ class _ProfilScreenState extends State<ProfilScreen> {
             const Divider(),
 
             // --- RESPONSABLES DU GROUPE ---
-            const Text("👥 Responsables du Groupe", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text("👥 ${'group_leaders'.tr()}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Président : ${groupe['president'] ?? 'Non défini'}", style: const TextStyle(fontWeight: FontWeight.w500)),
-                Text("Secrétaire : ${groupe['secretaire'] ?? 'Non défini'}", style: const TextStyle(fontWeight: FontWeight.w500)),
-                Text("Administration du Systéme : ${groupe['admin_sys'] ?? 'Non défini'}", style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text("${'president'.tr()} : ${groupe['president'] ?? 'not_defined_leader'.tr()}", style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text("${'secretaire'.tr()} : ${groupe['secretaire'] ?? 'not_defined_leader'.tr()}", style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text("${'admin_sys'.tr()} : ${groupe['admin_sys'] ?? 'not_defined_leader'.tr()}", style: const TextStyle(fontWeight: FontWeight.w500)),
               ],
             ),
             const SizedBox(height: 30),

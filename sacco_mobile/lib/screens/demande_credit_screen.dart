@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation easy_localization
 import '../services/api_service.dart';
 
 class DemandeCreditScreen extends StatefulWidget {
@@ -35,8 +36,6 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
       final data = await ApiService.getPortefeuille(widget.membreId);
       if (data != null && mounted) {
         setState(() {
-          // On récupère le taux configuré par le secrétaire/président (ex: 'taux_interet_applique')
-          // Ajustez la clé selon votre réponse API exacte du portefeuille
           _tauxInteret = (data['taux_interet_applique'] ?? 5.0).toDouble();
           _isLoadingTaux = false;
         });
@@ -63,16 +62,14 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
       bool success = false;
 
       try {
-        // AIGUILLAGE API : On appelle la bonne méthode selon le type de crédit
         if (_typeCredit == 'Standard') {
           success = await ApiService.demanderCredit(
             membreId: widget.membreId,
             montant: montant,
             motif: motif,
-            tauxInteretApplique: _tauxInteret, // Taux fixé par l'admin transmis
+            tauxInteretApplique: _tauxInteret,
           );
         } else {
-          // Prêt Social
           success = await ApiService.demanderPretSocial(
             membreId: widget.membreId,
             montant: montant,
@@ -83,21 +80,20 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
         if (mounted) {
           setState(() => _isLoading = false);
           if (success) {
-            _afficherMessage("✅ Votre demande de crédit a été envoyée avec succès !", Colors.green);
+            _afficherMessage("loan_success_msg".tr(), Colors.green);
 
             _montantController.clear();
             _motifController.clear();
 
-            // On retourne "true" pour dire à l'écran précédent de rafraîchir l'historique
             Navigator.pop(context, true);
           } else {
-            _afficherMessage("❌ Échec de l'envoi de la demande. Réessayez.", Colors.red);
+            _afficherMessage("loan_fail_msg".tr(), Colors.red);
           }
         }
       } catch (e) {
         if (mounted) {
           setState(() => _isLoading = false);
-          _afficherMessage("❌ Erreur réseau: $e", Colors.red);
+          _afficherMessage("${"network_error_msg".tr()}$e", Colors.red);
         }
       }
     }
@@ -127,15 +123,15 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Simulation du Remboursement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('repayment_simulation'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const Divider(),
-            _buildSimulationRow('Montant demandé:', '$montant FBU'),
-            _buildSimulationRow('Intérêts (${_typeCredit == 'Social' ? 0 : _tauxInteret}%):', '${interets.toStringAsFixed(0)} FBU'),
-            _buildSimulationRow('Durée:', '$dureeMois mois'),
+            _buildSimulationRow('requested_amount'.tr(), '$montant FBU'),
+            _buildSimulationRow('${"interests".tr()} (${_typeCredit == 'Social' ? 0 : _tauxInteret}\%) :', '${interets.toStringAsFixed(0)} FBU'),
+            _buildSimulationRow('duration'.tr(), '$dureeMois mois'),
             const Divider(),
-            _buildSimulationRow('Total à rembourser:', '${totalARembourser.toStringAsFixed(0)} FBU', isBold: true, color: primaryColor),
+            _buildSimulationRow('total_to_repay'.tr(), '${totalARembourser.toStringAsFixed(0)} FBU', isBold: true, color: primaryColor),
             const SizedBox(height: 8),
-            _buildSimulationRow('Mensualité estimée:', '${mensualite.toStringAsFixed(0)} FBU / mois', isBold: true),
+            _buildSimulationRow('estimated_monthly_payment'.tr(), '${mensualite.toStringAsFixed(0)} FBU / mois', isBold: true),
           ],
         ),
       ),
@@ -159,7 +155,7 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nouvelle Demande', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('new_loan_request'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -174,9 +170,12 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                   children: [
                     DropdownButtonFormField<String>(
                       value: _typeCredit,
-                      decoration: const InputDecoration(labelText: 'Type de Crédit', border: OutlineInputBorder(), prefixIcon: Icon(Icons.category)),
+                      decoration: InputDecoration(labelText: 'credit_type'.tr(), border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.category)),
                       items: ['Standard', 'Social'].map((String value) {
-                        return DropdownMenuItem<String>(value: value, child: Text(value == 'Standard' ? 'Crédit Standard' : 'Prêt Social'));
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value == 'Standard' ? 'credit_standard'.tr() : 'social_loan'.tr()),
+                        );
                       }).toList(),
                       onChanged: (newValue) => setState(() => _typeCredit = newValue!),
                     ),
@@ -184,15 +183,14 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
 
                     if (_typeCredit == 'Standard') ...[
                       TextFormField(
-                        // On utilise un controller ou une clé unique pour refléter le taux reçu de l'API
                         key: ValueKey(_tauxInteret),
                         initialValue: '$_tauxInteret %',
-                        readOnly: true, // IMPORTANT: Bloqué en lecture seule pour le membre !
+                        readOnly: true,
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
-                        decoration: const InputDecoration(
-                          labelText: 'Taux d\'intérêt appliqué (Fixé par l\'Administration)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.percent),
+                        decoration: InputDecoration(
+                          labelText: 'applied_interest_rate'.tr(),
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.percent),
                           filled: true,
                         ),
                       ),
@@ -202,16 +200,16 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                     TextFormField(
                       controller: _montantController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Montant Souhaité (FBU)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.attach_money)),
+                      decoration: InputDecoration(labelText: 'desired_amount'.tr(), border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.attach_money)),
                       onChanged: (val) => setState(() {}),
-                      validator: (value) => (value == null || value.isEmpty || double.tryParse(value) == null) ? 'Entrez un montant valide' : null,
+                      validator: (value) => (value == null || value.isEmpty || double.tryParse(value) == null) ? 'valid_amount_error'.tr() : null,
                     ),
                     const SizedBox(height: 20),
 
                     TextFormField(
                       controller: _motifController,
-                      decoration: const InputDecoration(labelText: 'Motif du prêt', border: OutlineInputBorder(), prefixIcon: Icon(Icons.edit)),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Entrez un motif' : null,
+                      decoration: InputDecoration(labelText: 'loan_reason'.tr(), border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.edit)),
+                      validator: (value) => (value == null || value.isEmpty) ? 'reason_error'.tr() : null,
                     ),
                     const SizedBox(height: 24),
 
@@ -224,7 +222,7 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
                         onPressed: _isLoading ? null : _soumettreDemande,
-                        child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Envoyer la Demande'),
+                        child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : Text('send_request'.tr()),
                       ),
                     ),
                   ],

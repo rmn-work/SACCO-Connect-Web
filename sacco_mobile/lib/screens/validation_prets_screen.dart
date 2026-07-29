@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
 import '../services/api_service.dart';
 
 class ValidationPretsScreen extends StatefulWidget {
@@ -55,18 +56,18 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
           setState(() => _demandesEnAttente.removeWhere((d) => d['id'] == idDemande));
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(estApprouve ? "Demande approuvée" : "Demande rejetée"),
+              content: Text(estApprouve ? 'request_approved'.tr() : 'request_rejected'.tr()),
               backgroundColor: estApprouve ? Colors.green : Colors.red,
             ),
           );
         }
       } else {
-        throw Exception("Échec de la validation");
+        throw Exception('validation_failure'.tr());
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Erreur lors de la communication avec le serveur")),
+          SnackBar(content: Text('server_communication_error'.tr())),
         );
       }
     } finally {
@@ -80,14 +81,14 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Validation des Prêts', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('validation_prets_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: primaryColor))
           : _demandesEnAttente.isEmpty
-              ? const Center(child: Text("Aucune demande en attente.", style: TextStyle(fontSize: 16, color: Colors.grey)))
+              ? Center(child: Text('no_pending_requests'.tr(), style: const TextStyle(fontSize: 16, color: Colors.grey)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _demandesEnAttente.length,
@@ -114,7 +115,7 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(color: demande['type'] == 'CREDIT' ? Colors.blue.shade100 : Colors.orange.shade100, borderRadius: BorderRadius.circular(4)),
-                              child: Text('Type: ${demande['type']}', style: TextStyle(fontSize: 12, color: demande['type'] == 'CREDIT' ? Colors.blue : Colors.orange)),
+                              child: Text('${'type_label'.tr()}: ${demande['type']}', style: TextStyle(fontSize: 12, color: demande['type'] == 'CREDIT' ? Colors.blue : Colors.orange)),
                             ),
                             const Divider(height: 24),
                             Row(
@@ -123,13 +124,13 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
                                 OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
                                   icon: const Icon(Icons.close),
-                                  label: const Text('Rejeter'),
+                                  label: Text('reject'.tr()),
                                   onPressed: () => _validerDemande(demande['id'], demande['type'], false),
                                 ),
                                 ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                                   icon: const Icon(Icons.check),
-                                  label: const Text('Approuver'),
+                                  label: Text('approve'.tr()),
                                   onPressed: () => _validerDemande(demande['id'], demande['type'], true),
                                 ),
                               ],

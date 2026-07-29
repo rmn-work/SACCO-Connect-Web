@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart'; // N'oublie pas cet import pour que l'API fonctionne
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import '../services/api_service.dart';
 import 'gestion_penalites_screen.dart';
 
 class RapportsFinanciersScreen extends StatefulWidget {
@@ -45,7 +46,7 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rapports & Analyses', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('reports_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -54,24 +55,24 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Text('Santé Globale de la Coopérative', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('global_health'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
 
-                // Les cartes utilisent maintenant les vraies données de l'API
-                _buildRapportCard('Épargne Totale Collectée', '$epargne FBU', Icons.account_balance, Colors.teal),
-                _buildRapportCard('Crédits Actifs (En cours)', '$credits FBU', Icons.trending_up, Colors.orange),
-                _buildRapportCard('Fonds de la Caisse Sociale', '$social FBU', Icons.volunteer_activism, Colors.blue),
-                _buildRapportCard('Pénalités de Retard Perçues', '$penalites FBU', Icons.warning_amber_rounded, Colors.redAccent),
+                // Les cartes utilisent maintenant les vraies données de l'API avec internationalisation
+                _buildRapportCard('total_savings_collected'.tr(), '$epargne FBU', Icons.account_balance, Colors.teal),
+                _buildRapportCard('active_credits'.tr(), '$credits FBU', Icons.trending_up, Colors.orange),
+                _buildRapportCard('social_fund_balance'.tr(), '$social FBU', Icons.volunteer_activism, Colors.blue),
+                _buildRapportCard('penalties_collected'.tr(), '$penalites FBU', Icons.warning_amber_rounded, Colors.redAccent),
 
                 const SizedBox(height: 24),
-                const Text('Actions Administrateur', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('admin_actions'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 ListTile(
                   tileColor: Colors.orange.shade50,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   leading: const Icon(Icons.gavel, color: Colors.deepOrange),
-                  title: const Text('Gestion des Pénalités'),
-                  subtitle: const Text('Appliquer des pénalités sur les retards manuellement'),
+                  title: Text('penalties_management'.tr()),
+                  subtitle: Text('penalties_subtitle'.tr()),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () {
                     Navigator.push(

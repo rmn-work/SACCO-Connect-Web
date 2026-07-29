@@ -8,7 +8,6 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Chargement de votre clé secrète Keystore
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -17,9 +16,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.saccoconnect.mobile"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
 
-    // On aligne Java sur la version 21
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
@@ -28,7 +26,7 @@ android {
     defaultConfig {
         applicationId = "com.saccoconnect.mobile"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -49,7 +47,6 @@ android {
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 
-            // Correction avec l'opérateur d'assignation '=' pour le Kotlin DSL
             ndk {
                 debugSymbolLevel = "SYMBOL_TABLE"
             }
@@ -61,8 +58,6 @@ flutter {
     source = "../.."
 }
 
-// --- CONFIGURATION KOTLIN (Placée à l'extérieur pour éviter les erreurs de référence) ---
-// Ce bloc force toutes les tâches de compilation Kotlin de l'application à utiliser Java 21
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_21)

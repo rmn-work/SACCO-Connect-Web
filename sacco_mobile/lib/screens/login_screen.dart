@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/auth_notifier.dart';
 import '../services/api_service.dart';
 
@@ -13,8 +14,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // Contrôleurs pour la connexion
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
+
+  // Contrôleurs pour l'inscription
   final TextEditingController _nomController = TextEditingController();
   final TextEditingController _prenomController = TextEditingController();
   final TextEditingController _cniController = TextEditingController();
@@ -24,6 +28,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final TextEditingController _quartierController = TextEditingController();
   final TextEditingController _avenueController = TextEditingController();
   final TextEditingController _maisonController = TextEditingController();
+  // 🟢 AJOUT : Contrôleur pour le PIN d'inscription
+  final TextEditingController _pinInsController = TextEditingController();
+
   String _sexeSelected = 'M';
   bool _isLoadingInscription = false;
 
@@ -39,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     if (phone.isEmpty || pin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez remplir tous les champs")),
+        SnackBar(content: Text("fill_all_fields".tr())),
       );
       return;
     }
@@ -52,8 +59,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       context.go('/');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Échec de connexion : Identifiants incorrects"),
+        SnackBar(
+          content: Text("login_failed".tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -65,10 +72,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final prenom = _prenomController.text.trim();
     final telephone = _telephoneInsController.text.trim();
     final cni = _cniController.text.trim();
+    final pin = _pinInsController.text.trim(); // 🟢 Récupération du PIN
 
-    if (nom.isEmpty || prenom.isEmpty || telephone.isEmpty || cni.isEmpty) {
+    // 🟢 Vérification que le PIN n'est pas vide
+    if (nom.isEmpty || prenom.isEmpty || telephone.isEmpty || cni.isEmpty || pin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez remplir les champs obligatoires")),
+        SnackBar(content: Text("fill_mandatory_fields".tr())),
       );
       return;
     }
@@ -86,6 +95,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       quartier: _quartierController.text.trim(),
       avenue: _avenueController.text.trim(),
       maison: _maisonController.text.trim(),
+      pin: pin, // 🟢 Envoi du PIN à l'API
     );
 
     if (!mounted) return;
@@ -93,17 +103,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("✅ Inscription réussie ! PIN par défaut : 1234"),
+        SnackBar(
+          content: Text("registration_success".tr()),
           backgroundColor: Colors.green,
         ),
       );
+      // Nettoyage des champs après succès (optionnel mais recommandé)
+      _pinInsController.clear();
+      _telephoneInsController.clear();
       _tabController.index = 0; // Basculer vers l'onglet Connexion
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Erreur lors de l'inscription. Vérifiez vos informations."),
-          backgroundColor: Colors.red
+        SnackBar(
+          content: Text("registration_error".tr()),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -122,6 +135,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     _quartierController.dispose();
     _avenueController.dispose();
     _maisonController.dispose();
+    _pinInsController.dispose(); // 🟢 Libération de la mémoire
     _tabController.dispose();
     super.dispose();
   }
@@ -130,15 +144,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("SACCO Connect"),
+        title: Text("app_title".tr()),
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
-          tabs: const [
-            Tab(icon: Icon(Icons.lock_open), text: "Connexion Sécurisée"),
-            Tab(icon: Icon(Icons.person_add), text: "Devenir Membre"),
+          tabs: [
+            Tab(icon: const Icon(Icons.lock_open), text: "secure_login".tr()),
+            Tab(icon: const Icon(Icons.person_add), text: "become_member".tr()),
           ],
         ),
       ),
@@ -156,20 +170,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 const SizedBox(height: 20),
                 TextField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: "Numéro de Téléphone (Identifiant)",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
+                  decoration: InputDecoration(
+                    labelText: "phone_identifier".tr(),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.phone),
                   ),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _pinController,
-                  decoration: const InputDecoration(
-                    labelText: "Code PIN",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                  decoration: InputDecoration(
+                    labelText: "pin_code".tr(),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
                   ),
                   obscureText: true,
                   keyboardType: TextInputType.number,
@@ -186,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               minimumSize: const Size(double.infinity, 50),
                               backgroundColor: const Color(0xFF1A529B),
                             ),
-                            child: const Text("Accéder au Système", style: TextStyle(color: Colors.white)),
+                            child: Text("access_system".tr(), style: const TextStyle(color: Colors.white)),
                           );
                   },
                 ),
@@ -200,29 +214,29 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("📝 Formulaire d'Adhésion Officiel", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A529B))),
+                Text("official_membership_form".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A529B))),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: _nomController, decoration: const InputDecoration(labelText: "Nom", border: OutlineInputBorder()))),
+                    Expanded(child: TextField(controller: _nomController, decoration: InputDecoration(labelText: "lastname".tr(), border: const OutlineInputBorder()))),
                     const SizedBox(width: 12),
-                    Expanded(child: TextField(controller: _prenomController, decoration: const InputDecoration(labelText: "Prénom", border: OutlineInputBorder()))),
+                    Expanded(child: TextField(controller: _prenomController, decoration: InputDecoration(labelText: "firstname".tr(), border: const OutlineInputBorder()))),
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: _cniController, decoration: const InputDecoration(labelText: "Numéro de Carte d'Identité (CNI)", border: OutlineInputBorder())),
+                TextField(controller: _cniController, decoration: InputDecoration(labelText: "cni_number".tr(), border: const OutlineInputBorder())),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: _ageController, decoration: const InputDecoration(labelText: "Âge", border: OutlineInputBorder()), keyboardType: TextInputType.number)),
+                    Expanded(child: TextField(controller: _ageController, decoration: InputDecoration(labelText: "age".tr(), border: const OutlineInputBorder()), keyboardType: TextInputType.number)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _sexeSelected,
-                        decoration: const InputDecoration(labelText: "Sexe", border: OutlineInputBorder()),
-                        items: const [
-                          DropdownMenuItem(value: 'M', child: Text("Masculin")),
-                          DropdownMenuItem(value: 'F', child: Text("Féminin")),
+                        decoration: InputDecoration(labelText: "sexe".tr(), border: const OutlineInputBorder()),
+                        items: [
+                          DropdownMenuItem(value: 'M', child: Text("male".tr())),
+                          DropdownMenuItem(value: 'F', child: Text("female".tr())),
                         ],
                         onChanged: (val) => setState(() => _sexeSelected = val ?? 'M'),
                       ),
@@ -230,23 +244,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: _telephoneInsController, decoration: const InputDecoration(labelText: "Téléphone (Identifiant)", border: OutlineInputBorder()), keyboardType: TextInputType.phone),
+                TextField(controller: _telephoneInsController, decoration: InputDecoration(labelText: "phone_label".tr(), border: const OutlineInputBorder()), keyboardType: TextInputType.phone),
+                const SizedBox(height: 12),
+                // 🟢 AJOUT : Champ pour le Code PIN
+                TextField(
+                  controller: _pinInsController,
+                  decoration: const InputDecoration(labelText: "Définir un Code PIN", border: OutlineInputBorder(), prefixIcon: Icon(Icons.lock)),
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                ),
                 const SizedBox(height: 20),
-                const Text("📍 Localisation", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A529B))),
+                Text("localization".tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A529B))),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: _collineController, decoration: const InputDecoration(labelText: "Colline", border: OutlineInputBorder()))),
+                    Expanded(child: TextField(controller: _collineController, decoration: InputDecoration(labelText: "colline".tr(), border: const OutlineInputBorder()))),
                     const SizedBox(width: 12),
-                    Expanded(child: TextField(controller: _quartierController, decoration: const InputDecoration(labelText: "Quartier", border: OutlineInputBorder()))),
+                    Expanded(child: TextField(controller: _quartierController, decoration: InputDecoration(labelText: "quartier".tr(), border: const OutlineInputBorder()))),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: _avenueController, decoration: const InputDecoration(labelText: "Avenue / Rue", border: OutlineInputBorder()))),
+                    Expanded(child: TextField(controller: _avenueController, decoration: InputDecoration(labelText: "avenue_street".tr(), border: const OutlineInputBorder()))),
                     const SizedBox(width: 12),
-                    Expanded(child: TextField(controller: _maisonController, decoration: const InputDecoration(labelText: "N° Maison", border: OutlineInputBorder()))),
+                    Expanded(child: TextField(controller: _maisonController, decoration: InputDecoration(labelText: "house_number".tr(), border: const OutlineInputBorder()))),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -258,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           minimumSize: const Size(double.infinity, 50),
                           backgroundColor: const Color(0xFF1A529B),
                         ),
-                        child: const Text("Valider mon Inscription", style: TextStyle(color: Colors.white)),
+                        child: Text("validate_registration".tr(), style: const TextStyle(color: Colors.white)),
                       ),
                 const SizedBox(height: 30),
               ],

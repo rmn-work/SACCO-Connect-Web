@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import '../services/cotisation_service.dart';
 
 class SaisieHebdomadaireScreen extends StatefulWidget {
   final int groupId;
@@ -14,17 +16,20 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
 
   // Exemple de données membres locales (à remplacer plus tard par l'appel API)
   List<Map<String, dynamic>> membres = [
-    {"id": 1, "nom": "Officiel SECRETAIRE", "presence": "P", "epargne": 5000, "caisse": 500, "amende": false},
-    {"id": 2, "nom": "Officiel PRESIDENT", "presence": "P", "epargne": 5000, "caisse": 500, "amende": false},
-    {"id": 3, "nom": "Raphael NKURUNZIZA", "presence": "P", "epargne": 5000, "caisse": 500, "amende": false},
+    {"id": 1, "nom": "Officiel SECRETAIRE", "presence": "P", "epargne": 5000.0, "caisse": 500.0, "amende": false},
+    {"id": 2, "nom": "Officiel PRESIDENT", "presence": "P", "epargne": 5000.0, "caisse": 500.0, "amende": false},
+    {"id": 3, "nom": "Raphael NKURUNZIZA", "presence": "P", "epargne": 5000.0, "caisse": 500.0, "amende": false},
   ];
+
+  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Saisie Hebdomadaire - Groupe #${widget.groupId}"),
+        title: Text("${"weekly_entry".tr()} - Groupe #${widget.groupId}"),
         backgroundColor: const Color(0xFF00897B),
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -36,7 +41,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
               elevation: 2,
               child: ListTile(
                 leading: const Icon(Icons.calendar_today, color: Color(0xFF00897B)),
-                title: const Text("Date de la réunion"),
+                title: Text("date_meeting".tr()),
                 subtitle: Text("${dateReunion.toLocal()}".split(' ')[0]),
                 trailing: const Icon(Icons.edit),
                 onTap: () async {
@@ -53,9 +58,9 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
             const SizedBox(height: 20),
 
             // --- SECTION 2: LISTE DES MEMBRES (ACCORDIONS) ---
-            const Text(
-              "Membres du groupe",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00897B)),
+            Text(
+              "members_group".tr(),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00897B)),
             ),
             const SizedBox(height: 10),
             ListView.builder(
@@ -69,7 +74,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                   child: ExpansionTile(
                     leading: const Icon(Icons.person, color: Colors.grey),
                     title: Text(membre['nom'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text("Épargne : ${membre['epargne']} BIF"),
+                    subtitle: Text("${"savings".tr()} : ${membre['epargne']} BIF"),
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -78,17 +83,17 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                             // Présence (P / A)
                             Row(
                               children: [
-                                const Text("Présence : ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text("${"presence".tr()} : ", style: const TextStyle(fontWeight: FontWeight.bold)),
                                 Radio<String>(
                                   value: "P",
                                   groupValue: membre['presence'],
-                                  onChanged: (val) => setState(() => membre['presence'] = val),
+                                  onChanged: (val) => setState(() => membre['presence'] = val!),
                                 ),
                                 const Text("P"),
                                 Radio<String>(
                                   value: "A",
                                   groupValue: membre['presence'],
-                                  onChanged: (val) => setState(() => membre['presence'] = val),
+                                  onChanged: (val) => setState(() => membre['presence'] = val!),
                                 ),
                                 const Text("A"),
                               ],
@@ -96,10 +101,10 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                             // Champ Épargne
                             Row(
                               children: [
-                                const Expanded(child: Text("Épargne (BIF) :")),
+                                Expanded(child: Text("${"savings".tr()} (BIF) :")),
                                 IconButton(
                                   icon: const Icon(Icons.remove_circle_outline),
-                                  onPressed: () => setState(() => membre['epargne'] = (membre['epargne'] - 500).clamp(0, 999999)),
+                                  onPressed: () => setState(() => membre['epargne'] = (membre['epargne'] - 500).clamp(0.0, 999999.0)),
                                 ),
                                 Text("${membre['epargne']}"),
                                 IconButton(
@@ -111,10 +116,10 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                             // Champ Caisse Sociale
                             Row(
                               children: [
-                                const Expanded(child: Text("Caisse Sociale (BIF) :")),
+                                Expanded(child: Text("${"social_fund".tr()} (BIF) :")),
                                 IconButton(
                                   icon: const Icon(Icons.remove_circle_outline),
-                                  onPressed: () => setState(() => membre['caisse'] = (membre['caisse'] - 100).clamp(0, 999999)),
+                                  onPressed: () => setState(() => membre['caisse'] = (membre['caisse'] - 100).clamp(0.0, 999999.0)),
                                 ),
                                 Text("${membre['caisse']}"),
                                 IconButton(
@@ -125,9 +130,9 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                             ),
                             // Amende Checkbox
                             CheckboxListTile(
-                              title: const Text("Amende"),
+                              title: Text("fine".tr()),
                               value: membre['amende'],
-                              onChanged: (val) => setState(() => membre['amende'] = val),
+                              onChanged: (val) => setState(() => membre['amende'] = val ?? false),
                               controlAffinity: ListTileControlAffinity.leading,
                             )
                           ],
@@ -141,24 +146,50 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
 
             const SizedBox(height: 15),
             Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Logique de sauvegarde API ici
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Données enregistrées localement !"))
-                  );
-                },
-                icon: const Icon(Icons.save),
-                label: const Text("Enregistrer la réunion"),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00897B), foregroundColor: Colors.white),
-              ),
+              child: _isSaving
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton.icon(
+                      onPressed: () async {
+                        setState(() => _isSaving = true);
+                        String dateStr = dateReunion.toIso8601String();
+                        bool globalSuccess = true;
+
+                        // Boucle pour enregistrer les cotisations de chaque membre présent/actif
+                        for (var membre in membres) {
+                          bool success = await CotisationService.enregistrerCotisation(
+                            membreId: membre['id'],
+                            montant: membre['epargne'],
+                            date: dateStr,
+                          );
+                          if (!success) globalSuccess = false;
+                        }
+
+                        setState(() => _isSaving = false);
+
+                        if (globalSuccess && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("meeting_save_success".tr()),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          setState(() {});
+                        }
+                      },
+                      icon: const Icon(Icons.save),
+                      label: Text("save_meeting".tr()),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00897B),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
             ),
             const Divider(height: 40),
 
             // --- SECTION 3: CALENDRIER DES RÉUNIONS ---
-            const Text(
-              "🗓️ Calendrier des réunions",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00897B)),
+            Text(
+              "calendar_meetings".tr(),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00897B)),
             ),
             const SizedBox(height: 10),
             Card(
@@ -168,7 +199,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                 child: Column(
                   children: [
                     ListTile(
-                      title: const Text("Date de la prochaine réunion"),
+                      title: Text("next_meeting_date".tr()),
                       subtitle: Text("${dateProchaineReunion.toLocal()}".split(' ')[0]),
                       trailing: const Icon(Icons.edit_calendar),
                       onTap: () async {
@@ -186,7 +217,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                         // Mettre à jour calendrier API
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
-                      child: const Text("Mettre à jour le calendrier du groupe", style: TextStyle(color: Colors.white)),
+                      child: Text("update_calendar".tr(), style: const TextStyle(color: Colors.white)),
                     )
                   ],
                 ),

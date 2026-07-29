@@ -1,22 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'app_router.dart';
 import 'providers/auth_notifier.dart';
+import 'services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
 
   final authNotifier = AuthNotifier();
   await authNotifier.checkAuthStatus();
 
+  _initConnectivityListener();
+
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => authNotifier),
+    EasyLocalization(
+      supportedLocales: const [
+        Locale('fr', 'FR'), // Français
+        Locale('rn', 'BI'), // Kirundi (Burundi)
       ],
-      child: const SaccoConnectApp(),
+      path: 'assets/locales',
+      fallbackLocale: const Locale('fr', 'FR'),
+      useOnlyLangCode: true, // Utilise fr.json et rn.json directement
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => authNotifier),
+        ],
+        child: const SaccoConnectApp(),
+      ),
     ),
   );
+}
+
+/// Écoute en arrière-plan le réseau et lance la synchronisation dès qu'Internet revient
+void _initConnectivityListener() {
+  // 1. Vérification initiale au démarrage
+  Connectivity().checkConnectivity().then((List<ConnectivityResult> results) {
+    final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+    bool isConnected = result == ConnectivityResult.mobile ||
+                       result == ConnectivityResult.wifi ||
+                       result == ConnectivityResult.ethernet;
+
+    if (isConnected) {
+      debugPrint("📶 Connecté au démarrage ! Lancement de la synchronisation automatique...");
+      ApiService.syncPendingRequests();
+    }
+  });
+
+  // 2. Écoute des changements de connexion en temps réel
+  Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+    bool isConnected = result == ConnectivityResult.mobile ||
+                       result == ConnectivityResult.wifi ||
+                       result == ConnectivityResult.ethernet;
+
+    if (isConnected) {
+      debugPrint("📶 Connexion Internet rétablie. Lancement de la synchronisation automatique...");
+      ApiService.syncPendingRequests();
+    } else {
+      debugPrint("📴 Appareil hors-ligne. Les données seront stockées localement.");
+    }
+  });
 }
 
 class SaccoConnectApp extends StatelessWidget {
@@ -31,6 +78,9 @@ class SaccoConnectApp extends StatelessWidget {
       title: 'SACCO CONNECT',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: primaryBlue,

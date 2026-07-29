@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
 import '../services/api_service.dart';
 
 class EpargneScreen extends StatefulWidget {
@@ -23,7 +24,6 @@ class _EpargneScreenState extends State<EpargneScreen> {
 
   Future<void> _chargerDetailsEpargne() async {
     try {
-      // Nous réutilisons la route du portefeuille pour récupérer les soldes actuels
       final data = await ApiService.getPortefeuille(widget.membreId);
       if (mounted) {
         setState(() {
@@ -43,7 +43,7 @@ class _EpargneScreenState extends State<EpargneScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Détails Épargne', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('savings_details_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -57,7 +57,7 @@ class _EpargneScreenState extends State<EpargneScreen> {
                 children: [
                   // --- Carte Solde Principal ---
                   _buildBalanceCard(
-                    titre: 'Solde Épargne Principal',
+                    titre: 'main_savings_balance'.tr(),
                     montant: _donneesEpargne?['solde_epargne']?.toDouble() ?? 0.0,
                     couleur: primaryColor,
                     icone: Icons.account_balance_wallet,
@@ -66,7 +66,7 @@ class _EpargneScreenState extends State<EpargneScreen> {
 
                   // --- Carte Caisse Sociale ---
                   _buildBalanceCard(
-                    titre: 'Caisse Sociale',
+                    titre: 'social_fund'.tr(),
                     montant: _donneesEpargne?['caisse_sociale']?.toDouble() ?? 0.0,
                     couleur: Colors.blueAccent,
                     icone: Icons.volunteer_activism,
@@ -74,16 +74,16 @@ class _EpargneScreenState extends State<EpargneScreen> {
                   const SizedBox(height: 32),
 
                   // --- Section Historique (Préparation) ---
-                  const Text(
-                    'Dernières Transactions',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                  Text(
+                    'latest_transactions'.tr(),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   const SizedBox(height: 12),
 
-                  // Faux historique temporaire en attendant la route backend spécifique
-                  _buildTransactionTile('Dépôt Hebdomadaire', '+ 5000.0 FBU', '08 Juin 2026', Colors.green),
-                  _buildTransactionTile('Cotisation Sociale', '+ 500.0 FBU', '08 Juin 2026', Colors.blue),
-                  _buildTransactionTile('Retrait Épargne', '- 15000.0 FBU', '25 Mai 2026', Colors.red),
+                  // Historique temporaire internationalisé
+                  _buildTransactionTile('weekly_deposit'.tr(), '+ 5000.0 FBU', '08 Juin 2026', Colors.green),
+                  _buildTransactionTile('social_contribution'.tr(), '+ 500.0 FBU', '08 Juin 2026', Colors.blue),
+                  _buildTransactionTile('savings_withdrawal'.tr(), '- 15000.0 FBU', '25 Mai 2026', Colors.red),
                 ],
               ),
             ),

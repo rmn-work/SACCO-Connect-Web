@@ -5,6 +5,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 
+
 final GoRouter appRouter = GoRouter(
   initialLocation: '/onboarding',
   refreshListenable: authNotifier,

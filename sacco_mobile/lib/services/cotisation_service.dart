@@ -1,38 +1,38 @@
-import 'local_database.dart'
-import 'api_service.dart'
+import 'local_database.dart';
+import 'api_service.dart';
 
 class CotisationService {
-    static Future<bool> enregistrerCotisation({
+  static Future<bool> enregistrerCotisation({
     required int membreId,
     required double montant,
     required String date,
   }) async {
     try {
-        await LocalDatabase.insertCotisationLocal(
-            membreId: membreId,
-            montant: montant,
-            date: date,
-        );
+      await LocalDatabase.insertCotisationLocal(
+        membreId: membreId,
+        montant: montant,
+        date: date,
+      );
 
-        final payload = {
-            "membre_id": membreId,
-            "montant": montant,
-            "date_cotisation": date,
-        };
+      final payload = {
+        "membre_id": membreId,
+        "montant": montant,
+        "date_cotisation": date,
+      };
 
-        await LocalDatabase.addToSyncQueue(
-            action: "AJOUT_COTISATION",
-            endpoint: "/cotisations",
-            method: "POST",
-            payload: payload,
-        );
+      await LocalDatabase.addToSyncQueue(
+        '/cotisations',
+        'POST',
+        payload,
+        action: 'AJOUT_COTISATION',
+      );
 
-        ApiService.syncPendingRequests();
+      ApiService.syncPendingRequests();
 
-        return true;
+      return true;
     } catch (e) {
-        print("Erreur lors de l'enregistrement local de la cotisation : $e");
-        return false;
-        }
+      print("Erreur lors de l'enregistrement de la cotisation : $e");
+      return false;
     }
+  }
 }

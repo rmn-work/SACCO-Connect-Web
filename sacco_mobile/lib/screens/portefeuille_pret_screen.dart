@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class PortefeuillePretScreen extends StatefulWidget {
@@ -60,23 +61,23 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("💰 Espace Responsable"),
+          title: Text("space_responsible".tr()),
           backgroundColor: const Color(0xFF009688),
           foregroundColor: Colors.white,
-          bottom: const TabBar(
+          bottom: TabBar(
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             tabs: [
-              Tab(icon: Icon(Icons.account_balance_wallet), text: "Portefeuille"),
-              Tab(icon: Icon(Icons.monetization_on), text: "Crédit"),
-              Tab(icon: Icon(Icons.history), text: "Historique"),
+              Tab(icon: const Icon(Icons.account_balance_wallet), text: "tab_portefeuille".tr()),
+              Tab(icon: const Icon(Icons.monetization_on), text: "tab_credit".tr()),
+              Tab(icon: const Icon(Icons.history), text: "tab_historique".tr()),
             ],
           ),
         ),
         body: TabBarView(
           children: [
-            _buildMonPortefeuilleTab(user, context), // Ajout du context ici
+            _buildMonPortefeuilleTab(user, context),
             _buildDemandeCreditTab(user, maxLoan),
             _buildHistoriqueTab(),
           ],
@@ -102,15 +103,15 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.5,
             children: [
-              _buildMetricCard("Épargne Totale", "${user['solde_epargne'] ?? 0} BIF", Colors.teal),
-              _buildMetricCard("Prêt à Rembourser", "${user['solde_pret'] ?? 0} BIF", Colors.red),
-              _buildMetricCard("Status Présence", "${user['status_presence'] ?? '-'}", Colors.blue),
-              _buildMetricCard("Cotisation Fixée", "5,000 BIF", Colors.orange),
+              _buildMetricCard("total_savings".tr(), "${user['solde_epargne'] ?? 0} BIF", Colors.teal),
+              _buildMetricCard("loan_to_repay".tr(), "${user['solde_pret'] ?? 0} BIF", Colors.red),
+              _buildMetricCard("status_presence".tr(), "${user['status_presence'] ?? '-'}", Colors.blue),
+              _buildMetricCard("fixed_contribution".tr(), "5,000 BIF", Colors.orange),
             ],
           ),
           const SizedBox(height: 24),
 
-          const Text("🛡️ Solidarité & Prêts Sociaux", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text("solidarity_social_loans".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
 
           Container(
@@ -124,16 +125,15 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Ma Caisse Sociale", style: TextStyle(color: Color(0xFF01579B), fontWeight: FontWeight.bold)),
+                Text("my_social_fund".tr(), style: const TextStyle(color: Color(0xFF01579B), fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text("${user['caisse_sociale'] ?? 0} BIF", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                const Text("Fonds d'entraide communautaire", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text("community_mutual_aid_fund".tr(), style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ),
           const SizedBox(height: 12),
 
-          // 🔥 LE BLOC CORRIGÉ EST ICI
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFFF1F8E9),
@@ -145,33 +145,33 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
             child: Material(
               color: Colors.transparent,
               child: ListTile(
-                title: const Text("Demande de Prêt Social"),
-                subtitle: const Text("Besoin d'un coup de pouce urgent ?"),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF8BC34A)), // Petite flèche pour indiquer l'action
+                title: Text("social_loan_request".tr()),
+                subtitle: Text("urgent_boost_need".tr()),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF8BC34A)),
                 onTap: () {
-                  _afficherFormulairePretSocial(context); // Ouvre le formulaire modal !
+                  _afficherFormulairePretSocial(context);
                 },
               ),
             ),
           ),
           const SizedBox(height: 24),
 
-          const Text("📉 Suivi de mon Crédit", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text("credit_tracking".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          _buildCreditRow("Crédit en cours", "${user['credit_en_cours'] ?? 0} BIF", Colors.black87),
-          _buildCreditRow("Déjà remboursé", "${user['credit_rembourse'] ?? 0} BIF", Colors.green),
-          _buildCreditRow("Reste à payer", "${user['credit_restant'] ?? 0} BIF", Colors.orange.shade800),
+          _buildCreditRow("ongoing_credit".tr(), "${user['credit_en_cours'] ?? 0} BIF", Colors.black87),
+          _buildCreditRow("already_repaid".tr(), "${user['credit_rembourse'] ?? 0} BIF", Colors.green),
+          _buildCreditRow("remaining_to_pay".tr(), "${user['credit_restant'] ?? 0} BIF", Colors.orange.shade800),
 
           const SizedBox(height: 24),
           const Divider(),
-          const Text("📎 Mes Documents (Reçus)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text("my_documents".tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Module d'importation PDF activé.")));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("pdf_import_activated".tr())));
             },
             icon: const Icon(Icons.upload_file),
-            label: const Text("Associer un reçu de banque (PDF)"),
+            label: Text("associate_bank_receipt".tr()),
           ),
         ],
       ),
@@ -184,14 +184,14 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   void _afficherFormulairePretSocial(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Permet au clavier de ne pas cacher le formulaire
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom, // Gère la hauteur du clavier
+            bottom: MediaQuery.of(context).viewInsets.bottom,
             left: 20,
             right: 20,
             top: 24,
@@ -202,24 +202,24 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.health_and_safety, color: Color(0xFF8BC34A)),
-                    SizedBox(width: 8),
-                    Text("Nouveau Prêt Social", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const Icon(Icons.health_and_safety, color: Color(0xFF8BC34A)),
+                    const SizedBox(width: 8),
+                    Text("new_social_loan".tr(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _montantSocialController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "Montant souhaité (BIF)",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.money),
+                  decoration: InputDecoration(
+                    labelText: "desired_amount".tr(),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.money),
                   ),
                   validator: (val) {
-                    if (val == null || val.isEmpty) return "Entrez un montant";
+                    if (val == null || val.isEmpty) return "enter_amount".tr();
                     return null;
                   },
                 ),
@@ -227,11 +227,11 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                 TextFormField(
                   controller: _motifSocialController,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: "Motif (Maladie, Naissance, Décès...)",
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: "reason_social".tr(),
+                    border: const OutlineInputBorder(),
                   ),
-                  validator: (val) => val == null || val.isEmpty ? "Précisez votre motif" : null,
+                  validator: (val) => val == null || val.isEmpty ? "specify_reason".tr() : null,
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -244,13 +244,13 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
                     ),
                     onPressed: () {
-                      Navigator.pop(context); // Ferme la modale d'abord
-                      _soumettrePretSocial(); // Envoie les données à l'API
+                      Navigator.pop(context);
+                      _soumettrePretSocial();
                     },
-                    child: const Text("Soumettre la demande", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text("submit_request".tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(height: 24), // Espace en bas
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -273,7 +273,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber)),
             child: Text(
-              "🛡️ Votre plafond de prêt (3x votre épargne) :\n${maxLoan.toStringAsFixed(0)} BIF",
+              "${"loan_ceiling".tr()}\n${maxLoan.toStringAsFixed(0)} BIF",
               style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -287,10 +287,10 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                 TextFormField(
                   controller: _montantCreditController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: "Montant souhaité (BIF)", border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: "desired_amount".tr(), border: const OutlineInputBorder()),
                   validator: (val) {
-                    if (val!.isEmpty) return "Entrez un montant";
-                    if (double.parse(val) > maxLoan) return "Dépasse le plafond autorisé";
+                    if (val!.isEmpty) return "enter_amount".tr();
+                    if (double.parse(val) > maxLoan) return "exceeds_authorized_ceiling".tr();
                     return null;
                   },
                 ),
@@ -298,8 +298,8 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                 TextFormField(
                   controller: _motifCreditController,
                   maxLines: 3,
-                  decoration: const InputDecoration(labelText: "Motif détaillé du prêt (Projet, Santé...)", border: OutlineInputBorder()),
-                  validator: (val) => val!.isEmpty ? "Précisez votre motif" : null,
+                  decoration: InputDecoration(labelText: "detailed_credit_reason".tr(), border: const OutlineInputBorder()),
+                  validator: (val) => val!.isEmpty ? "specify_reason".tr() : null,
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
@@ -308,7 +308,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF009688), foregroundColor: Colors.white),
                     onPressed: _soumettreDemandeCredit,
-                    child: const Text("🚀 Envoyer la Demande", style: TextStyle(fontSize: 16)),
+                    child: Text("send_request".tr(), style: const TextStyle(fontSize: 16)),
                   ),
                 ),
               ],
@@ -317,10 +317,10 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
           const SizedBox(height: 30),
           const Divider(),
 
-          const Text("📋 État de mes demandes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text("state_of_my_requests".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           _mesDemandes.isEmpty
-              ? const Text("Vous n'avez aucune demande de prêt en cours.", style: TextStyle(color: Colors.grey))
+              ? Text("no_ongoing_loan_request".tr(), style: const TextStyle(color: Colors.grey))
               : ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -330,7 +330,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                     return Card(
                       child: ListTile(
                         title: Text("${d['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("Demandé le : ${d['date_demande']}"),
+                        subtitle: Text("${"requested_on".tr()}${d['date_demande']}"),
                         trailing: _buildStatusBadge(d['status']),
                       ),
                     );
@@ -346,7 +346,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   // =========================================================================
   Widget _buildHistoriqueTab() {
     if (_historiqueEpargne.isEmpty) {
-      return const Center(child: Text("Aucun historique disponible."));
+      return Center(child: Text("no_history_available".tr()));
     }
 
     return ListView.builder(
@@ -358,7 +358,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
           child: ListTile(
             leading: const Icon(Icons.history, color: Colors.teal),
             title: Text("${item['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text("Date : ${item['date_reunion']}"),
+            subtitle: Text("${"date_label".tr()}${item['date_reunion']}"),
             trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
           ),
         );
@@ -418,7 +418,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
         motif: _motifSocialController.text,
       );
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Demande sociale envoyée au comité !")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("social_request_sent".tr())));
         _montantSocialController.clear();
         _motifSocialController.clear();
         _chargerDonnees();
@@ -432,7 +432,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
 
     if (parsedMontant <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Veuillez entrer un montant valide supérieur à 0")),
+        SnackBar(content: Text("enter_valid_amount".tr())),
       );
       return;
     }
@@ -447,7 +447,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Votre demande a été transmise aux administrateurs.")),
+          SnackBar(content: Text("credit_request_sent".tr())),
         );
         _montantCreditController.clear();
         _motifCreditController.clear();

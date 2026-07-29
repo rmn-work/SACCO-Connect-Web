@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
 import '../services/api_service.dart';
 import 'demande_credit_screen.dart';
 
@@ -45,7 +46,7 @@ class _CreditScreenState extends State<CreditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Espace Crédit & Prêts', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('credit_space_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -58,11 +59,11 @@ class _CreditScreenState extends State<CreditScreen> {
                 padding: const EdgeInsets.all(16.0),
                 children: [
                   // --- Résumé des encours ---
-                  _buildStatCard('Crédit En Cours', '$encours FBU', Colors.redAccent, Icons.money_off),
+                  _buildStatCard('ongoing_credit'.tr(), '$encours FBU', Colors.redAccent, Icons.money_off),
                   const SizedBox(height: 12),
-                  _buildStatCard('Reste à Rembourser', '$restant FBU', Colors.orange, Icons.hourglass_empty),
+                  _buildStatCard('remaining_to_pay'.tr(), '$restant FBU', Colors.orange, Icons.hourglass_empty),
                   const SizedBox(height: 12),
-                  _buildStatCard('Prêt Social Actif', '$pretSocial FBU', Colors.blue, Icons.handshake),
+                  _buildStatCard('active_social_loan'.tr(), '$pretSocial FBU', Colors.blue, Icons.handshake),
                   const SizedBox(height: 30),
 
                   // --- Bouton d'action ---
@@ -76,7 +77,7 @@ class _CreditScreenState extends State<CreditScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       icon: const Icon(Icons.add_circle_outline),
-                      label: const Text('Nouvelle Demande de Crédit', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      label: Text('new_credit_request'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       onPressed: () {
                         Navigator.push(
                           context,

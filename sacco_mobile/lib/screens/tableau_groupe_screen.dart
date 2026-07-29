@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
 import '../services/api_service.dart';
 
 class TableauGroupeScreen extends StatefulWidget {
@@ -36,7 +37,6 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
       double total = 0;
       int actifs = 0;
       for (var m in dataMock) {
-        // CORRECTION : Conversion explicite en num puis double, et gestion des valeurs nulles
         final epargneValeur = m['epargne'] as num? ?? 0;
         total += epargneValeur.toDouble();
 
@@ -54,7 +54,7 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur lors du chargement du tableau : $e")),
+        SnackBar(content: Text("${'error_loading_table'.tr()} : $e")),
       );
     }
   }
@@ -65,7 +65,7 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('État des Membres', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text('members_status'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -92,7 +92,7 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
                         Icon(Icons.analytics, color: primaryColor, size: 28),
                         const SizedBox(width: 8),
                         Text(
-                          'Tableau du Groupe #${widget.groupId}',
+                          '${'group_table'.tr()} #${widget.groupId}',
                           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                         ),
                       ],
@@ -111,12 +111,12 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
                             headingRowColor: MaterialStateProperty.all(Colors.grey[100]),
-                            columns: const [
-                              DataColumn(label: Text('Nom', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Prénom', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Épargne Totale', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Caisse Sociale', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Présence', style: TextStyle(fontWeight: FontWeight.bold))),
+                            columns: [
+                              DataColumn(label: Text('lastname'.tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('firstname'.tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('total_savings'.tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('social_fund'.tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('presence'.tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
                             ],
                             rows: _membres.map((membre) {
                               return DataRow(cells: [
@@ -154,7 +154,7 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
                     children: [
                       Expanded(
                         child: _buildKpiCard(
-                          "Épargne Totale Groupe",
+                          'group_total_savings'.tr(),
                           "$_epargneTotaleGroupe BIF",
                           Icons.monetization_on,
                           Colors.teal,
@@ -163,7 +163,7 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildKpiCard(
-                          "Membres Actifs",
+                          'active_members'.tr(),
                           "$_membresActifs",
                           Icons.person_outline,
                           Colors.blue,

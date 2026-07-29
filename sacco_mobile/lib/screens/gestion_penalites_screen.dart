@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart'; // Assure-toi que le chemin est correct
+import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import '../services/api_service.dart';
 
 class GestionPenalitesScreen extends StatefulWidget {
   final int membreId;
@@ -27,7 +28,6 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
   Future<void> _chargerCreditsEnRetard() async {
     setState(() => _isLoading = true);
     try {
-      // Appel à ton API FastAPI pour récupérer les crédits en retard
       final data = await ApiService.getCreditsEnRetard();
       setState(() {
         _creditsEnRetard = List<Map<String, dynamic>>.from(data);
@@ -35,7 +35,11 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur de chargement')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('load_error'.tr())),
+        );
+      }
     }
   }
 
@@ -50,45 +54,50 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
         moisRetard,
       );
 
-      if (success) {
-        _chargerCreditsEnRetard(); // Recharger la liste
+      if (success && mounted) {
+        _chargerCreditsEnRetard();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pénalité appliquée avec succès !'), backgroundColor: Colors.green),
+          SnackBar(content: Text('penalty_success'.tr()), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de l\'application'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('apply_error'.tr()), backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _ouvrirDialoguePenalite(Map<String, dynamic> credit) {
     final tauxController = TextEditingController(text: "5");
     final moisController = TextEditingController(text: credit['mois_retard'].toString());
+    final nomMembre = credit['nom'] ?? 'member'.tr();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Pénaliser ${credit['nom'] ?? 'Membre'}'),
+        title: Text('${'penalize'.tr()} $nomMembre'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: tauxController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Taux pénalité (%)', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: 'penalty_rate'.tr(), border: const OutlineInputBorder()),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: moisController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Nombre de mois', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: 'number_of_months'.tr(), border: const OutlineInputBorder()),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('cancel'.tr())),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
             onPressed: () {
@@ -97,7 +106,7 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
               Navigator.pop(context);
               _appliquerPenaliteBase(credit['id'], taux, mois);
             },
-            child: const Text('Appliquer', style: TextStyle(color: Colors.white)),
+            child: Text('apply'.tr(), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -108,7 +117,7 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestion des Pénalités', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('penalties_management'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
       ),
       body: _isLoading
@@ -121,12 +130,12 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                  title: Text(credit['nom'] ?? 'Inconnu'),
-                  subtitle: Text('Reste: ${credit['reste_a_payer']} FBU'),
+                  title: Text(credit['nom'] ?? 'unknown'.tr()),
+                  subtitle: Text('${'remaining'.tr()}: ${credit['reste_a_payer']} FBU'),
                   trailing: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
                     onPressed: () => _ouvrirDialoguePenalite(credit),
-                    child: const Text('Sanctionner', style: TextStyle(color: Colors.white)),
+                    child: Text('sanction'.tr(), style: const TextStyle(color: Colors.white)),
                   ),
                 ),
               );

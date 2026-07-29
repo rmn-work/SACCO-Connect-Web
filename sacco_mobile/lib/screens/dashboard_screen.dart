@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 import '../providers/auth_notifier.dart';
 import 'groupe_screen.dart';
@@ -54,7 +55,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _chargerDonnees() async {
     try {
-      // L'appel redevient simple, le token est géré automatiquement par ApiService
       final data = await ApiService.getDashboardData(_effectiveMembreId);
 
       setState(() {
@@ -79,9 +79,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text(
-          'SACCO CONNECT',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        title: Text(
+          'app_title'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: primaryColor,
         elevation: 0,
@@ -130,17 +130,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Bienvenue dans votre espace',
+                                'welcome_space'.tr(),
                                 style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Rôle : ${_effectiveRole.toUpperCase()}',
+                                '${'role_label'.tr()} : ${_effectiveRole.toUpperCase()}',
                                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Identifiant Membre : #$_effectiveMembreId',
+                                '${'member_id_label'.tr()} : #$_effectiveMembreId',
                                 style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                               ),
                             ],
@@ -148,105 +148,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        _buildSectionTitle('Mon Portefeuille Personnel'),
+                        _buildSectionTitle('my_personal_portfolio'.tr()),
                         _buildSoldeCard(primaryColor, secondaryColor),
                         const SizedBox(height: 20),
 
                         _buildMenuCard(
                           Icons.account_balance_wallet,
-                          'Mon Compte',
-                          'Solde épargne, caisse sociale et demandes de prêts',
+                          'my_compte_title'.tr(),
+                          'my_compte_desc'.tr(),
                           primaryColor,
                           PortefeuillePretScreen(membreId: _effectiveMembreId),
                         ),
                         _buildMenuCard(
                           Icons.groups,
-                          'Groupe',
-                          'Informations sur votre groupe Sacco',
+                          'group_title'.tr(),
+                          'group_desc'.tr(),
                           primaryColor,
                           GroupeScreen(membreId: _effectiveMembreId),
                         ),
                         _buildMenuCard(
                           Icons.person,
-                          'Mon Profil',
-                          'Consulter vos informations personnelles et votre badge QR',
+                          'my_profile_title'.tr(),
+                          'my_profile_desc'.tr(),
                           primaryColor,
                           ProfilScreen(membreId: _effectiveMembreId),
                         ),
 
                         if (_effectiveRole.toLowerCase() == 'admin') ...[
                           const Divider(height: 32),
-                          _buildSectionTitle('Administration du Système'),
+                          _buildSectionTitle('system_admin_title'.tr()),
                           _buildMenuCard(
                             Icons.supervisor_account,
-                            'Gérer les utilisateurs',
-                            'Approuver les nouveaux comptes',
+                            'manage_users_title'.tr(),
+                            'manage_users_desc'.tr(),
                             Colors.redAccent,
-                            const ActionsPlaceholderScreen(title: 'Gestion des Utilisateurs'),
+                            ActionsPlaceholderScreen(title: 'manage_users_title'.tr()),
                           ),
                           _buildMenuCard(
                             Icons.settings,
-                            'Configuration SACCO',
-                            'Modifier les taux et paramètres généraux',
+                            'sacco_config_title'.tr(),
+                            'sacco_config_desc'.tr(),
                             Colors.redAccent,
-                            const ActionsPlaceholderScreen(title: 'Configuration Globale'),
+                            ActionsPlaceholderScreen(title: 'sacco_config_title'.tr()),
                           ),
                         ] else if (_effectiveRole.toLowerCase() == 'president' || _effectiveRole.toLowerCase() == 'secretaire') ...[
                           const Divider(height: 32),
-                          _buildSectionTitle('Espace Bureau Exécutif'),
+                          _buildSectionTitle('executive_space_title'.tr()),
                           _buildMenuCard(
                             Icons.gavel,
-                            'Validation des Prêts',
-                            'Valider ou rejeter les demandes en attente',
+                            'loan_validation_title'.tr(),
+                            'loan_validation_desc'.tr(),
                             secondaryColor,
                             ValidationPretsScreen(membreId: _effectiveMembreId),
                           ),
                           _buildMenuCard(
                             Icons.bar_chart,
-                            'Rapports Financiers',
-                            'Voir la santé globale de la coopérative',
+                            'financial_reports_title'.tr(),
+                            'financial_reports_desc'.tr(),
                             secondaryColor,
                             RapportsFinanciersScreen(membreId: _effectiveMembreId),
                           ),
                           _buildMenuCard(
                             Icons.assignment_turned_in,
-                            'Saisie Hebdomadaire',
-                            "Gérer la présence, l'épargne et les amendes du groupe",
+                            'weekly_entry'.tr(),
+                            'weekly_entry_desc'.tr(),
                             secondaryColor,
                             SaisieHebdomadaireScreen(groupId: userGroupId),
                           ),
                           _buildMenuCard(
                             Icons.qr_code_scanner,
-                            'Scanner Présences',
-                            "Scanner les badges QR des membres pour l'émargement rapide",
+                            'scan_attendance_title'.tr(),
+                            'scan_attendance_desc'.tr(),
                             secondaryColor,
                             ScannerPresenceScreen(adminId: _effectiveMembreId),
                           ),
 
                           const Divider(height: 32),
-                          _buildSectionTitle('Espace Secrétariat'),
+                          _buildSectionTitle('secretariat_space_title'.tr()),
                           _buildMenuCard(
                             Icons.table_chart,
-                            'Tableau du Groupe',
-                            'Consulter l\'état général et l\'épargne de tous les membres',
+                            'group_table_title'.tr(),
+                            'group_table_desc'.tr(),
                             primaryColor,
                             TableauGroupeScreen(groupId: userGroupId),
                           ),
 
                           _buildMenuCard(
                             Icons.edit_document,
-                            'Enregistrer un membre',
-                            'Ajouter un nouveau dossier au système',
+                            'register_member_title'.tr(),
+                            'register_member_desc'.tr(),
                             primaryColor,
                             const InscriptionScreen(),
                           ),
 
                           _buildMenuCard(
                             Icons.list_alt,
-                            'Registre des réunions',
-                            'Gérer les procès-verbaux et présences',
+                            'meeting_register_title'.tr(),
+                            'meeting_register_desc'.tr(),
                             primaryColor,
-                            const ActionsPlaceholderScreen(title: 'Registre de Réunion'),
+                            ActionsPlaceholderScreen(title: 'meeting_register_title'.tr()),
                           ),
                         ],
                       ],
@@ -288,7 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Solde Total Épargné', style: TextStyle(color: Colors.white70, fontSize: 14)),
+            Text('total_savings_balance'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 14)),
             const SizedBox(height: 6),
             Text(
               '$solde FBU',
@@ -298,7 +298,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Prêt à rembourser', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text('loan_to_repay'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 14)),
                 Text(
                   '$pret BIF',
                   style: TextStyle(
@@ -358,12 +358,12 @@ class ActionsPlaceholderScreen extends StatelessWidget {
             Icon(Icons.construction, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              'Interface "$title"',
+              '${'interface_label'.tr()} "$title"',
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Le module backend et mobile est prêt à être connecté ici.',
+              'backend_ready_label'.tr(),
               style: TextStyle(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
