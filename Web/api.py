@@ -1,6 +1,6 @@
 import os
 import hashlib
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import pytz
 import requests
 from bs4 import BeautifulSoup
@@ -15,14 +15,13 @@ from fastapi import FastAPI, HTTPException, status, Query, Request, Depends, API
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Dict
+from pydantic import BaseModel, validator
+from typing import List, Dict, Optional
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import timedelta
-from typing import Optional
-from pydintic import validator
+
 
 load_dotenv()
 
@@ -43,7 +42,7 @@ origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0
 origins = [origin.strip() for origin in origins_str.split(",")]
 
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"],
-    allow_headers=["*"],)
+                   allow_headers=["*"], )
 
 database_url = os.getenv("DATABASE_URL")
 
@@ -73,6 +72,7 @@ if not os.path.exists("./static/documents"):
     os.makedirs("./static/documents", exist_ok=True)
 app.mount("/documents", StaticFiles(directory="./static/documents"), name="documents")
 
+
 def get_db_cursor():
     conn = db_pool.getconn()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -86,12 +86,14 @@ def get_db_cursor():
         cursor.close()
         db_pool.putconn(conn)
 
+
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_cursor)):
     try:
@@ -108,41 +110,44 @@ def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable")
     return user
 
+
 class LoginRequest(BaseModel):
     telephone: str
     pin: str
 
-class InscriptionPayload(BaseModel):
-    telephone: str
-    colline: Optional[str] = None
-    quartier: Optional[str] = None
-    avenue: Optional[str] = None
-    maison: Optional[str] = None
-    nom: Optional[str] = "Non renseigné"
-    prenom: Optional[str] = "Membre"
-    age: Optional[int] = 0
-    sexe: Optional[str] = "M"
-    cni: Optional[str] = "0000"
 
-    @validator('age', pre=True, allow_reuse=True)
-    def empty_str_to_int(cls, v):
-        if v == "" or v is None:
-            return 0
-        return int(v)
+# Nouveau modèle pour valider les données envoyées par Flutter
+class InscriptionSchema(BaseModel):
+    nom: str
+    prenom: str
+    age: int
+    sexe: str
+    telephone: str
+    cni: str
+    colline: str
+    quartier: str
+    avenue: str
+    maison: str
+    pin: str
+    created_at_offline: Optional[str] = None
+
 
 class GroupeCreate(BaseModel):
     nom_groupe: str
     president_nom: str
     secretaire_nom: str
 
+
 class GroupSettingsRequest(BaseModel):
     date_reunion_prochaine: date
     montant_hebdo: int
+
 
 class MembreUpdate(BaseModel):
     role: str
     groupe_id: int
     admin_nom: str
+
 
 class MembreSaisieInput(BaseModel):
     membre_id: int
@@ -151,33 +156,40 @@ class MembreSaisieInput(BaseModel):
     caisse_sociale: float
     amende: bool
 
+
 class SaisieHebdomadaireRequest(BaseModel):
     date_reunion: date
     date_prochaine_reunion: date
     enregistre_par: str
     enregistrements: List[MembreSaisieInput]
 
+
 class DemandeSocialeInput(BaseModel):
     montant_demande: int
     motif: str
+
 
 class DemandePretInput(BaseModel):
     montant: int
     motif: str
     taux_interet_applique: float = 5.0
 
+
 class ValidationPretSchema(BaseModel):
     approuver: bool
     admin_id: int
+
 
 class PenaliteSchema(BaseModel):
     taux_penalite_mensuel: float
     admin_id: int
     mois_retard: int
 
+
 class CotisationUpdateRequest(BaseModel):
     nouveau_montant: int
     admin_id: int
+
 
 def log_audit_api(user: str, action: str, details: str):
     conn = db_pool.getconn()
@@ -194,11 +206,13 @@ def log_audit_api(user: str, action: str, details: str):
         cursor.close()
         db_pool.putconn(conn)
 
+
 @app.on_event("shutdown")
 def shutdown_db_pool():
     if db_pool:
         db_pool.closeall()
         print("🛑 Pool de connexions PostgreSQL fermé avec succès.")
+
 
 @app.on_event("startup")
 def startup_db_setup():
@@ -286,6 +300,7 @@ def startup_db_setup():
     except Exception as e:
         print(f"❌ Erreur critique lors de l'initialisation de la base : {e}")
 
+
 @app.get('/')
 def read_root():
     return {
@@ -293,6 +308,7 @@ def read_root():
         "projet": "SACCO Connect",
         "database": "Connectée avec succès ✅"
     }
+
 
 @app.get("/privacy-policy", response_class=HTMLResponse)
 async def privacy_policy():
@@ -327,6 +343,7 @@ async def privacy_policy():
     </body>
     </html>
     """
+
 
 @app.get("/delete-account", response_class=HTMLResponse)
 async def delete_account_instructions():
@@ -363,6 +380,7 @@ async def delete_account_instructions():
     </html>
     """
 
+
 @app.post("/auth/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
@@ -391,20 +409,27 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_d
     access_token = create_access_token(data={"sub": str(user['id']), "role": user['role']})
     return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
 
-@app.post("/auth/inscription", status_code=status.HTTP_201_CREATED)
-def inscription(data: InscriptionPayload, cursor=Depends(get_db_cursor)):
-    hp = pwd_context.hash("1234")
+
+# Déclaration de la route POST avec le slash final et intégration de la logique PostgreSQL
+@app.post("/auth/inscription/", status_code=status.HTTP_201_CREATED)
+def inscrire_membre(data: InscriptionSchema, cursor=Depends(get_db_cursor)):
     try:
+        # Hachage du PIN envoyé par Flutter avant insertion en base
+        hash_pin = pwd_context.hash(data.pin)
+
         cursor.execute(
             """INSERT INTO membres (nom, prenom, age, sexe, telephone, cni, pin, role, is_active, colline, quartier, avenue, maison) 
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s, 1, %s, %s, %s, %s)""",
-            (data.nom or "Non renseigné", data.prenom or "Membre", data.age or 0, data.sexe or "M",
-             data.telephone, data.cni or "0000", hp, 'membre',
+            (data.nom, data.prenom, data.age, data.sexe,
+             data.telephone, data.cni, hash_pin, 'membre',
              data.colline, data.quartier, data.avenue, data.maison)
         )
-        return {"status": "success", "message": "✅ Inscription réussie !"}
+        return {"success": True, "message": "Inscription réussie !"}
     except psycopg2.IntegrityError:
         raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @app.get('/membres/{membre_id}/dashboard')
 def get_membre_dashboard(
