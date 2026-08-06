@@ -43,12 +43,19 @@ origins = [origin.strip() for origin in origins_str.split(",")]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"], )
 
-# Récupération de l'URL de la base de données configurée sur Render avec support local
+# ==========================================
+# CONFIGURATION ET POOL DE CONNEXIONS POSTGRESQL
+# ==========================================
 database_url = os.getenv("DATABASE_URL")
 
 if database_url:
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    # Ajout automatique du paramètre SSL indispensable pour Render si absent
+    if "render.com" in database_url and "?" not in database_url:
+        database_url += "?sslmode=require"
+
     db_conn_string = database_url
     print("🌍 API connectée à la base de données distante (Render).")
 else:
@@ -62,20 +69,19 @@ else:
     db_conn_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
     print("⚠️ DATABASE_URL non trouvée, API en mode local.")
 
-DATABASE_URL = db_conn_string
+# Déclaration globale explicite
+db_pool = None
 
-# Initialisation globale du pool de connexions
 try:
     db_pool = pool.ThreadedConnectionPool(
         minconn=1,
         maxconn=10,
-        dsn=DATABASE_URL
+        dsn=db_conn_string
     )
     if db_pool:
         print("✅ Pool de connexions PostgreSQL créé avec succès.")
 except Exception as e:
-    print(f"❌ Erreur lors de l'initialisation du pool de connexion : {e}")
-    db_pool = None
+    print(f"❌ Erreur critique lors de la création du pool de connexions : {e}")
 
 if not os.path.exists("./static/documents"):
     os.makedirs("./static/documents", exist_ok=True)
@@ -83,9 +89,12 @@ app.mount("/documents", StaticFiles(directory="./static/documents"), name="docum
 
 
 def get_db_cursor():
+    global db_pool
     if db_pool is None:
-        raise HTTPException(status_code=500,
-                            detail="Erreur critique : Le pool de connexions à la base de données n'est pas initialisé.")
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur critique : Le pool de connexions à la base de données n'est pas initialisé."
+        )
 
     conn = db_pool.getconn()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -220,11 +229,17 @@ def log_audit_api(user: str, action: str, details: str):
         db_pool.putconn(conn)
 
 
+
+
 @app.on_event("shutdown")
 def shutdown_db_pool():
+    global db_pool
     if db_pool:
-        db_pool.closeall()
-        print("🛑 Pool de connexions PostgreSQL fermé avec succès.")
+        try:
+            db_pool.closeall()
+            print("🔒 Pool de connexions fermé proprement.")
+        except Exception as e:
+            print(f"Erreur lors de la fermeture du pool : {e}")
 
 
 @app.on_event("startup")
