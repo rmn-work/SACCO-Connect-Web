@@ -22,7 +22,6 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import timedelta
 
-
 load_dotenv()
 
 SECRET_KEY = os.getenv("JWT_SECRET", "une_cle_tres_longue_et_secrete_a_changer_en_production")
@@ -44,6 +43,7 @@ origins = [origin.strip() for origin in origins_str.split(",")]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"], )
 
+# Récupération de l'URL de la base de données configurée sur Render avec support local
 database_url = os.getenv("DATABASE_URL")
 
 if database_url:
@@ -61,12 +61,21 @@ else:
     }
     db_conn_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
     print("⚠️ DATABASE_URL non trouvée, API en mode local.")
+
+DATABASE_URL = db_conn_string
+
+# Initialisation globale du pool de connexions
 try:
-    db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, db_conn_string)
+    db_pool = pool.ThreadedConnectionPool(
+        minconn=1,
+        maxconn=10,
+        dsn=DATABASE_URL
+    )
     if db_pool:
         print("✅ Pool de connexions PostgreSQL créé avec succès.")
 except Exception as e:
-    print(f"❌ Erreur lors de la création du pool de connexions : {e}")
+    print(f"❌ Erreur lors de l'initialisation du pool de connexion : {e}")
+    db_pool = None
 
 if not os.path.exists("./static/documents"):
     os.makedirs("./static/documents", exist_ok=True)
@@ -74,6 +83,10 @@ app.mount("/documents", StaticFiles(directory="./static/documents"), name="docum
 
 
 def get_db_cursor():
+    if db_pool is None:
+        raise HTTPException(status_code=500,
+                            detail="Erreur critique : Le pool de connexions à la base de données n'est pas initialisé.")
+
     conn = db_pool.getconn()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     try:
