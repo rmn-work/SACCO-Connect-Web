@@ -28,7 +28,6 @@ class CotisationService {
       );
 
       ApiService.syncPendingRequests();
-
       return true;
     } catch (e) {
       print("Erreur lors de l'enregistrement de la cotisation : $e");

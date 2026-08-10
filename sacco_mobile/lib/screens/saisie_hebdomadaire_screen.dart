@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
+import 'package:http/http.dart' as http; // <-- L'importation manquante qui corrige l'erreur
+import '../services/api_service.dart';
 import '../services/cotisation_service.dart';
 
 class SaisieHebdomadaireScreen extends StatefulWidget {
   final int groupId;
-  const SaisieHebdomadaireScreen({Key? key, required this.groupId}) : super(key: key);
+  const SaisieHebdomadaireScreen({super.key, required this.groupId});
 
   @override
   State<SaisieHebdomadaireScreen> createState() => _SaisieHebdomadaireScreenState();
@@ -14,7 +17,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
   DateTime dateReunion = DateTime.now();
   DateTime dateProchaineReunion = DateTime.now().add(const Duration(days: 7));
 
-  // Exemple de données membres locales (à remplacer plus tard par l'appel API)
   List<Map<String, dynamic>> membres = [
     {"id": 1, "nom": "Officiel SECRETAIRE", "presence": "P", "epargne": 5000.0, "caisse": 500.0, "amende": false},
     {"id": 2, "nom": "Officiel PRESIDENT", "presence": "P", "epargne": 5000.0, "caisse": 500.0, "amende": false},
@@ -22,6 +24,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
   ];
 
   bool _isSaving = false;
+  bool _isUpdatingCalendar = false;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +60,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
             ),
             const SizedBox(height: 20),
 
-            // --- SECTION 2: LISTE DES MEMBRES (ACCORDIONS) ---
+            // --- SECTION 2: LISTE DES MEMBRES ---
             Text(
               "members_group".tr(),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00897B)),
@@ -80,7 +83,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           children: [
-                            // Présence (P / A)
                             Row(
                               children: [
                                 Text("${"presence".tr()} : ", style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -98,7 +100,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                                 const Text("A"),
                               ],
                             ),
-                            // Champ Épargne
                             Row(
                               children: [
                                 Expanded(child: Text("${"savings".tr()} (BIF) :")),
@@ -113,7 +114,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                                 ),
                               ],
                             ),
-                            // Champ Caisse Sociale
                             Row(
                               children: [
                                 Expanded(child: Text("${"social_fund".tr()} (BIF) :")),
@@ -128,7 +128,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                                 ),
                               ],
                             ),
-                            // Amende Checkbox
                             CheckboxListTile(
                               title: Text("fine".tr()),
                               value: membre['amende'],
@@ -151,10 +150,9 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                   : ElevatedButton.icon(
                       onPressed: () async {
                         setState(() => _isSaving = true);
-                        String dateStr = dateReunion.toIso8601String();
+                        String dateStr = dateReunion.toIso8601String().split('T')[0];
                         bool globalSuccess = true;
 
-                        // Boucle pour enregistrer les cotisations de chaque membre présent/actif
                         for (var membre in membres) {
                           bool success = await CotisationService.enregistrerCotisation(
                             membreId: membre['id'],
@@ -164,16 +162,15 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                           if (!success) globalSuccess = false;
                         }
 
-                        setState(() => _isSaving = false);
+                        if (mounted) {
+                          setState(() => _isSaving = false);
 
-                        if (globalSuccess && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("meeting_save_success".tr()),
-                              backgroundColor: Colors.green,
+                              content: Text(globalSuccess ? "meeting_save_success".tr() : "Erreur lors de l'enregistrement"),
+                              backgroundColor: globalSuccess ? Colors.green : Colors.red,
                             ),
                           );
-                          setState(() {});
                         }
                       },
                       icon: const Icon(Icons.save),
@@ -212,13 +209,40 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                         if (picked != null) setState(() => dateProchaineReunion = picked);
                       },
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Mettre à jour calendrier API
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
-                      child: Text("update_calendar".tr(), style: const TextStyle(color: Colors.white)),
-                    )
+                    const SizedBox(height: 10),
+                    _isUpdatingCalendar
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: () async {
+                              setState(() => _isUpdatingCalendar = true);
+                              String formattedDate = dateProchaineReunion.toIso8601String().split('T')[0];
+
+                              try {
+                                final response = await httpPutCall(widget.groupId, formattedDate);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(response ? "Calendrier mis à jour avec succès" : "Échec de la mise à jour"),
+                                      backgroundColor: response ? Colors.green : Colors.red,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Erreur réseau lors de la mise à jour"),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) setState(() => _isUpdatingCalendar = false);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
+                            child: Text("update_calendar".tr(), style: const TextStyle(color: Colors.white)),
+                          )
                   ],
                 ),
               ),
@@ -227,5 +251,19 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
         ),
       ),
     );
+  }
+
+  Future<bool> httpPutCall(int groupId, String dateProchaine) async {
+    try {
+      final uri = Uri.parse("${ApiService.baseUrl}/groupes/$groupId/modifier-calendrier");
+      final response = await http.put(
+        uri,
+        headers: {"Content-Type": "application/json", "Accept": "application/json"},
+        body: jsonEncode({"date_reunion_prochaine": dateProchaine}),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 }

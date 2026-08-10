@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class EpargneScreen extends StatefulWidget {
   final int membreId;
 
-  const EpargneScreen({Key? key, required this.membreId}) : super(key: key);
+  const EpargneScreen({super.key, required this.membreId});
 
   @override
   State<EpargneScreen> createState() => _EpargneScreenState();
@@ -35,8 +35,14 @@ class _EpargneScreenState extends State<EpargneScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      print("Erreur de chargement: $e");
+      debugPrint("Erreur de chargement: $e");
     }
+  }
+
+  // Fonction utilitaire pour formater les nombres avec des espaces
+  String _formaterMontant(double montant) {
+    final format = NumberFormat('#,##0', context.locale.languageCode);
+    return format.format(montant).replaceAll(',', ' ');
   }
 
   @override
@@ -73,17 +79,16 @@ class _EpargneScreenState extends State<EpargneScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // --- Section Historique (Préparation) ---
+                  // --- Section Historique ---
                   Text(
                     'latest_transactions'.tr(),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   const SizedBox(height: 12),
 
-                  // Historique temporaire internationalisé
-                  _buildTransactionTile('weekly_deposit'.tr(), '+ 5000.0 FBU', '08 Juin 2026', Colors.green),
-                  _buildTransactionTile('social_contribution'.tr(), '+ 500.0 FBU', '08 Juin 2026', Colors.blue),
-                  _buildTransactionTile('savings_withdrawal'.tr(), '- 15000.0 FBU', '25 Mai 2026', Colors.red),
+                  _buildTransactionTile('weekly_deposit'.tr(), '+ ${_formaterMontant(5000.0)} FBU', '08 Juin 2026', Colors.green),
+                  _buildTransactionTile('social_contribution'.tr(), '+ ${_formaterMontant(500.0)} FBU', '08 Juin 2026', Colors.blue),
+                  _buildTransactionTile('savings_withdrawal'.tr(), '- ${_formaterMontant(15000.0)} FBU', '25 Mai 2026', Colors.red),
                 ],
               ),
             ),
@@ -97,14 +102,14 @@ class _EpargneScreenState extends State<EpargneScreen> {
         color: couleur,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: couleur.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(color: couleur.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4)),
         ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
             child: Icon(icone, color: Colors.white, size: 32),
           ),
           const SizedBox(width: 16),
@@ -114,7 +119,10 @@ class _EpargneScreenState extends State<EpargneScreen> {
               children: [
                 Text(titre, style: const TextStyle(color: Colors.white70, fontSize: 14)),
                 const SizedBox(height: 4),
-                Text('$montant FBU', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                Text(
+                  'amount_fbu'.tr(namedArgs: {'montant': _formaterMontant(montant)}),
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
@@ -129,7 +137,7 @@ class _EpargneScreenState extends State<EpargneScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: colorMontant.withOpacity(0.1),
+          backgroundColor: colorMontant.withValues(alpha: 0.1),
           child: Icon(
             montant.startsWith('+') ? Icons.arrow_downward : Icons.arrow_upward,
             color: colorMontant,

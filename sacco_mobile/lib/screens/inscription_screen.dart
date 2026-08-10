@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class InscriptionScreen extends StatefulWidget {
-  const InscriptionScreen({Key? key}) : super(key: key);
+  const InscriptionScreen({super.key});
 
   @override
   State<InscriptionScreen> createState() => _InscriptionScreenState();
@@ -12,7 +12,6 @@ class InscriptionScreen extends StatefulWidget {
 class _InscriptionScreenState extends State<InscriptionScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Contrôleurs
   final _nomController = TextEditingController();
   final _prenomController = TextEditingController();
   final _telController = TextEditingController();
@@ -22,11 +21,12 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
   final _quartierController = TextEditingController();
   final _avenueController = TextEditingController();
   final _maisonController = TextEditingController();
-  final _pinController = TextEditingController(); // 🟢 AJOUT : Contrôleur pour le PIN
+  final _pinController = TextEditingController();
 
-  // Variables d'état pour le Sexe (Utilisation des clés de traduction)
   String? _sexeSelectionneKey;
   final List<String> _sexesKeys = ['male', 'female'];
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -39,126 +39,194 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
     _quartierController.dispose();
     _avenueController.dispose();
     _maisonController.dispose();
-    _pinController.dispose(); // 🟢 AJOUT : Libération de la mémoire du PIN
+    _pinController.dispose();
     super.dispose();
   }
 
   void _validerInscription() async {
-    if (_formKey.currentState!.validate()) {
+  FocusScope.of(context).unfocus();
 
-      // On s'assure que l'API reçoit toujours 'Masculin' ou 'Féminin' peu importe la langue
-      String sexeApi = (_sexeSelectionneKey == 'female') ? 'Féminin' : 'Masculin';
-
-      // Appel au service avec les nouvelles données incluant le PIN
-      bool success = await ApiService.inscrireMembre(
-        nom: _nomController.text,
-        prenom: _prenomController.text,
-        age: int.tryParse(_ageController.text) ?? 18,
-        sexe: sexeApi,
-        telephone: _telController.text,
-        cni: _cniController.text,
-        colline: _collineController.text,
-        quartier: _quartierController.text,
-        avenue: _avenueController.text,
-        maison: _maisonController.text,
-        pin: _pinController.text, // 🟢 AJOUT : Transmission du PIN à l'API
+  if (_formKey.currentState!.validate()) {
+    if (_sexeSelectionneKey == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez sélectionner un genre'), backgroundColor: Colors.orange),
       );
+      return;
+    }
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('registration_success'.tr())),
-        );
-        Navigator.pop(context);
-      }
+    setState(() {
+      _isLoading = true;
+    });
+
+    String sexeApi = (_sexeSelectionneKey == 'female') ? 'Féminin' : 'Masculin';
+
+    // Appel du service
+    final result = await ApiService.inscrireMembre(
+      nom: _nomController.text,
+      prenom: _prenomController.text,
+      age: int.tryParse(_ageController.text) ?? 18,
+      sexe: sexeApi,
+      telephone: _telController.text,
+      cni: _cniController.text,
+      colline: _collineController.text,
+      quartier: _quartierController.text,
+      avenue: _avenueController.text,
+      maison: _maisonController.text,
+      pin: _pinController.text,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('registration_success'.tr()), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context);
+    } else {
+      // Affiche la raison EXACTE donnée par le backend sur le téléphone du testeur
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('register_title'.tr())),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(controller: _nomController, decoration: InputDecoration(labelText: 'last_name'.tr())),
-              TextFormField(controller: _prenomController, decoration: InputDecoration(labelText: 'first_name'.tr())),
-              TextFormField(controller: _telController, decoration: InputDecoration(labelText: 'phone_number'.tr())),
-              TextFormField(controller: _cniController, decoration: InputDecoration(labelText: 'cni_number'.tr())),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: _nomController,
+              decoration: InputDecoration(labelText: 'last_name'.tr(), border: const OutlineInputBorder()),
+              validator: (value) => value == null || value.trim().isEmpty ? 'Champ requis' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _prenomController,
+              decoration: InputDecoration(labelText: 'first_name'.tr(), border: const OutlineInputBorder()),
+              validator: (value) => value == null || value.trim().isEmpty ? 'Champ requis' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _telController,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(labelText: 'phone_number'.tr(), border: const OutlineInputBorder()),
+              validator: (value) => value == null || value.trim().isEmpty ? 'Champ requis' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _cniController,
+              decoration: InputDecoration(labelText: 'cni_number'.tr(), border: const OutlineInputBorder()),
+            ),
 
-              const SizedBox(height: 16),
-              // 🟢 AJOUT : Champ de saisie pour le Code PIN
-              TextFormField(
-                controller: _pinController,
-                decoration: const InputDecoration(
-                  labelText: 'Code PIN',
-                  border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _pinController,
+              decoration: InputDecoration(
+                labelText: 'pin_code'.tr(),
+                border: const OutlineInputBorder(),
+              ),
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              validator: (value) => (value == null || value.isEmpty) ? 'pin_error'.tr() : null,
+            ),
+
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(labelText: 'gender'.tr(), border: const OutlineInputBorder()),
+              value: _sexeSelectionneKey,
+              items: _sexesKeys.map((String key) {
+                return DropdownMenuItem<String>(
+                  value: key,
+                  child: Text(key.tr()),
+                );
+              }).toList(),
+              onChanged: (val) => setState(() => _sexeSelectionneKey = val),
+            ),
+
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text('age_label'.tr(), style: const TextStyle(fontSize: 16)),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () {
+                    int age = int.tryParse(_ageController.text) ?? 18;
+                    if (age > 1) _ageController.text = (age - 1).toString();
+                  },
                 ),
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                validator: (value) => value == null || value.isEmpty ? 'Veuillez définir un PIN' : null,
-              ),
-
-              const SizedBox(height: 16),
-              // --- Sélecteur de Sexe ---
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(labelText: 'gender'.tr(), border: const OutlineInputBorder()),
-                value: _sexeSelectionneKey,
-                items: _sexesKeys.map((String key) {
-                  return DropdownMenuItem<String>(
-                    value: key,
-                    child: Text(key.tr()) // Affiche 'Masculin/Féminin'
-                  );
-                }).toList(),
-                onChanged: (val) => setState(() => _sexeSelectionneKey = val),
-              ),
-
-              const SizedBox(height: 16),
-              // --- Sélecteur d'Âge avec + et - ---
-              Row(
-                children: [
-                  Text('age_label'.tr()),
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: () {
-                      int age = int.tryParse(_ageController.text) ?? 18;
-                      if (age > 1) _ageController.text = (age - 1).toString();
-                    },
+                Expanded(
+                  child: TextFormField(
+                    controller: _ageController,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
                   ),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _ageController,
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: () {
-                      int age = int.tryParse(_ageController.text) ?? 18;
-                      _ageController.text = (age + 1).toString();
-                    },
-                  ),
-                ],
-              ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () {
+                    int age = int.tryParse(_ageController.text) ?? 18;
+                    _ageController.text = (age + 1).toString();
+                  },
+                ),
+              ],
+            ),
 
-              const Divider(height: 30),
-              Text('location'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-              TextFormField(controller: _collineController, decoration: InputDecoration(labelText: 'colline_label'.tr())),
-              TextFormField(controller: _quartierController, decoration: InputDecoration(labelText: 'quartier_label'.tr())),
-              TextFormField(controller: _avenueController, decoration: InputDecoration(labelText: 'avenue_label'.tr())),
-              TextFormField(controller: _maisonController, decoration: InputDecoration(labelText: 'house_number'.tr())),
+            const Divider(height: 30),
+            Text('location'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _collineController,
+              decoration: InputDecoration(labelText: 'colline_label'.tr(), border: const OutlineInputBorder()),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _quartierController,
+              decoration: InputDecoration(labelText: 'quartier_label'.tr(), border: const OutlineInputBorder()),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _avenueController,
+              decoration: InputDecoration(labelText: 'avenue_label'.tr(), border: const OutlineInputBorder()),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _maisonController,
+              decoration: InputDecoration(labelText: 'house_number'.tr(), border: const OutlineInputBorder()),
+            ),
 
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _validerInscription,
-                child: Text('validate_registration'.tr())
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A529B), foregroundColor: Colors.white),
+                onPressed: _isLoading ? null : _validerInscription,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                      )
+                    : Text('validate_registration'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );

@@ -1,11 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
 
 class PortefeuillePretScreen extends StatefulWidget {
   final int membreId;
 
-  const PortefeuillePretScreen({Key? key, required this.membreId}) : super(key: key);
+  const PortefeuillePretScreen({super.key, required this.membreId});
 
   @override
   State<PortefeuillePretScreen> createState() => _PortefeuillePretScreenState();
@@ -13,11 +15,11 @@ class PortefeuillePretScreen extends StatefulWidget {
 
 class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   bool _isLoading = true;
+  bool _isUploading = false;
   Map<String, dynamic>? _accountData;
   List<dynamic> _mesDemandes = [];
   List<dynamic> _historiqueEpargne = [];
 
-  // Formulaires controllers
   final _formSocialKey = GlobalKey<FormState>();
   final _formCreditKey = GlobalKey<FormState>();
   final _montantSocialController = TextEditingController();
@@ -32,24 +34,74 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   }
 
   void _chargerDonnees() async {
-    final data = await ApiService.getPortefeuille(widget.membreId);
-    final demandes = await ApiService.getMesDemandesPrets(widget.membreId);
-    final historique = await ApiService.getHistoriqueEpargne(widget.membreId);
+    try {
+      final data = await ApiService.getPortefeuille(widget.membreId);
+      final demandes = await ApiService.getMesDemandesPrets(widget.membreId);
+      final historique = await ApiService.getHistoriqueEpargne(widget.membreId);
 
-    setState(() {
-      _accountData = data;
-      _mesDemandes = demandes;
-      _historiqueEpargne = historique;
-      _isLoading = false;
-    });
+      if (mounted) {
+        setState(() {
+          _accountData = data;
+          _mesDemandes = demandes;
+          _historiqueEpargne = historique;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // --- MÉTHODE POUR SÉLECTIONNER ET UPLOADER LE REÇU ---
+  Future<void> _associerRecu() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        String fileName = result.files.single.name;
+
+        setState(() => _isUploading = true);
+
+        // Appel à la méthode d'upload dans ApiService
+        bool success = await ApiService.uploadRecu(
+          membreId: widget.membreId,
+          filePath: filePath,
+          fileName: fileName,
+        );
+
+        if (mounted) {
+          setState(() => _isUploading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success ? "Reçu uploadé avec succès !" : "Échec de l'upload du reçu"),
+              backgroundColor: success ? Colors.green : Colors.red,
+            ),
+          );
+          if (success) _chargerDonnees();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Erreur lors de la sélection du fichier"), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(color: const Color(0xFF009688)),
         ),
       );
     }
@@ -86,9 +138,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     );
   }
 
-  // =========================================================================
-  // ONGLET 1 : MON PORTEFEUILLE
-  // =========================================================================
   Widget _buildMonPortefeuilleTab(Map<String, dynamic> user, BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -166,21 +215,18 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
           const Divider(),
           Text("my_documents".tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("pdf_import_activated".tr())));
-            },
-            icon: const Icon(Icons.upload_file),
-            label: Text("associate_bank_receipt".tr()),
-          ),
+          _isUploading
+              ? const Center(child: CircularProgressIndicator())
+              : OutlinedButton.icon(
+                  onPressed: _associerRecu,
+                  icon: const Icon(Icons.upload_file),
+                  label: Text("associate_bank_receipt".tr()),
+                ),
         ],
       ),
     );
   }
 
-  // =========================================================================
-  // FENÊTRE MODALE : FORMULAIRE PRÊT SOCIAL
-  // =========================================================================
   void _afficherFormulairePretSocial(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -259,9 +305,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     );
   }
 
-  // =========================================================================
-  // ONGLET 2 : DEMANDE DE CRÉDIT & HISTORIQUE
-  // =========================================================================
   Widget _buildDemandeCreditTab(Map<String, dynamic> user, double maxLoan) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -289,8 +332,9 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(labelText: "desired_amount".tr(), border: const OutlineInputBorder()),
                   validator: (val) {
-                    if (val!.isEmpty) return "enter_amount".tr();
-                    if (double.parse(val) > maxLoan) return "exceeds_authorized_ceiling".tr();
+                    if (val == null || val.isEmpty) return "enter_amount".tr();
+                    double? parsed = double.tryParse(val);
+                    if (parsed == null || parsed > maxLoan) return "exceeds_authorized_ceiling".tr();
                     return null;
                   },
                 ),
@@ -299,7 +343,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                   controller: _motifCreditController,
                   maxLines: 3,
                   decoration: InputDecoration(labelText: "detailed_credit_reason".tr(), border: const OutlineInputBorder()),
-                  validator: (val) => val!.isEmpty ? "specify_reason".tr() : null,
+                  validator: (val) => val == null || val.isEmpty ? "specify_reason".tr() : null,
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
@@ -330,8 +374,8 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                     return Card(
                       child: ListTile(
                         title: Text("${d['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("${"requested_on".tr()}${d['date_demande']}"),
-                        trailing: _buildStatusBadge(d['status']),
+                        subtitle: Text("${"requested_on".tr()}${d['date_demande'] ?? ''}"),
+                        trailing: _buildStatusBadge(d['status'] ?? ''),
                       ),
                     );
                   },
@@ -341,9 +385,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     );
   }
 
-  // =========================================================================
-  // ONGLET 3 : HISTORIQUE
-  // =========================================================================
   Widget _buildHistoriqueTab() {
     if (_historiqueEpargne.isEmpty) {
       return Center(child: Text("no_history_available".tr()));
@@ -358,7 +399,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
           child: ListTile(
             leading: const Icon(Icons.history, color: Colors.teal),
             title: Text("${item['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text("${"date_label".tr()}${item['date_reunion']}"),
+            subtitle: Text("${"date_label".tr()}${item['date_reunion'] ?? ''}"),
             trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
           ),
         );
@@ -366,13 +407,14 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     );
   }
 
-  // =========================================================================
-  // WIDGETS ET FONCTIONS UTILES
-  // =========================================================================
   Widget _buildMetricCard(String title, String value, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.3))),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +447,11 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: badgeColor.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: badgeColor)),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: badgeColor),
+      ),
       child: Text(status, style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 12)),
     );
   }
@@ -417,7 +463,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
         montant: int.parse(_montantSocialController.text),
         motif: _motifSocialController.text,
       );
-      if (success) {
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("social_request_sent".tr())));
         _montantSocialController.clear();
         _motifSocialController.clear();
@@ -431,9 +477,11 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     double parsedMontant = double.tryParse(rawMontant) ?? 0.0;
 
     if (parsedMontant <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("enter_valid_amount".tr())),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("enter_valid_amount".tr())),
+        );
+      }
       return;
     }
 
@@ -445,7 +493,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
         tauxInteretApplique: 0.0,
       );
 
-      if (success) {
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("credit_request_sent".tr())),
         );

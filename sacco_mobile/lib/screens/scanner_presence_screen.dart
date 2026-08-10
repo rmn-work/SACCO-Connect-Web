@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
+import '../services/api_service.dart';
 
 class ScannerPresenceScreen extends StatefulWidget {
   final int adminId;
 
-  const ScannerPresenceScreen({Key? key, required this.adminId}) : super(key: key);
+  const ScannerPresenceScreen({super.key, required this.adminId});
 
   @override
   State<ScannerPresenceScreen> createState() => _ScannerPresenceScreenState();
@@ -21,29 +22,31 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
     final barcode = barcodeCapture.barcodes.first;
     final String? qrData = barcode.rawValue;
 
-    if (qrData != null) {
+    if (qrData != null && qrData.isNotEmpty) {
       setState(() {
         _isProcessing = true;
       });
 
       cameraController.stop();
-      _traiterEmargementMembres(qrData);
+      await _traiterEmargementMembres(qrData);
     }
   }
 
   Future<void> _traiterEmargementMembres(String qrData) async {
     try {
-      String cleanId = qrData.replaceAll(RegExp(r'[^0-9]'), '');
-      int? membreId = int.tryParse(cleanId);
+      // Envoi du token/payload dynamique du QR code au serveur pour validation sécurisée
+      final ApiResponse response = await ApiService.validerPresenceQr(
+        qrToken: qrData,
+        adminId: widget.adminId,
+      );
 
-      if (membreId == null) {
-        throw Exception("invalid_qr_format".tr());
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      if (response.success) {
+        _afficherSuccesScan(response.message);
+      } else {
+        _afficherErreurScan(response.message);
       }
-
-      // Simulation de la validation réseau
-      await Future.delayed(const Duration(milliseconds: 600));
-
-      _afficherSuccesScan("Membre #$membreId ${"member_marked_present".tr()}");
     } catch (e) {
       _afficherErreurScan("${"validation_error".tr()} : ${e.toString()}");
     }
@@ -83,13 +86,15 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
   }
 
   void _afficherErreurScan(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
     _relancerCamera();
   }
 
@@ -118,12 +123,10 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // Bouton Basculer Flash
           IconButton(
             icon: const Icon(Icons.flash_on, color: Colors.white),
             onPressed: () => cameraController.toggleTorch(),
           ),
-          // Bouton Inverser Caméra Avant/Arrière
           IconButton(
             icon: const Icon(Icons.cameraswitch, color: Colors.white),
             onPressed: () => cameraController.switchCamera(),

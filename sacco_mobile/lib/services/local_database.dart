@@ -19,7 +19,6 @@ class LocalDatabase {
       path,
       version: 1,
       onCreate: (db, version) async {
-        // Table pour la mise en cache des réponses GET
         await db.execute('''
           CREATE TABLE app_cache (
             key TEXT PRIMARY KEY,
@@ -28,7 +27,6 @@ class LocalDatabase {
           )
         ''');
 
-        // Table pour la file d'attente de synchronisation
         await db.execute('''
           CREATE TABLE sync_queue (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +38,6 @@ class LocalDatabase {
           )
         ''');
 
-        // Table pour les cotisations enregistrées en local
         await db.execute('''
           CREATE TABLE cotisations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,8 +74,6 @@ class LocalDatabase {
     return null;
   }
 
-  // --- Gestion de la File d'attente (Sync Queue) ---
-  // Notez l'ordre précis des arguments pour correspondre à api_service.dart
   static Future<void> addToSyncQueue(String endpoint, String method, Map<String, dynamic> payload, {String action = 'API_SYNC'}) async {
     final db = await database;
     await db.insert('sync_queue', {
@@ -100,7 +95,6 @@ class LocalDatabase {
     await db.delete('sync_queue', where: 'id = ?', whereArgs: [id]);
   }
 
-  // --- Cotisations Locales ---
   static Future<int> insertCotisationLocal({
     required int membreId,
     required double montant,

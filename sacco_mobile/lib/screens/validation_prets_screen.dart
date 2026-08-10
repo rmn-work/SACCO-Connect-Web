@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class ValidationPretsScreen extends StatefulWidget {
   final int membreId;
 
-  const ValidationPretsScreen({Key? key, required this.membreId}) : super(key: key);
+  const ValidationPretsScreen({super.key, required this.membreId});
 
   @override
   State<ValidationPretsScreen> createState() => _ValidationPretsScreenState();
@@ -38,12 +38,10 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
     }
   }
 
-  // Fonction mise à jour utilisant ApiService
   void _validerDemande(int idDemande, String typeDemande, bool estApprouve) async {
     setState(() => _isLoading = true);
 
     try {
-      // Appel via votre Service au lieu de http direct
       bool success = await ApiService.validerPret(
         idDemande,
         estApprouve,
@@ -111,7 +109,9 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text('${demande['montant']} FBU', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                            // Remplacement de FBU par BIF pour garder l'uniformité avec les autres écrans
+                            Text('${demande['montant']} BIF', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                            const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(color: demande['type'] == 'CREDIT' ? Colors.blue.shade100 : Colors.orange.shade100, borderRadius: BorderRadius.circular(4)),

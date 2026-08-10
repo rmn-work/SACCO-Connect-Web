@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class GroupeScreen extends StatefulWidget {
   final int membreId;
 
-  const GroupeScreen({Key? key, required this.membreId}) : super(key: key);
+  const GroupeScreen({super.key, required this.membreId});
 
   @override
   State<GroupeScreen> createState() => _GroupeScreenState();
@@ -33,7 +33,7 @@ class _GroupeScreenState extends State<GroupeScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
-      print("Erreur groupe: $e");
+      debugPrint("Erreur groupe: $e");
     }
   }
 
@@ -57,9 +57,12 @@ class _GroupeScreenState extends State<GroupeScreen> {
                 children: [
                   // --- Header du groupe ---
                   Card(
-                    color: primaryColor.withOpacity(0.05),
+                    color: primaryColor.withValues(alpha: 0.05),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: primaryColor.withOpacity(0.2))),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: primaryColor.withValues(alpha: 0.2)),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Row(

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class TableauGroupeScreen extends StatefulWidget {
   final int groupId;
 
-  const TableauGroupeScreen({Key? key, required this.groupId}) : super(key: key);
+  const TableauGroupeScreen({super.key, required this.groupId});
 
   @override
   State<TableauGroupeScreen> createState() => _TableauGroupeScreenState();
@@ -25,7 +25,6 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
 
   Future<void> _recupererDonneesGroupe() async {
     try {
-      // Simulation d'attente réseau
       await Future.delayed(const Duration(milliseconds: 800));
 
       final dataMock = [
@@ -45,17 +44,21 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
         }
       }
 
-      setState(() {
-        _membres = dataMock;
-        _epargneTotaleGroupe = total;
-        _membresActifs = actifs;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _membres = dataMock;
+          _epargneTotaleGroupe = total;
+          _membresActifs = actifs;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${'error_loading_table'.tr()} : $e")),
-      );
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("${'error_loading_table'.tr()} : $e")),
+        );
+      }
     }
   }
 
@@ -100,7 +103,6 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // --- Tableau des membres ---
                   Expanded(
                     child: Card(
                       elevation: 2,
@@ -110,7 +112,7 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
-                            headingRowColor: MaterialStateProperty.all(Colors.grey[100]),
+                            headingRowColor: WidgetStateProperty.all(Colors.grey[100]),
                             columns: [
                               DataColumn(label: Text('lastname'.tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
                               DataColumn(label: Text('firstname'.tr(), style: const TextStyle(fontWeight: FontWeight.bold))),
@@ -149,7 +151,6 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // --- Zone des deux KPI Cards du bas ---
                   Row(
                     children: [
                       Expanded(

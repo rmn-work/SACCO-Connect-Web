@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -19,12 +19,12 @@ void main() async {
   runApp(
     EasyLocalization(
       supportedLocales: const [
-        Locale('fr', 'FR'), // Français
-        Locale('rn', 'BI'), // Kirundi (Burundi)
+        Locale('fr'),
+        Locale('rn'),
       ],
       path: 'assets/locales',
-      fallbackLocale: const Locale('fr', 'FR'),
-      useOnlyLangCode: true, // Utilise fr.json et rn.json directement
+      fallbackLocale: const Locale('fr'),
+      saveLocale: true,
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => authNotifier),
@@ -35,9 +35,7 @@ void main() async {
   );
 }
 
-/// Écoute en arrière-plan le réseau et lance la synchronisation dès qu'Internet revient
 void _initConnectivityListener() {
-  // 1. Vérification initiale au démarrage
   Connectivity().checkConnectivity().then((List<ConnectivityResult> results) {
     final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
     bool isConnected = result == ConnectivityResult.mobile ||
@@ -50,7 +48,6 @@ void _initConnectivityListener() {
     }
   });
 
-  // 2. Écoute des changements de connexion en temps réel
   Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
     final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
     bool isConnected = result == ConnectivityResult.mobile ||
@@ -74,13 +71,31 @@ class SaccoConnectApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentLang = context.locale.languageCode;
+    final materialLocale = currentLang == 'rn' ? const Locale('fr') : context.locale;
+
     return MaterialApp.router(
-      title: 'SACCO CONNECT',
+      title: 'Sacco Connect',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
-      localizationsDelegates: context.localizationDelegates,
+      key: ValueKey(currentLang),
+
+      localizationsDelegates: [
+        ...context.localizationDelegates,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       supportedLocales: context.supportedLocales,
-      locale: context.locale,
+      locale: materialLocale,
+
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: primaryBlue,

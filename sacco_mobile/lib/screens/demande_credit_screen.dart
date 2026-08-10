@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class DemandeCreditScreen extends StatefulWidget {
   final int membreId;
 
-  const DemandeCreditScreen({Key? key, required this.membreId}) : super(key: key);
+  const DemandeCreditScreen({super.key, required this.membreId});
 
   @override
   State<DemandeCreditScreen> createState() => _DemandeCreditScreenState();
@@ -17,9 +17,9 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
   final _motifController = TextEditingController();
 
   String _typeCredit = 'Standard';
-  double _tauxInteret = 5.0; // Taux par défaut, sera écrasé par celui de l'admin
+  double _tauxInteret = 5.0;
   bool _isLoading = false;
-  bool _isLoadingTaux = true; // Pour charger le taux au démarrage
+  bool _isLoadingTaux = true;
   final Color primaryColor = const Color(0xFF1A529B);
 
   final int dureeMois = 3;
@@ -30,7 +30,6 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
     _chargerTauxAttribue();
   }
 
-  // Charge le taux d'intérêt spécifique fixé par l'administration pour ce membre
   void _chargerTauxAttribue() async {
     try {
       final data = await ApiService.getPortefeuille(widget.membreId);
@@ -41,7 +40,7 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
         });
       }
     } catch (e) {
-      print("Erreur lors de la récupération du taux admin : $e");
+      debugPrint("Erreur lors de la récupération du taux admin : $e");
       if (mounted) setState(() => _isLoadingTaux = false);
     }
   }
@@ -105,6 +104,11 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
     );
   }
 
+  String _formaterMontant(double montant) {
+    final format = NumberFormat('#,##0', context.locale.languageCode);
+    return format.format(montant).replaceAll(',', ' ');
+  }
+
   Widget _buildSimulationCard() {
     double montant = double.tryParse(_montantController.text) ?? 0.0;
     double taux = _typeCredit == 'Standard' ? (_tauxInteret / 100) : 0.0;
@@ -113,10 +117,10 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
     double mensualite = totalARembourser / dureeMois;
 
     return Card(
-      color: primaryColor.withOpacity(0.05),
+      color: primaryColor.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: primaryColor.withOpacity(0.3)),
+        side: BorderSide(color: primaryColor.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -125,13 +129,13 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
           children: [
             Text('repayment_simulation'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const Divider(),
-            _buildSimulationRow('requested_amount'.tr(), '$montant FBU'),
-            _buildSimulationRow('${"interests".tr()} (${_typeCredit == 'Social' ? 0 : _tauxInteret}\%) :', '${interets.toStringAsFixed(0)} FBU'),
+            _buildSimulationRow('requested_amount'.tr(), '${_formaterMontant(montant)} FBU'),
+            _buildSimulationRow('${"interests".tr()} (${_typeCredit == 'Social' ? 0 : _tauxInteret}%) :', '${_formaterMontant(interets)} FBU'),
             _buildSimulationRow('duration'.tr(), '$dureeMois mois'),
             const Divider(),
-            _buildSimulationRow('total_to_repay'.tr(), '${totalARembourser.toStringAsFixed(0)} FBU', isBold: true, color: primaryColor),
+            _buildSimulationRow('total_to_repay'.tr(), '${_formaterMontant(totalARembourser)} FBU', isBold: true, color: primaryColor),
             const SizedBox(height: 8),
-            _buildSimulationRow('estimated_monthly_payment'.tr(), '${mensualite.toStringAsFixed(0)} FBU / mois', isBold: true),
+            _buildSimulationRow('estimated_monthly_payment'.tr(), '${_formaterMontant(mensualite)} FBU / mois', isBold: true),
           ],
         ),
       ),
@@ -160,7 +164,7 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoadingTaux
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: primaryColor))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Form(
@@ -170,7 +174,11 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                   children: [
                     DropdownButtonFormField<String>(
                       value: _typeCredit,
-                      decoration: InputDecoration(labelText: 'credit_type'.tr(), border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.category)),
+                      decoration: InputDecoration(
+                        labelText: 'credit_type'.tr(),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.category),
+                      ),
                       items: ['Standard', 'Social'].map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
@@ -200,7 +208,11 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                     TextFormField(
                       controller: _montantController,
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: 'desired_amount'.tr(), border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.attach_money)),
+                      decoration: InputDecoration(
+                        labelText: 'desired_amount'.tr(),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.attach_money),
+                      ),
                       onChanged: (val) => setState(() {}),
                       validator: (value) => (value == null || value.isEmpty || double.tryParse(value) == null) ? 'valid_amount_error'.tr() : null,
                     ),
@@ -208,7 +220,11 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
 
                     TextFormField(
                       controller: _motifController,
-                      decoration: InputDecoration(labelText: 'loan_reason'.tr(), border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.edit)),
+                      decoration: InputDecoration(
+                        labelText: 'loan_reason'.tr(),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.edit),
+                      ),
                       validator: (value) => (value == null || value.isEmpty) ? 'reason_error'.tr() : null,
                     ),
                     const SizedBox(height: 24),

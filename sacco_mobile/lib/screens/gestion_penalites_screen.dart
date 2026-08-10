@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 
 class GestionPenalitesScreen extends StatefulWidget {
   final int membreId;
-  const GestionPenalitesScreen({Key? key, required this.membreId}) : super(key: key);
+  const GestionPenalitesScreen({super.key, required this.membreId});
 
   @override
   State<GestionPenalitesScreen> createState() => _GestionPenalitesScreenState();
@@ -14,7 +14,6 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
   final Color primaryColor = const Color(0xFF1A529B);
   bool _isLoading = false;
 
-  // Remplacer par l'ID de l'admin connecté dans ton application
   final int _adminId = 1;
 
   List<Map<String, dynamic>> _creditsEnRetard = [];
@@ -113,12 +112,18 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
     );
   }
 
+  String _formaterMontant(double montant) {
+    final format = NumberFormat('#,##0', context.locale.languageCode);
+    return format.format(montant).replaceAll(',', ' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('penalties_management'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
         ? Center(child: CircularProgressIndicator(color: primaryColor))
@@ -127,11 +132,17 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
             itemCount: _creditsEnRetard.length,
             itemBuilder: (context, index) {
               final credit = _creditsEnRetard[index];
+              double resteAPayer = (credit['reste_a_payer'] ?? 0.0).toDouble();
+
               return Card(
+                elevation: 0.5,
+                margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                  title: Text(credit['nom'] ?? 'unknown'.tr()),
-                  subtitle: Text('${'remaining'.tr()}: ${credit['reste_a_payer']} FBU'),
+                  title: Text(credit['nom'] ?? 'unknown'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                    '${'remaining'.tr()}: ${_formaterMontant(resteAPayer)} FBU',
+                  ),
                   trailing: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
                     onPressed: () => _ouvrirDialoguePenalite(credit),

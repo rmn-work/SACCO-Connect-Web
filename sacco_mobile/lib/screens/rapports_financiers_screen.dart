@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart'; // Importation de easy_localization
+import 'package:easy_localization/easy_localization.dart';
 import '../services/api_service.dart';
 import 'gestion_penalites_screen.dart';
 
 class RapportsFinanciersScreen extends StatefulWidget {
   final int membreId;
 
-  const RapportsFinanciersScreen({Key? key, required this.membreId}) : super(key: key);
+  const RapportsFinanciersScreen({super.key, required this.membreId});
 
   @override
   State<RapportsFinanciersScreen> createState() => _RapportsFinanciersScreenState();
@@ -16,7 +16,6 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
   final Color primaryColor = const Color(0xFF1A529B);
   bool _isLoading = true;
 
-  // Variable pour stocker les données réelles du backend
   Map<String, dynamic>? _stats;
 
   @override
@@ -25,20 +24,24 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
     _chargerRapports();
   }
 
-  // Nouvelle fonction connectée à ton FastAPI
   Future<void> _chargerRapports() async {
-    final stats = await ApiService.getRapportsGlobaux();
-    if (mounted) {
-      setState(() {
-        _stats = stats;
-        _isLoading = false;
-      });
+    try {
+      final stats = await ApiService.getRapportsGlobaux();
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Extraction sécurisée des valeurs (si null, on affiche 0.0)
     String epargne = _stats?['total_epargne']?.toString() ?? '0.0';
     String credits = _stats?['total_credits_actifs']?.toString() ?? '0.0';
     String social = _stats?['total_social']?.toString() ?? '0.0';
@@ -58,7 +61,6 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
                 Text('global_health'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
 
-                // Les cartes utilisent maintenant les vraies données de l'API avec internationalisation
                 _buildRapportCard('total_savings_collected'.tr(), '$epargne FBU', Icons.account_balance, Colors.teal),
                 _buildRapportCard('active_credits'.tr(), '$credits FBU', Icons.trending_up, Colors.orange),
                 _buildRapportCard('social_fund_balance'.tr(), '$social FBU', Icons.volunteer_activism, Colors.blue),

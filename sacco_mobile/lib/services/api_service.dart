@@ -1,12 +1,19 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
 import 'authenticated_client.dart';
 import 'local_database.dart';
 
+class ApiResponse {
+  final bool success;
+  final String message;
+  ApiResponse({required this.success, required this.message});
+}
+
 class ApiService {
-  static const String productionUrl = "https://sacco-connect.onrender.com";
+  static const String productionUrl = "https://sacco-connect-web.onrender.com";
+
   static const bool isLocalEnvironment = false;
 
   static final AuthenticatedClient _client = AuthenticatedClient();
@@ -26,15 +33,12 @@ class ApiService {
         "Accept": "application/json",
       };
 
-  static Uri get loginUri => Uri.parse('$baseUrl/auth/login');
-
   static String _url(String endpoint) {
-    return "$baseUrl$endpoint";
+    return endpoint.startsWith('/') ? "$baseUrl$endpoint" : "$baseUrl/$endpoint";
   }
 
-  // ==========================================
-  // AUTHENTIFICATION
-  // ==========================================
+  static Uri get loginUri => Uri.parse(_url('/auth/login'));
+
   static Future<Map<String, dynamic>?> login(String telephone, String pin) async {
     print("Tentative de connexion vers : $loginUri");
     try {
@@ -62,10 +66,6 @@ class ApiService {
       return cachedSession as Map<String, dynamic>?;
     }
   }
-
-  // ==========================================
-  // INSCRIPTION & MEMBRES
-  // ==========================================
 
   static Future<Map<String, dynamic>> register({
     required String phoneNumber,
@@ -97,7 +97,7 @@ class ApiService {
     }
   }
 
-  static Future<bool> inscrireMembre({
+  static Future<ApiResponse> inscrireMembre({
     required String nom,
     required String prenom,
     required int age,
@@ -108,7 +108,7 @@ class ApiService {
     required String quartier,
     required String avenue,
     required String maison,
-    required String pin, // 🟢 AJOUT : On exige le PIN
+    required String pin,
   }) async {
     String sexeCode = (sexe == 'Masculin') ? 'M' : 'F';
     final payload = {
@@ -117,7 +117,7 @@ class ApiService {
       "age": age,
       "sexe": sexeCode,
       "telephone": telephone,
-      "pin": pin, // 🟢 AJOUT : On l'ajoute aux données envoyées au serveur
+      "pin": pin,
       "cni": cni,
       "colline": colline,
       "quartier": quartier,
@@ -126,31 +126,49 @@ class ApiService {
       "created_at_offline": DateTime.now().toIso8601String()
     };
 
+    const endpoint = '/auth/inscription';
+
     try {
       final response = await _client.post(
-        Uri.parse(_url('/auth/inscription')),
+        Uri.parse(_url(endpoint)),
         headers: _headers,
         body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200 || response.statusCode == 201) return true;
+      debugPrint("STATUS API: ${response.statusCode}");
+      debugPrint("REPONSE API: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ApiResponse(success: true, message: 'Inscription réussie !');
+      } else {
+        Map<String, dynamic> data = {};
+        try {
+          data = jsonDecode(response.body);
+        } catch (_) {}
+
+        String errorDetails = data['detail'] ??
+            data['message'] ??
+            data['error'] ??
+            'Erreur serveur (${response.statusCode}) : ${response.body}';
+
+        return ApiResponse(success: false, message: errorDetails);
+      }
     } catch (e) {
-      print("Mode hors-ligne : Inscription mise en file d'attente.");
+      debugPrint("Mode hors-ligne : Inscription mise en file d'attente. Erreur: $e");
+      await LocalDatabase.addToSyncQueue(endpoint, 'POST', payload);
+      return ApiResponse(
+        success: true,
+        message: 'Mode hors-ligne : Inscription enregistrée localement.',
+      );
     }
-
-    await LocalDatabase.addToSyncQueue('/auth/inscription', 'POST', payload);
-    return true;
   }
 
-  // ==========================================
-  // CONSULTATIONS (GET - AVEC CACHE LOCAL)
-  // ==========================================
   static Future<Map<String, dynamic>?> getPortefeuille(dynamic membreId) async {
     final String cacheKey = 'portefeuille_$membreId';
     try {
       final int idConforme = int.parse(membreId.toString());
       final response = await _client.get(
-        Uri.parse('$baseUrl/membres/$idConforme/portefeuille'),
+        Uri.parse(_url('/membres/$idConforme/portefeuille/')),
         headers: _headers,
       ).timeout(const Duration(seconds: 5));
 
@@ -169,7 +187,8 @@ class ApiService {
     final String cacheKey = 'dashboard_$membreId';
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/membres/$membreId/dashboard'),
+        Uri.parse(_url('/membres/$membreId/dashboard')),
+        headers: _headers,
       ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
@@ -187,7 +206,7 @@ class ApiService {
     final String cacheKey = 'profil_$membreId';
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/membres/$membreId/profil-complet'),
+        Uri.parse(_url('/membres/$membreId/profil')),
         headers: _headers,
       ).timeout(const Duration(seconds: 5));
 
@@ -202,9 +221,26 @@ class ApiService {
     return await LocalDatabase.getCachedData(cacheKey) as Map<String, dynamic>?;
   }
 
-  // ==========================================
-  // CRÉDITS & PRÊTS
-  // ==========================================
+  static Future<bool> uploadRecu({
+    required int membreId,
+    required String filePath,
+    required String fileName,
+  }) async {
+    try {
+      var uri = Uri.parse(_url('/membres/$membreId/upload-recu/'));
+      var request = http.MultipartRequest('POST', uri);
+      request.files.add(
+        await http.MultipartFile.fromPath('recu', filePath, filename: fileName),
+      );
+      var streamedResponse = await _client.send(request).timeout(const Duration(seconds: 30));
+      var response = await http.Response.fromStream(streamedResponse);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint("Erreur lors de l'upload du reçu : $e");
+      return false;
+    }
+  }
+
   static Future<bool> demanderCredit({
     required int membreId,
     required int montant,
@@ -221,7 +257,7 @@ class ApiService {
 
     try {
       final response = await _client.post(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(_url(endpoint)),
         headers: _headers,
         body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 5));
@@ -249,7 +285,7 @@ class ApiService {
 
     try {
       final response = await _client.post(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(_url(endpoint)),
         headers: _headers,
         body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 5));
@@ -267,7 +303,7 @@ class ApiService {
     final String cacheKey = 'demandes_prets_$membreId';
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/membres/$membreId/mes-demandes-prets'),
+        Uri.parse(_url('/membres/$membreId/mes-demandes-prets')),
         headers: _headers,
       ).timeout(const Duration(seconds: 5));
 
@@ -293,7 +329,7 @@ class ApiService {
     final String cacheKey = 'historique_epargne_$membreId';
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/membres/$membreId/historique/'),
+        Uri.parse(_url('/membres/$membreId/historique')),
         headers: _headers
       ).timeout(const Duration(seconds: 5));
 
@@ -312,14 +348,11 @@ class ApiService {
     return cached is List ? cached : [];
   }
 
-  // ==========================================
-  // ADMINISTRATION (ADMIN / PRÉSIDENT)
-  // ==========================================
   static Future<List<dynamic>> getPretsEnAttente() async {
     final String cacheKey = 'prets_en_attente';
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/admin/prets-en-attente'),
+        Uri.parse(_url('/admin/prets-en-attente')),
         headers: _headers
       ).timeout(const Duration(seconds: 5));
 
@@ -339,7 +372,7 @@ class ApiService {
   }
 
   static Future<bool> validerPret(int idDemande, bool approuver, int adminId, String type) async {
-    final endpoint = "/admin/valider-demande";
+    const endpoint = "/admin/valider-demande";
     final payload = {
       "id": idDemande,
       "type": type,
@@ -350,7 +383,7 @@ class ApiService {
 
     try {
       final response = await _client.post(
-        Uri.parse("$baseUrl$endpoint"),
+        Uri.parse(_url(endpoint)),
         headers: _headers,
         body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 5));
@@ -364,11 +397,49 @@ class ApiService {
     return true;
   }
 
+  static Future<ApiResponse> validerPresenceQr({
+    required String qrToken,
+    required int adminId,
+  }) async {
+    const endpoint = '/admin/valider-presence-qr';
+    final payload = {
+      "qr_token": qrToken,
+      "admin_id": adminId,
+    };
+
+    try {
+      final response = await _client.post(
+        Uri.parse(_url(endpoint)),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ApiResponse(
+          success: true,
+          message: data['message'] ?? 'Présence enregistrée avec succès !',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: data['detail'] ?? data['message'] ?? 'QR code invalide ou expiré.',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Erreur réseau lors de la validation du QR code.',
+      );
+    }
+  }
+
   static Future<Map<String, dynamic>?> getRapportsGlobaux() async {
     final String cacheKey = 'rapports_globaux';
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/admin/rapports'),
+        Uri.parse(_url('/admin/rapports')),
         headers: _headers
       ).timeout(const Duration(seconds: 5));
 
@@ -388,7 +459,7 @@ class ApiService {
     final String cacheKey = 'credits_en_retard';
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/admin/credits-en-retard'),
+        Uri.parse(_url('/admin/credits-en-retard')),
         headers: _headers
       ).timeout(const Duration(seconds: 5));
 
@@ -410,7 +481,7 @@ class ApiService {
   static Future<bool> appliquerPenalite(int creditId, double taux, int adminId, int moisRetard) async {
     final endpoint = '/api/credits/$creditId/appliquer-penalite';
     final payload = {
-      "taux_penalite_mensuel": taux,
+      "tau_penalite_mensuel": taux,
       "admin_id": adminId,
       "mois_retard": moisRetard,
       "applied_at_offline": DateTime.now().toIso8601String()
@@ -418,7 +489,7 @@ class ApiService {
 
     try {
       final response = await _client.post(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(_url(endpoint)),
         headers: _headers,
         body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 5));
@@ -432,9 +503,6 @@ class ApiService {
     return true;
   }
 
-  // ==========================================
-  // MOTEUR DE SYNCHRONISATION
-  // ==========================================
   static Future<int> syncPendingRequests() async {
     final pendingQueue = await LocalDatabase.getPendingSyncQueue();
     if (pendingQueue.isEmpty) return 0;
@@ -450,7 +518,7 @@ class ApiService {
 
       try {
         http.Response response;
-        final uri = Uri.parse('$baseUrl$endpoint');
+        final uri = Uri.parse(_url(endpoint));
 
         if (method == 'POST') {
           response = await _client.post(uri, headers: _headers, body: jsonEncode(payload));
