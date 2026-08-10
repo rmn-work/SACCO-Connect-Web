@@ -52,7 +52,6 @@ if database_url:
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-    # Ajout automatique du paramètre SSL indispensable pour Render si absent
     if "render.com" in database_url and "?" not in database_url:
         database_url += "?sslmode=require"
 
@@ -69,7 +68,6 @@ else:
     db_conn_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
     print("⚠️ DATABASE_URL non trouvée, API en mode local.")
 
-# Déclaration globale explicite
 db_pool = None
 
 try:
@@ -138,7 +136,6 @@ class LoginRequest(BaseModel):
     pin: str
 
 
-# Nouveau modèle pour valider les données envoyées par Flutter
 class InscriptionSchema(BaseModel):
     nom: str
     prenom: str
@@ -227,8 +224,6 @@ def log_audit_api(user: str, action: str, details: str):
     finally:
         cursor.close()
         db_pool.putconn(conn)
-
-
 
 
 @app.on_event("shutdown")
@@ -354,20 +349,7 @@ async def privacy_policy():
     <body>
         <h1>Politique de confidentialité de Sacco Connect</h1>
         <p>Dernière mise à jour : Juillet 2026</p>
-
-        <p>L'application <strong>Sacco Connect</strong> accorde une grande importance à la protection de vos données personnelles. Cette politique de confidentialité explique quelles informations nous collectons et comment nous les utilisons.</p>
-
-        <h2>1. Données collectées</h2>
-        <p>Nous collectons uniquement les informations nécessaires au fonctionnement de votre compte de coopérative (numéro de téléphone, identifiants de connexion sécurisés et données de transactions).</p>
-
-        <h2>2. Utilisation des données</h2>
-        <p>Vos données sont exclusivement utilisées pour l'authentification sécurisée sur l'application et la gestion de vos services financiers au sein de la coopérative.</p>
-
-        <h2>3. Sécurité</h2>
-        <p>Toutes les communications entre l'application mobile et notre serveur sur Render sont chiffrées via HTTPS. Les mots de passe et données sensibles font l'objet d'un hachage sécurisé (Bcrypt).</p>
-
-        <h2>4. Contact</h2>
-        <p>Pour toute question concernant vos données, vous pouvez contacter l'administrateur de votre Sacco.</p>
+        <p>L'application <strong>Sacco Connect</strong> accorde une grande importance à la protection de vos données personnelles.</p>
     </body>
     </html>
     """
@@ -388,22 +370,7 @@ async def delete_account_instructions():
     </head>
     <body>
         <h1>Suppression de compte et de données - Sacco Connect</h1>
-        <p>Dernière mise à jour : Juillet 2026</p>
-
-        <p>Si vous souhaitez supprimer votre compte ainsi que les données associées au sein de l'application <strong>Sacco Connect</strong>, veuillez suivre la procédure ci-dessous :</p>
-
-        <h2>Procédure de suppression :</h2>
-        <ol>
-            <li>Contactez l'administrateur ou le bureau exécutif de votre coopérative (SACCO).</li>
-            <li>Fournissez votre numéro de téléphone enregistré pour authentifier votre demande.</li>
-            <li>L'administrateur procédera à la désactivation de votre profil dans le système.</li>
-        </ol>
-
-        <h2>Données conservées :</h2>
-        <p>Les données liées aux transactions financières et aux historiques d'épargne peuvent être conservées conformément aux exigences légales et aux statuts de la coopérative.</p>
-
-        <h2>Contact</h2>
-        <p>Pour toute assistance, rapprochez-vous de l'administration de votre Sacco.</p>
+        <p>Contactez l'administrateur de votre coopérative pour toute demande de suppression.</p>
     </body>
     </html>
     """
@@ -438,13 +405,10 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_d
     return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
 
 
-# Déclaration de la route POST avec le slash final et intégration de la logique PostgreSQL
 @app.post("/auth/inscription/", status_code=status.HTTP_201_CREATED)
 def inscrire_membre(data: InscriptionSchema, cursor=Depends(get_db_cursor)):
     try:
-        # Hachage du PIN envoyé par Flutter avant insertion en base
         hash_pin = pwd_context.hash(data.pin)
-
         cursor.execute(
             """INSERT INTO membres (nom, prenom, age, sexe, telephone, cni, pin, role, is_active, colline, quartier, avenue, maison) 
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s, 1, %s, %s, %s, %s)""",
@@ -465,10 +429,9 @@ def get_membre_dashboard(
         current_user: dict = Depends(get_current_user),
         cursor=Depends(get_db_cursor)
 ):
-    if current_user['id'] != membre_id and current_user['role'] not in ['admin', 'admin_sys']:
-        raise HTTPException(status_code=403, detail="Accès non autorisé.")
+    target_id = current_user['id'] if current_user['role'] == 'membre' else membre_id
 
-    cursor.execute("SELECT * FROM membres WHERE id = %s", (membre_id,))
+    cursor.execute("SELECT * FROM membres WHERE id = %s", (target_id,))
     membre = cursor.fetchone()
 
     if not membre:
@@ -479,7 +442,7 @@ def get_membre_dashboard(
         FROM membres m
         JOIN groupes g ON m.groupe_id = g.id
         WHERE m.id = %s
-    """, (membre_id,))
+    """, (target_id,))
     groupe_data = cursor.fetchone()
 
     return {
@@ -488,6 +451,7 @@ def get_membre_dashboard(
         "cotisation_hebdo_fixee": groupe_data['montant_hebdo'] if groupe_data else 0,
         "devise": "BIF"
     }
+
 
 @app.get('/membres/{membre_id}/previsions-ia')
 def get_previsions_ia(
@@ -507,7 +471,6 @@ def get_previsions_ia(
         "SELECT status FROM presences WHERE membre_id = %s ORDER BY id DESC LIMIT 10",
         (membre_id,)
     )
-
     presences = cursor.fetchall()
     total_reunions = len(presences)
     jours_presents = sum(1 for p in presences if p['status'] == 'P')
@@ -542,8 +505,7 @@ def get_previsions_ia(
     capacite_reelle_estimee = (capacite_theorique * taux_presence) - credit_restant
     capacite_reelle_estimee = max(0.0, capacite_reelle_estimee)
 
-    score_endettement = 50 if capacite_theorique == 0 else (1 - min(1.0,
-                                                                    credit_restant / max(1.0, capacite_theorique))) * 50
+    score_endettement = 50 if capacite_theorique == 0 else (1 - min(1.0, credit_restant / max(1.0, capacite_theorique))) * 50
     score_sante = (taux_presence * 50) + score_endettement
 
     return {
@@ -554,9 +516,11 @@ def get_previsions_ia(
         "devise": "BIF"
     }
 
+
 @app.post("/upload-pdf/")
 async def upload_pdf(file: UploadFile = File(...)):
     return {"filename": file.filename}
+
 
 @app.get('/membres/{membre_id}/historique/')
 def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
@@ -568,6 +532,52 @@ def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
     """
     cursor.execute(query, (membre_id,))
     return cursor.fetchall()
+
+@app.get('/membres/{membre_id}/profil')
+def get_membre_profil(
+    membre_id: int,
+    current_user: dict = Depends(get_current_user),
+    cursor=Depends(get_db_cursor)
+):
+    target_id = current_user['id'] if current_user['role'] == 'membre' else membre_id
+
+    cursor.execute("SELECT * FROM membres WHERE id = %s", (target_id,))
+    membre = cursor.fetchone()
+
+    if not membre:
+        raise HTTPException(status_code=404, detail="Membre introuvable.")
+
+    groupe_info = {}
+    if membre.get('groupe_id'):
+        cursor.execute("""
+            SELECT g.id as groupe_id, g.nom_groupe, 
+                   p.nom as president_nom, p.prenom as president_prenom,
+                   s.nom as secretaire_nom, s.prenom as secretaire_prenom
+            FROM groupes g
+            LEFT JOIN membres p ON g.president_id = p.id
+            LEFT JOIN membres s ON g.secretaire_id = s.id
+            WHERE g.id = %s
+        """, (membre['groupe_id'],))
+        groupe_info = cursor.fetchone() or {}
+
+    return {
+        "id": membre.get("id"),
+        "nom": membre.get("nom", ""),
+        "prenom": membre.get("prenom", ""),
+        "age": membre.get("age"),
+        "sexe": membre.get("sexe"),
+        "telephone": membre.get("telephone", ""),
+        "cni": membre.get("cni", ""),
+        "colline": membre.get("colline", ""),
+        "quartier": membre.get("quartier", ""),
+        "avenue": membre.get("avenue", ""),
+        "maison": membre.get("maison", ""),
+        "role": membre.get("role", "MEMBRE"),
+        "groupe_id": membre.get("groupe_id"),
+        "last_login": membre.get("last_login") or "Première session",
+        "groupe": groupe_info
+    }
+
 
 @app.post('/membres/{membre_id}/demande-sociale')
 def create_demande_sociale(membre_id: int, data: DemandeSocialeInput, cursor=Depends(get_db_cursor)):
@@ -583,11 +593,13 @@ def create_demande_sociale(membre_id: int, data: DemandeSocialeInput, cursor=Dep
     )
     return {"status": "success", "message": "✅ Demande de secours social envoyée."}
 
+
 @app.get('/membres/{membre_id}/mes-demandes-prets')
 def get_mes_demandes_prets(membre_id: int, cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT id, montant, motif, status, date_demande FROM prets WHERE membre_id = %s ORDER BY id DESC",
                    (membre_id,))
     return {"data": cursor.fetchall()}
+
 
 @app.post('/membres/{membre_id}/demande-credit')
 def create_demande_credit(membre_id: int, data: DemandePretInput, cursor=Depends(get_db_cursor)):
@@ -607,6 +619,7 @@ def create_demande_credit(membre_id: int, data: DemandePretInput, cursor=Depends
          data.taux_interet_applique)
     )
     return {"status": "success", "message": "✅ Demande transmise avec taux personnalisé."}
+
 
 @app.post("/api/credits/{credit_id}/appliquer-penalite")
 def appliquer_penalite(credit_id: int, payload: PenaliteSchema, cursor=Depends(get_db_cursor)):
@@ -628,6 +641,7 @@ def appliquer_penalite(credit_id: int, payload: PenaliteSchema, cursor=Depends(g
 
     return {"status": "success", "message": f"Pénalité de {penalite_totale} BIF appliquée."}
 
+
 @app.get("/membres/actifs/{groupe_id}")
 def get_active_members(groupe_id: int, role: str = Query(...), cursor=Depends(get_db_cursor)):
     if role == "admin_sys":
@@ -637,6 +651,7 @@ def get_active_members(groupe_id: int, role: str = Query(...), cursor=Depends(ge
             "SELECT id, nom, prenom, telephone, solde_epargne, solde_pret FROM membres WHERE groupe_id = %s AND is_active = 1",
             (groupe_id,))
     return cursor.fetchall()
+
 
 @app.get("/groupes/{group_id}/membres-formater")
 def get_membres_groupe_pour_flutter(group_id: int, cursor=Depends(get_db_cursor)):
@@ -651,6 +666,7 @@ def get_membres_groupe_pour_flutter(group_id: int, cursor=Depends(get_db_cursor)
         "caisse": 0.0,
         "amende": False
     } for row in rows]
+
 
 @app.post('/groupes/{groupe_id}/saisie-hebdo')
 def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=Depends(get_db_cursor)):
@@ -680,6 +696,7 @@ def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=
 
     return {"status": "success", "message": "✅ Réunion et saisies enregistrées avec succès !"}
 
+
 @app.get('/admin/prets-en-attente')
 def get_prets_en_attente(cursor=Depends(get_db_cursor)):
     query = """
@@ -700,6 +717,7 @@ def get_prets_en_attente(cursor=Depends(get_db_cursor)):
         row['telephone'] = membre['telephone'] if membre else ""
 
     return {"status": "success", "data": data}
+
 
 @app.post('/admin/valider-demande')
 def valider_demande(payload: dict, cursor=Depends(get_db_cursor)):
@@ -737,6 +755,7 @@ def valider_demande(payload: dict, cursor=Depends(get_db_cursor)):
 
     return {"status": "success", "message": f"Demande {statut} avec succès."}
 
+
 @app.get('/admin/rapports')
 def get_rapports_globaux(cursor=Depends(get_db_cursor)):
     cursor.execute("""
@@ -754,6 +773,7 @@ def get_rapports_globaux(cursor=Depends(get_db_cursor)):
         }
     }
 
+
 @app.get('/admin/credits-en-retard')
 def get_credits_retard(cursor=Depends(get_db_cursor)):
     cursor.execute("""
@@ -770,6 +790,7 @@ def get_credits_retard(cursor=Depends(get_db_cursor)):
         "mois_retard": 1
     } for p in cursor.fetchall()]}
 
+
 @app.put('/groupes/{groupe_id}/modifier-cotisation')
 def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest, cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT role, groupe_id FROM membres WHERE id = %s", (payload.admin_id,))
@@ -783,6 +804,7 @@ def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest,
         raise HTTPException(status_code=400, detail="❌ Le montant ne peut pas être négatif.")
     cursor.execute("UPDATE groupes SET montant_hebdo = %s WHERE id = %s", (payload.nouveau_montant, groupe_id))
     return {"status": "success", "message": f"✅ Cotisation du groupe mise à jour à {payload.nouveau_montant} BIF"}
+
 
 if __name__ == "__main__":
     import uvicorn
