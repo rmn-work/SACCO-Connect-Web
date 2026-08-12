@@ -1,6 +1,6 @@
 import os
 import hashlib
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 import pytz
 import requests
 from bs4 import BeautifulSoup
@@ -20,28 +20,38 @@ from typing import List, Dict, Optional
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from datetime import timedelta
 
 load_dotenv()
 
 SECRET_KEY = os.getenv("JWT_SECRET", "une_cle_tres_longue_et_secrete_a_changer_en_production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 register_adapter(AsIs, AsIs)
 
+
 app = FastAPI(
     title="SACCO Connect Burundi",
     description="Back-end unifié pour l'application mobile et l'interface de la SACCO FinTech",
-    version="1.1.0"
+    version="1.1.0",
+    redirect_slashes=False
 )
 
-origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
-origins = [origin.strip() for origin in origins_str.split(",")]
+origins_str = os.getenv("ALLOWED_ORIGINS", "*")
+if origins_str == "*":
+    origins = ["*"]
+else:
+    origins = [origin.strip() for origin in origins_str.split(",") if origin.strip()]
 
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"],
-                   allow_headers=["*"], )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ==========================================
 # CONFIGURATION ET POOL DE CONNEXIONS POSTGRESQL
@@ -52,8 +62,8 @@ if database_url:
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-    if "render.com" in database_url and "?" not in database_url:
-        database_url += "?sslmode=require"
+    if "render.com" in database_url and "sslmode" not in database_url:
+        database_url += "?sslmode=require" if "?" not in database_url else "&sslmode=require"
 
     db_conn_string = database_url
     print("🌍 API connectée à la base de données distante (Render).")
@@ -73,13 +83,14 @@ db_pool = None
 try:
     db_pool = pool.ThreadedConnectionPool(
         minconn=1,
-        maxconn=10,
+        maxconn=20,
         dsn=db_conn_string
     )
     if db_pool:
         print("✅ Pool de connexions PostgreSQL créé avec succès.")
 except Exception as e:
     print(f"❌ Erreur critique lors de la création du pool de connexions : {e}")
+
 
 if not os.path.exists("./static/documents"):
     os.makedirs("./static/documents", exist_ok=True)
@@ -95,15 +106,15 @@ def get_db_cursor():
         )
 
     conn = db_pool.getconn()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
     try:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         yield cursor
         conn.commit()
+        cursor.close()
     except Exception:
         conn.rollback()
         raise
     finally:
-        cursor.close()
         db_pool.putconn(conn)
 
 
@@ -111,8 +122,7 @@ def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_cursor)):
@@ -170,7 +180,7 @@ class MembreUpdate(BaseModel):
 
 class MembreSaisieInput(BaseModel):
     membre_id: int
-    presence: str  # "P" ou "A"
+    presence: str  # "P", "A" ou "E"
     epargne: float
     caisse_sociale: float
     amende: bool
@@ -211,18 +221,20 @@ class CotisationUpdateRequest(BaseModel):
 
 
 def log_audit_api(user: str, action: str, details: str):
+    if db_pool is None:
+        return
     conn = db_pool.getconn()
-    cursor = conn.cursor()
     try:
+        cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO logs (utilisateur, action, details, date) VALUES (%s, %s, %s, %s)",
             (user, action, details, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         )
         conn.commit()
+        cursor.close()
     except Exception as e:
         print(f"⚠️ Échec du log d'audit : {e}")
     finally:
-        cursor.close()
         db_pool.putconn(conn)
 
 
@@ -240,7 +252,6 @@ def shutdown_db_pool():
 @app.on_event("startup")
 def startup_db_setup():
     print("🚀 Initialisation de la base de données PostgreSQL (init_db)...")
-
     try:
         local_conn = psycopg2.connect(db_conn_string)
         cursor = local_conn.cursor()
@@ -291,21 +302,16 @@ def startup_db_setup():
 
         cursor.execute("SELECT COUNT(*) FROM groupes WHERE id = 1")
         if cursor.fetchone()[0] == 0:
-            cursor.execute(
-                "INSERT INTO groupes (id, nom_groupe, montant_hebdo, is_active) VALUES (1, 'Groupe Alpha', 5000, 1)")
+            cursor.execute("INSERT INTO groupes (id, nom_groupe, montant_hebdo, is_active) VALUES (1, 'Groupe Alpha', 5000, 1)")
 
         pin_standard_hash = pwd_context.hash("1234")
         pin_admin_hash = pwd_context.hash("SACCO_Bujumbura-BBIN")
 
         comptes_init = [
-            {"nom": "ADMIN", "prenom": "Système", "telephone": "admin", "role": "admin_sys", "pin": pin_admin_hash,
-             "groupe_id": None},
-            {"nom": "MEMBRE", "prenom": "Raphael", "telephone": "0000", "role": "membre", "pin": pin_standard_hash,
-             "groupe_id": 1},
-            {"nom": "PRÉSIDENT", "prenom": "Bureau", "telephone": "1111", "role": "president", "pin": pin_standard_hash,
-             "groupe_id": 1},
-            {"nom": "SECRÉTAIRE", "prenom": "Bureau", "telephone": "2222", "role": "secretaire",
-             "pin": pin_standard_hash, "groupe_id": 1}
+            {"nom": "ADMIN", "prenom": "Système", "telephone": "admin", "role": "admin_sys", "pin": pin_admin_hash, "groupe_id": None},
+            {"nom": "MEMBRE", "prenom": "Raphael", "telephone": "0000", "role": "membre", "pin": pin_standard_hash, "groupe_id": 1},
+            {"nom": "PRÉSIDENT", "prenom": "Bureau", "telephone": "1111", "role": "president", "pin": pin_standard_hash, "groupe_id": 1},
+            {"nom": "SECRÉTAIRE", "prenom": "Bureau", "telephone": "2222", "role": "secretaire", "pin": pin_standard_hash, "groupe_id": 1}
         ]
 
         for c in comptes_init:
@@ -319,7 +325,7 @@ def startup_db_setup():
         local_conn.commit()
         cursor.close()
         local_conn.close()
-        print("✅ Base de données initialisée avec succès (Bcrypt mobile).")
+        print("✅ Base de données initialisée avec succès.")
     except Exception as e:
         print(f"❌ Erreur critique lors de l'initialisation de la base : {e}")
 
@@ -348,7 +354,7 @@ async def privacy_policy():
     </head>
     <body>
         <h1>Politique de confidentialité de Sacco Connect</h1>
-        <p>Dernière mise à jour : Juillet 2026</p>
+        <p>Dernière mise à jour : Août 2026</p>
         <p>L'application <strong>Sacco Connect</strong> accorde une grande importance à la protection de vos données personnelles.</p>
     </body>
     </html>
@@ -370,7 +376,7 @@ async def delete_account_instructions():
     </head>
     <body>
         <h1>Suppression de compte et de données - Sacco Connect</h1>
-        <p>Contactez l'administrateur de votre coopérative pour toute demande de suppression.</p>
+        <p>Contactez l'administrateur de votre coopérative pour toute demande de suppression de compte.</p>
     </body>
     </html>
     """
@@ -405,7 +411,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_d
     return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
 
 
-@app.post("/auth/inscription/", status_code=status.HTTP_201_CREATED)
+@app.post("/auth/inscription", status_code=status.HTTP_201_CREATED)
 def inscrire_membre(data: InscriptionSchema, cursor=Depends(get_db_cursor)):
     try:
         hash_pin = pwd_context.hash(data.pin)
@@ -517,12 +523,12 @@ def get_previsions_ia(
     }
 
 
-@app.post("/upload-pdf/")
+@app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
     return {"filename": file.filename}
 
 
-@app.get('/membres/{membre_id}/historique/')
+@app.get('/membres/{membre_id}/historique')
 def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
     query = """
         SELECT date_reunion, heure_enregistrement, montant_epargne, montant_social 
@@ -532,6 +538,7 @@ def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
     """
     cursor.execute(query, (membre_id,))
     return cursor.fetchall()
+
 
 @app.get('/membres/{membre_id}/profil')
 def get_membre_profil(
@@ -674,6 +681,7 @@ def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=
     groupe = cursor.fetchone()
     taux_amende = groupe.get('taux_amende', 0) if groupe else 0
     heure_actuelle = datetime.now().strftime("%H:%M:%S")
+
     for saisie in data.enregistrements:
         amende_appliquee = taux_amende if saisie.amende else 0
         final_epargne = max(0, float(saisie.epargne - amende_appliquee))
@@ -709,6 +717,7 @@ def get_prets_en_attente(cursor=Depends(get_db_cursor)):
     """
     cursor.execute(query)
     data = cursor.fetchall()
+
     for row in data:
         cursor.execute("SELECT nom, prenom, telephone FROM membres WHERE id = %s", (row['membre_id'],))
         membre = cursor.fetchone()
@@ -718,57 +727,70 @@ def get_prets_en_attente(cursor=Depends(get_db_cursor)):
 
     return {"status": "success", "data": data}
 
+class ValiderDemandeInput(BaseModel):
+    admin_id: int
+    id: int
+    type: str
+    approuver: bool
 
 @app.post('/admin/valider-demande')
-def valider_demande(payload: dict, cursor=Depends(get_db_cursor)):
-    admin_id = payload.get('admin_id')
-    cursor.execute("SELECT role FROM membres WHERE id = %s", (admin_id,))
+def valider_demande(payload: ValiderDemandeInput, cursor=Depends(get_db_cursor)):
+
+    cursor.execute("SELECT role FROM membres WHERE id = %s", (payload.admin_id,))
     admin = cursor.fetchone()
     if not admin or admin['role'].lower() not in ["president", "secretaire", "admin", "admin_sys"]:
         raise HTTPException(status_code=403, detail="Non autorisé.")
-    id_demande = payload.get('id')
-    type_demande = payload.get('type')  # 'CREDIT' ou 'SOCIAL'
-    approuver = payload.get('approuver')
-    table = "prets" if type_demande == "CREDIT" else "demandes_sociales"
-    statut = "APPROUVÉ" if approuver else "REJETÉ"
+
+    table = "prets" if payload.type == "CREDIT" else "demandes_sociales"
+    statut = "APPROUVÉ" if payload.approuver else "REJETÉ"
     date_validation = datetime.now().strftime("%Y-%m-%d")
-    if type_demande == "CREDIT":
+
+    if payload.type == "CREDIT":
         cursor.execute(
             f"UPDATE {table} SET status = %s, date_validation = %s WHERE id = %s RETURNING membre_id, montant",
-            (statut, date_validation, id_demande))
+            (statut, date_validation, payload.id)
+        )
         pret = cursor.fetchone()
-        if approuver and pret:
+
+        if payload.approuver and pret:
             cursor.execute("""
                 UPDATE membres 
                 SET credit_en_cours = credit_en_cours + %s, 
                     credit_restant = credit_restant + %s 
                 WHERE id = %s
             """, (pret['montant'], pret['montant'], pret['membre_id']))
+
     else:
-        cursor.execute(f"UPDATE {table} SET status = %s WHERE id = %s", (statut, id_demande))
-        if approuver:
-            cursor.execute("SELECT membre_id, montant_demande FROM demandes_sociales WHERE id = %s", (id_demande,))
+        cursor.execute(f"UPDATE {table} SET status = %s WHERE id = %s", (statut, payload.id))
+
+        if payload.approuver:
+            cursor.execute("SELECT membre_id, montant_demande FROM demandes_sociales WHERE id = %s", (payload.id,))
             demande = cursor.fetchone()
             if demande:
-                cursor.execute("UPDATE membres SET caisse_sociale = caisse_sociale - %s WHERE id = %s",
-                               (demande['montant_demande'], demande['membre_id']))
+                cursor.execute(
+                    "UPDATE membres SET caisse_sociale = caisse_sociale - %s WHERE id = %s",
+                    (demande['montant_demande'], demande['membre_id'])
+                )
 
-    return {"status": "success", "message": f"Demande {statut} avec succès."}
+    return {"status": "success", "message": f"Demande {statut.lower()} avec succès."}
 
 
 @app.get('/admin/rapports')
 def get_rapports_globaux(cursor=Depends(get_db_cursor)):
     cursor.execute("""
-        SELECT SUM(solde_epargne) as total_epargne, SUM(caisse_sociale) as total_social, SUM(credit_restant) as total_credits_actifs
+        SELECT SUM(solde_epargne) as total_epargne, 
+               SUM(caisse_sociale) as total_social, 
+               SUM(credit_restant) as total_credits_actifs
         FROM membres WHERE is_active = 1
     """)
     stats = cursor.fetchone()
+
     return {
         "status": "success",
         "data": {
-            "total_epargne": stats['total_epargne'] or 0.0,
-            "total_social": stats['total_social'] or 0.0,
-            "total_credits_actifs": stats['total_credits_actifs'] or 0.0,
+            "total_epargne": float(stats['total_epargne'] or 0.0),
+            "total_social": float(stats['total_social'] or 0.0),
+            "total_credits_actifs": float(stats['total_credits_actifs'] or 0.0),
             "penalites_percues": 0.0
         }
     }
@@ -782,30 +804,47 @@ def get_credits_retard(cursor=Depends(get_db_cursor)):
         JOIN membres m ON p.membre_id = m.id 
         WHERE p.status = 'APPROUVÉ' AND p.reste_a_payer > 0
     """)
-    return {"status": "success", "data": [{
-        "id": p['id'],
-        "membre": f"{p['nom']} {p['prenom']}",
-        "type": "Standard",
-        "credit_restant": p['reste_a_payer'],
-        "mois_retard": 1
-    } for p in cursor.fetchall()]}
+
+    return {
+        "status": "success",
+        "data": [
+            {
+                "id": p['id'],
+                "membre": f"{p['nom']} {p['prenom']}",
+                "type": "Standard",
+                "credit_restant": p['reste_a_payer'],
+                "mois_retard": 1
+            } for p in cursor.fetchall()
+        ]
+    }
 
 
 @app.put('/groupes/{groupe_id}/modifier-cotisation')
 def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest, cursor=Depends(get_db_cursor)):
     cursor.execute("SELECT role, groupe_id FROM membres WHERE id = %s", (payload.admin_id,))
     admin = cursor.fetchone()
+
     if not admin or admin['role'].lower() not in ['president', 'secretaire', 'admin', 'admin_sys']:
         raise HTTPException(status_code=403, detail="⚠️ Action non autorisée pour votre rôle.")
+
     if admin['role'].lower() not in ['admin', 'admin_sys'] and admin['groupe_id'] != groupe_id:
-        raise HTTPException(status_code=403,
-                            detail="❌ Vous ne pouvez modifier que la cotisation de votre propre groupe.")
+        raise HTTPException(
+            status_code=403,
+            detail="❌ Vous ne pouvez modifier que la cotisation de votre propre groupe."
+        )
+
     if payload.nouveau_montant < 0:
         raise HTTPException(status_code=400, detail="❌ Le montant ne peut pas être négatif.")
+
     cursor.execute("UPDATE groupes SET montant_hebdo = %s WHERE id = %s", (payload.nouveau_montant, groupe_id))
+
     return {"status": "success", "message": f"✅ Cotisation du groupe mise à jour à {payload.nouveau_montant} BIF"}
 
 
+# ==========================================
+# LANCEMENT DE L'APPLICATION
+# ==========================================
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=True)
