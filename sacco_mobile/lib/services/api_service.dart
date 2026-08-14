@@ -39,18 +39,22 @@ class ApiService {
 
   static Uri get loginUri => Uri.parse(_url('/auth/login'));
 
+  // ==========================================
+  // METHODE LOGIN MISE A JOUR (x-www-form-urlencoded)
+  // ==========================================
   static Future<Map<String, dynamic>?> login(String telephone, String pin) async {
     print("Tentative de connexion vers : $loginUri");
     try {
       final response = await http.post(
         loginUri,
         headers: {
+          // 👈 INDISPENSABLE pour FastAPI OAuth2PasswordRequestForm
           "Content-Type": "application/x-www-form-urlencoded",
           "Accept": "application/json",
         },
         body: {
-          "username": telephone,
-          "password": pin,
+          "username": telephone, // Transmet le téléphone sous la clé 'username'
+          "password": pin,       // Transmet le PIN sous la clé 'password'
         },
       ).timeout(const Duration(seconds: 60));
 
@@ -58,8 +62,10 @@ class ApiService {
         final data = jsonDecode(response.body);
         await LocalDatabase.cacheData('user_session', data);
         return data;
+      } else {
+        debugPrint("Erreur de connexion : Code ${response.statusCode} - ${response.body}");
+        return null;
       }
-      return null;
     } catch (e) {
       print("Erreur réseau, chargement de la session locale: $e");
       final cachedSession = await LocalDatabase.getCachedData('user_session');
@@ -90,7 +96,10 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true, 'message': 'Compte créé avec succès !'};
       } else {
-        return {'success': false, 'message': data['message'] ?? 'Erreur lors de la création du compte.'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Erreur lors de la création du compte.'
+        };
       }
     } catch (e) {
       return {'success': false, 'message': 'Erreur réseau ou délai d\'attente dépassé.'};
@@ -481,7 +490,7 @@ class ApiService {
   static Future<bool> appliquerPenalite(int creditId, double taux, int adminId, int moisRetard) async {
     final endpoint = '/api/credits/$creditId/appliquer-penalite';
     final payload = {
-      "tau_penalite_mensuel": taux,
+      "taux_penalite_mensuel": taux, // Correction de l'orthographe par précaution
       "admin_id": adminId,
       "mois_retard": moisRetard,
       "applied_at_offline": DateTime.now().toIso8601String()
