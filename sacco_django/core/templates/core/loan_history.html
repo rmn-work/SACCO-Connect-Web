@@ -1,0 +1,64 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Historique et Suivi des Prêts</h1>
+
+        <!-- Formulaire de filtrage -->
+        <div class="flex flex-wrap items-center gap-2 mb-6 text-sm">
+            <span class="text-gray-500 font-medium mr-2">Filtrer par :</span>
+            <a href="?" class="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">Tous</a>
+            <a href="?status=EN_ATTENTE" class="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">En attente</a>
+            <a href="?status=APPROUVE" class="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">Approuvé</a>
+            <a href="?status=REJETE" class="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">Rejeté</a>
+        </div>
+
+        <!-- Boutons d'exportation avec conservation des filtres -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <a href="{% url 'export_loans_csv' %}?{{ request.GET.urlencode }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export CSV</a>
+            <a href="{% url 'export_loans_excel' %}?{{ request.GET.urlencode }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export Excel</a>
+            <a href="{% url 'export_loans_pdf' %}?{{ request.GET.urlencode }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export PDF</a>
+        </div>
+
+        <!-- Tableau des prêts -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 text-xs font-semibold uppercase tracking-wider">
+                        <th class="p-3 rounded-tl-lg">Membre</th>
+                        <th class="p-3">Montant</th>
+                        <th class="p-3">Progression / Statut</th>
+                        <th class="p-3 rounded-tr-lg text-right">Détails</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                    {% for loan in loans %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-3 font-medium text-gray-800">{{ loan.membre.nom }} {{ loan.membre.prenom }}</td>
+                        <td class="p-3 font-bold text-gray-900">{{ loan.montant }} BIF</td>
+                        <td class="p-3">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1 max-w-xs">
+                                {% with progress=loan.get_progress_percent|default:0 %}
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ progress }}%"></div>
+                                {% endwith %}
+                            </div>
+                            <span class="text-xs text-gray-500">Statut : <strong>{{ loan.get_statut_display }}</strong></span>
+                        </td>
+                        <td class="p-3 text-right">
+                            <!-- Optionnel : Lien vers le détail du prêt -->
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                            Aucun prêt trouvé.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

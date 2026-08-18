@@ -1,0 +1,45 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+    <!-- En-tête de la page -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Demander un nouveau prêt</h1>
+        <p class="text-sm text-gray-500 mt-1">Remplissez les informations ci-dessous pour soumettre votre demande de crédit.</p>
+    </div>
+
+    <!-- Formulaire en carte -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
+                <a href="{% url 'dashboard' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-medium transition">
+                    Annuler
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                    Soumettre la demande
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="flex justify-end">
+        <a href="{% url 'dashboard' %}" class="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+            Retour au Tableau de bord
+        </a>
+    </div>
+
+</div>
+{% endblock %}

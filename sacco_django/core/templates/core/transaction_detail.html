@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détails de la Transaction - SaccoFINtech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 class="text-2xl font-bold text-gray-800">Détails de la Transaction</h1>
+            <span class="px-3 py-1 text-sm font-semibold rounded-full
+                {% if transaction.statut == 'ACTIF' %} bg-green-100 text-green-800
+                {% else %} bg-gray-100 text-gray-800 {% endif %}">
+                {{ transaction.statut }}
+            </span>
+        </div>
+
+        <div class="space-y-4 text-gray-700">
+            <div class="flex justify-between border-b pb-2">
+                <span class="font-semibold">ID Transaction :</span>
+                <span>#{{ transaction.id }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="font-semibold">Date et Heure :</span>
+                <span>{{ transaction.date_transaction|date:"d/m/Y à H:i" }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="font-semibold">Membre concerné :</span>
+                <span class="text-blue-600 font-medium">{{ transaction.membre.nom }} {{ transaction.membre.prenom }} (Tél: {{ transaction.membre.telephone }})</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="font-semibold">Type d'opération :</span>
+                <span class="font-bold">{{ transaction.type_operation }}</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+                <span class="font-semibold">Montant :</span>
+                <span class="text-lg font-bold text-gray-900">{{ transaction.montant }} BIF</span>
+            </div>
+            <div>
+                <span class="font-semibold block mb-1">Description / Notes :</span>
+                <p class="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
+                    {{ transaction.description|default:"Aucune description fournie pour cette transaction." }}
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-between items-center">
+            <a href="javascript:history.back()" class="text-sm text-gray-600 hover:underline">← Retour</a>
+
+            <div class="space-x-2">
+                <!-- Bouton Modifier -->
+                <a href="{% url 'edit_transaction' transaction.id %}" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                    ✏️ Modifier
+                </a>
+                <!-- Bouton d'export PDF -->
+                <a href="{% url 'export_transaction_pdf' transaction.id %}" class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                    📄 Télécharger en PDF
+                </a>
+                <a href="{% url 'filtered_transactions' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                    Voir toutes les transactions
+                </a>
+                <a href="{% url 'delete_transaction' transaction.id %}"nclass="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                    🗑️ Supprimer
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

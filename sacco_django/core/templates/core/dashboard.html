@@ -1,0 +1,298 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    
+    <!-- Widget Heure Burundi & Taux BRB (USD / EUR) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+        <!-- Bloc Heure en temps réel (Burundi) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Heure Locale (Burundi)</span>
+                    <div id="burundi-clock" class="text-lg font-bold text-gray-800">Chargement...</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="text-xs text-gray-500 font-medium" id="burundi-date">--/--/----</span>
+            </div>
+        </div>
+
+        <!-- Bloc Taux de Change Officiel BRB -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Taux BRB (Officiel)</span>
+                    <div class="flex items-center gap-4 mt-1">
+                        <span class="text-sm font-bold text-gray-800">USD: <span class="text-blue-600">{{ brb_rates.USD }}</span></span>
+                        <span class="text-sm font-bold text-gray-800">EUR: <span class="text-blue-600">{{ brb_rates.EUR }}</span></span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="https://www.brb.bi/affichagetoustauxchange" target="_blank" title="Voir sur le site de la BRB" class="text-xs text-blue-500 hover:underline">Source BRB ↗</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- En-tête de bienvenue -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Tableau de bord - Mon Compte</h1>
+        <p class="text-sm text-gray-500 mt-2">
+            Bienvenue, <span class="font-semibold text-blue-600">{{ membre.prenom|default:"SACCO" }} {{ membre.nom|default:"App" }}</span>
+            {% if membre.role %}| Rôle : <span class="uppercase font-medium text-blue-600">{{ membre.get_role_display|default:membre.role }}</span>{% endif %}
+        </p>
+        <p class="text-sm text-gray-500 mt-1">
+            Téléphone : {{ membre.telephone|default:"N/A" }} | Colline : {{ membre.colline|default:"N/A" }}
+        </p>
+    </div>
+
+    <!-- SECTION SUPPLÉMENTAIRE : Réservée au Président ou Secrétaire -->
+    {% if membre.role == 'president' or membre.role == 'secretaire' %}
+    <div class="bg-gradient-to-r from-slate-900 to-blue-900 text-white rounded-xl shadow-sm p-6 mb-6">
+        <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            Panneau de Gestion du Groupe ({{ membre.get_role_display|default:membre.role }})
+        </h2>
+        <p class="text-sm text-blue-200 mb-4">Accédez aux fonctions de supervision et de validation des opérations de vos membres.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'group_members_list' %}" class="bg-white/10 hover:bg-white/20 p-4 rounded-xl transition border border-white/10 flex justify-between items-center">
+                <div>
+                    <h3 class="font-semibold text-sm">Liste des membres du groupe</h3>
+                    <p class="text-xs text-blue-200 mt-0.5">Consulter les soldes et présences</p>
+                </div>
+                <span class="text-blue-300">→</span>
+            </a>
+
+            {% if membre.role == 'president' %}
+            <a href="{% url 'group_validate_loans' %}" class="bg-white/10 hover:bg-white/20 p-4 rounded-xl transition border border-white/10 flex justify-between items-center">
+                <div>
+                    <h3 class="font-semibold text-sm">Validation des Prêts</h3>
+                    <p class="text-xs text-blue-200 mt-0.5">Approuver ou rejeter les demandes de crédit</p>
+                </div>
+                <span class="text-blue-300">→</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Section: Situation Financière (Petits cadres individuels) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Situation Financière</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Solde Épargne</span>
+                <p class="text-xl font-bold text-gray-800 mt-1">{{ membre.solde_epargne|default:"0" }} BIF</p>
+            </div>
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Caisse Sociale</span>
+                <p class="text-xl font-bold text-gray-800 mt-1">{{ membre.caisse_sociale|default:"0" }} BIF</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Gestion des Crédits (Petits cadres individuels) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Gestion des Crédits</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="border border-orange-200 rounded-xl p-4 bg-orange-50">
+                <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit en cours</span>
+                <p class="text-xl font-bold text-orange-700 mt-1">{{ membre.credit_en_cours|default:"0" }} BIF</p>
+            </div>
+            <div class="border border-orange-200 rounded-xl p-4 bg-orange-50">
+                <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit remboursé</span>
+                <p class="text-xl font-bold text-orange-700 mt-1">{{ membre.credit_rembourse|default:"0" }} BIF</p>
+            </div>
+            <div class="border border-orange-200 rounded-xl p-4 bg-orange-50">
+                <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit Restant</span>
+                <p class="text-xl font-bold text-orange-700 mt-1">{{ membre.credit_restant|default:"0" }} BIF</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Simulateur de Remboursement -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Simulateur de Remboursement</h2>
+        <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
+            <form method="POST" class="flex flex-col sm:flex-row gap-4 items-end">
+                {% csrf_token %}
+                <div class="flex-1 w-full">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Durée (en mois) :</label>
+                    <input type="number" name="mois" value="6" min="1" max="36" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                </div>
+                <button type="submit" name="simulate" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition w-full sm:w-auto shadow-sm">
+                    Simuler
+                </button>
+            </form>
+
+            {% if simulation_result %}
+                <div class="mt-4 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                    <p class="text-sm text-gray-800">
+                        Pour votre crédit restant, sur <strong class="text-blue-700">{{ simulation_result.mois }} mois</strong> :<br>
+                        <span class="inline-block mt-1">• Mensualité estimée : <strong>{{ simulation_result.mensualite }} BIF</strong></span><br>
+                        <span class="inline-block mt-1">• Total estimé à rembourser : <strong>{{ simulation_result.total }} BIF</strong></span>
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section: Analyse Graphique -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Analyse Graphique des Transactions</h2>
+        <div class="h-64 w-full">
+            <canvas id="transactionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Section: Historique des Transactions -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Historique des Transactions</h2>
+
+        {% if transactions %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+                        <th class="py-3 px-4 rounded-tl-lg">Date</th>
+                        <th class="py-3 px-4">Type</th>
+                        <th class="py-3 px-4 rounded-tr-lg">Montant</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                    {% for t in transactions %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="py-3 px-4 text-gray-600">{{ t.date }}</td>
+                        <td class="py-3 px-4 font-medium text-gray-800">{{ t.type_transaction }}</td>
+                        <td class="py-3 px-4 font-bold text-gray-900">{{ t.montant }} BIF</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="border border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-500 text-sm bg-gray-50">
+            Aucune transaction récente enregistrée.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Section: Historique des Présences -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Historique des Présences</h2>
+
+        {% if presences %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+                        <th class="py-3 px-4 rounded-tl-lg">ID Réunion / Groupe</th>
+                        <th class="py-3 px-4 rounded-tr-lg">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                    {% for p in presences %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="py-3 px-4 text-gray-600">Groupe ID : {{ p.groupe_id }}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                {{ p.status_presence|default:"Enregistré" }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="border border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-500 text-sm bg-gray-50">
+            Aucun historique de présence trouvé pour le moment.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Bouton de retour -->
+    <div class="flex justify-end">
+        <a href="{% url 'dashboard' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+            Retour au Tableau de bord
+        </a>
+    </div>
+
+</div>
+
+<!-- Script JavaScript pour l'horloge en temps réel du Burundi -->
+<script>
+    function updateBurundiClock() {
+        const optionsTime = { timeZone: 'Africa/Bujumbura', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+        const optionsDate = { timeZone: 'Africa/Bujumbura', day: '2-digit', month: '2-digit', year: 'numeric' };
+
+        const now = new Date();
+        const timeString = new Intl.DateTimeFormat([], optionsTime).format(now);
+        const dateString = new Intl.DateTimeFormat([], optionsDate).format(now);
+
+        const clockElement = document.getElementById('burundi-clock');
+        const dateElement = document.getElementById('burundi-date');
+
+        if (clockElement) clockElement.innerText = timeString + " CAT";
+        if (dateElement) dateElement.innerText = dateString;
+    }
+
+    setInterval(updateBurundiClock, 1000);
+    updateBurundiClock();
+</script>
+
+<!-- Script Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('transactionChart');
+        if (ctx) {
+            const labels = JSON.parse('{{ chart_labels|safe|default:"[]" }}');
+            const data = JSON.parse('{{ chart_data|safe|default:"[]" }}');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Montant total par opération (BIF)',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.6)',   // Vert (Dépôt)
+                            'rgba(239, 68, 68, 0.6)',    // Rouge (Retrait)
+                            'rgba(234, 179, 8, 0.6)',    // Jaune (Pénalité)
+                            'rgba(59, 130, 246, 0.6)'    // Bleu (Crédit)
+                        ],
+                        borderColor: [
+                            'rgb(34, 197, 94)',
+                            'rgb(239, 68, 68)',
+                            'rgb(234, 179, 8)',
+                            'rgb(59, 130, 246)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

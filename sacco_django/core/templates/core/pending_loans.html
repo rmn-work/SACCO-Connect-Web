@@ -1,0 +1,81 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Validation des demandes de prêts</h1>
+                <p class="text-xs text-gray-500 mt-1">Groupe : <span class="font-semibold text-blue-600">{{ admin_membre.groupe.nom|default:"Mon Groupe" }}</span></p>
+            </div>
+            <a href="{% url 'dashboard' %}" class="text-sm text-blue-600 hover:underline font-medium">← Retour au tableau de bord</a>
+        </div>
+
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl text-sm {% if message.tags == 'success' %}bg-green-50 border border-green-200 text-green-700{% else %}bg-amber-50 border border-amber-200 text-amber-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if prets %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 text-xs font-semibold uppercase tracking-wider">
+                            <th class="p-3 rounded-tl-lg">ID</th>
+                            <th class="p-3">Membre</th>
+                            <th class="p-3">Montant demandé</th>
+                            <th class="p-3">Taux annuel</th>
+                            <th class="p-3">Durée</th>
+                            <th class="p-3">Total à rembourser</th>
+                            <th class="p-3 text-center rounded-tr-lg">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+                        {% for pret in prets %}
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-3 font-semibold text-gray-700">#{{ pret.id }}</td>
+                                <td class="p-3 text-blue-600 font-medium">{{ pret.membre.nom }} {{ pret.membre.prenom }}</td>
+                                <td class="p-3 font-bold text-gray-900">{{ pret.montant }} BIF</td>
+                                <td class="p-3 text-gray-600">{{ pret.taux_interet }}%</td>
+                                <td class="p-3 text-gray-600">{{ pret.duree_mois }} mois</td>
+                                <td class="p-3 text-gray-800 font-semibold">{{ pret.mont_total_a_rembourser|default:pret.montant_total_a_rembourser|floatformat:2 }} BIF</td>
+                                <td class="p-3 text-center">
+                                    <div class="inline-flex items-center space-x-2">
+                                        <a href="{% url 'update_loan_status' pret.id 'approuver' %}"
+                                           onclick="return confirm('Approuver ce prêt ?');"
+                                           class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">
+                                            Approuver
+                                        </a>
+                                        <a href="{% url 'update_loan_status' pret.id 'rejeter' %}"
+                                           onclick="return confirm('Rejeter cette demande ?');"
+                                           class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">
+                                            Rejeter
+                                        </a>
+                                    </div>
+                                    {% if pret.id %}
+                                        <div class="mt-2">
+                                            <a href="{% url 'generate_loan_contract' pret.id %}"
+                                               class="bg-gray-700 hover:bg-gray-800 text-white px-2.5 py-1 rounded-md text-[11px] font-medium shadow-sm inline-block transition">
+                                                📄 Imprimer Contrat
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="border border-dashed border-gray-200 rounded-xl p-12 text-center text-gray-500 text-sm bg-gray-50">
+                Aucune demande de prêt en attente de validation pour votre groupe.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Octroyer un Crédit - Sacco FinTech</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 400px; }
+        h2 { color: #2c3e50; margin-top: 0; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-submit { background-color: #e67e22; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        .btn-submit:hover { background-color: #d35400; }
+        .btn-cancel { display: block; text-align: center; margin-top: 15px; color: #7f8c8d; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Octroyer un Crédit</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+            Membre : <strong>{{ membre.prenom }} {{ membre.nom }}</strong><br>
+            <span style="font-size: 12px;">Crédit actuel : {{ membre.credit_en_cours|default:"0" }} BIF</span>
+        </p>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="montant_credit">Montant du prêt à accorder (BIF)</label>
+                <input type="number" id="montant_credit" name="montant_credit" min="1" step="any" required>
+            </div>
+
+            <button type="submit" class="btn-submit">Valider et enregistrer le prêt</button>
+            <a href="{% url 'member_detail' membre.id %}" class="btn-cancel">Annuler</a>
+        </form>
+    </div>
+
+</body>
+</html>

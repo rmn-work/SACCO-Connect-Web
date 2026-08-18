@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ajouter un Membre - Sacco FinTech</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 400px; }
+        h2 { color: #2c3e50; margin-top: 0; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-submit { background-color: #3498db; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        .btn-submit:hover { background-color: #2980b9; }
+        .btn-cancel { display: block; text-align: center; margin-top: 15px; color: #7f8c8d; text-decoration: none; font-size: 14px; }
+        .error { color: #e74c3c; font-size: 14px; text-align: center; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Inscrire un Nouveau Membre</h2>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="nom">Nom</label>
+                <input type="text" id="nom" name="nom" required placeholder="Ex: Nom">
+            </div>
+
+            <div class="form-group">
+                <label for="prenom">Prénom</label>
+                <input type="text" id="prenom" name="prenom" required placeholder="Ex: Prenom">
+            </div>
+
+            <div class="form-group">
+                <label for="telephone">Téléphone (Identifiant)</label>
+                <input type="text" id="telephone" name="telephone" required placeholder="Ex: 79123456">
+            </div>
+
+            <div class="form-group">
+                <label for="pin">Code PIN initial</label>
+                <input type="text" id="pin" name="pin" required placeholder="Ex: 1234">
+            </div>
+
+            <div class="form-group">
+                <label for="role">Rôle dans la Sacco</label>
+                <select name="role" id="role">
+                    <option value="membre">Membre classique</option>
+                    <option value="gestionnaire">Gestionnaire</option>
+                    <option value="admin">Administrateur</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-submit">Enregistrer le membre</button>
+            <a href="{% url 'manager_dashboard' %}" class="btn-cancel">Retour au tableau de bord</a>
+        </form>
+    </div>
+
+</body>
+</html>

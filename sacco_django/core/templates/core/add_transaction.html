@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ajouter une Transaction - SaccoFINtech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen m-0">
+
+    <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold mb-2 text-gray-800 text-center">Nouvelle Transaction</h2>
+
+        <p class="text-center text-gray-600 mb-6">
+            Membre : <strong class="text-gray-800">{{ membre.prenom }} {{ membre.nom }}</strong><br>
+            <span class="text-xs text-gray-500">ID: {{ membre.id }}</span>
+        </p>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded transition shadow">
+                Enregistrer la transaction
+            </button>
+        </form>
+
+        <div class="mt-4 text-center">
+            <a href="{% url 'manager_dashboard' %}" class="text-sm text-gray-500 hover:underline">Annuler et retourner au tableau de bord</a>
+        </div>
+    </div>
+
+</body>
+</html>

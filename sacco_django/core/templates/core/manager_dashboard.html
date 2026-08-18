@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Administration SACCO Connect - Back-Office</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #3498db; }
+        .stat-card h3 { margin: 0 0 10px 0; color: #7f8c8d; font-size: 14px; text-transform: uppercase; }
+        .stat-card p { font-size: 22px; font-weight: bold; color: #2c3e50; margin: 0; }
+        .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        th { background-color: #f8f9fa; color: #333; font-weight: bold; }
+        tr:hover { background-color: #f1f4f6; }
+        .btn-action { background-color: #2ecc71; color: white; padding: 6px 12px; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; cursor: pointer; display: inline-block; margin-bottom: 4px; }
+        .btn-logout { color: white; text-decoration: none; font-weight: bold; padding: 8px 15px; background: #e74c3c; border-radius: 4px; }
+
+        /* Styles des onglets */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .nav-tab { text-decoration: none; color: #2c3e50; font-weight: bold; font-size: 15px; padding: 8px 15px; border-radius: 6px; transition: all 0.2s; cursor: pointer; border: none; background: none; }
+        .nav-tab.active-tab { background-color: #3498db; color: white; }
+        .nav-tab:hover { background-color: #ebf5fb; color: #3498db; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Sacco Admin | Connecté en tant que : {{ admin_nom }}</h1>
+        <a href="{% url 'logout' %}" class="btn-logout">Déconnexion</a>
+    </div>
+
+    <!-- Menu de Navigation par Onglets -->
+    <nav style="display: flex; gap: 10px; margin-bottom: 25px; padding: 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <button onclick="switchTab('accueil')" id="btn-accueil" class="nav-tab active-tab">🏠 Accueil</button>
+        <button onclick="switchTab('membres')" id="btn-membres" class="nav-tab">👥 Membres</button>
+        <button onclick="switchTab('groupes')" id="btn-groupes" class="nav-tab">📂 Groupes</button>
+        <button onclick="switchTab('transactions')" id="btn-transactions" class="nav-tab">💳 Transactions</button>
+        <button onclick="switchTab('parametres')" id="btn-parametres" class="nav-tab">⚙️ Paramètres</button>
+    </nav>
+
+    <!-- ================= ONGLET 1 : ACCUEIL ================= -->
+    <div id="tab-accueil" class="tab-content active">
+        <!-- Widget Heure Burundi & Taux BRB (USD / EUR) -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 20px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #3498db;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: #ebf5fb; color: #3498db; padding: 10px; border-radius: 8px;">
+                        <svg style="width: 24px; height: 24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Heure Locale (Burundi)</span>
+                        <div id="burundi-clock" style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-top: 2px;">Chargement...</div>
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 12px; color: #7f8c8d; font-weight: 500;" id="burundi-date">--/--/----</span>
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 20px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #2ecc71;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: #eafaf1; color: #2ecc71; padding: 10px; border-radius: 8px;">
+                        <svg style="width: 24px; height: 24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Taux BRB (Officiel)</span>
+                        <div style="display: flex; gap: 15px; margin-top: 2px;">
+                            <span style="font-size: 14px; font-weight: bold; color: #2c3e50;">USD: <span style="color: #3498db;">{{ brb_rates.USD }}</span></span>
+                            <span style="font-size: 14px; font-weight: bold; color: #2c3e50;">EUR: <span style="color: #3498db;">{{ brb_rates.EUR }}</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <a href="https://www.brb.bi/affichagetoustauxchange" target="_blank" style="font-size: 12px; color: #3498db; text-decoration: none;">Source BRB ↗</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widgets de Statistiques Rapides -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Membres</h3>
+                <p>{{ total_membres }}</p>
+            </div>
+            <div class="stat-card" style="border-left-color: #2ecc71;">
+                <h3>Total Épargne Globale</h3>
+                <p>{{ total_epargne }} BIF</p>
+            </div>
+            <div class="stat-card" style="border-left-color: #9b59b6;">
+                <h3>Caisse Sociale</h3>
+                <p>{{ total_caisse_sociale }} BIF</p>
+            </div>
+            <div class="stat-card" style="border-left-color: #e67e22;">
+                <h3>Crédits en Cours</h3>
+                <p>{{ total_credits }} BIF</p>
+            </div>
+            <div class="stat-card" style="border-left-color: #1abc9c;">
+                <h3>Groupes Actifs</h3>
+                <p>{{ total_groupes_actifs }}</p>
+            </div>
+        </div>
+
+        <!-- Section Graphique -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 30px;">
+            <h3 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Top Épargnes des Membres</h3>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="savingsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ONGLET 2 : MEMBRES ================= -->
+    <div id="tab-membres" class="tab-content">
+        <div class="table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin:0; color:#2c3e50;">Gestion des Comptes Membres (Détails d'Inscription)</h2>
+                <div style="display: flex; gap: 10px;">
+                    <a href="{% url 'export_members_pdf' %}" style="background-color: #e74c3c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px;">📄 Exporter en PDF</a>
+                    <a href="/membres/nouveau" style="background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px;">+ Inscrire un nouveau membre</a>
+                </div>
+            </div>
+
+            <!-- Barre de recherche des membres -->
+            <form method="GET" action="{% url 'manager_dashboard' %}" style="margin: 20px 0; display: flex; gap: 10px;">
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Rechercher par nom, prénom ou téléphone..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                <button type="submit" style="background-color: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">Rechercher</button>
+                {% if search_query %}
+                    <a href="{% url 'manager_dashboard' %}" style="background-color: #7f8c8d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; display: flex; align-items: center;">Réinitialiser</a>
+                {% endif %}
+            </form>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom & Prénom</th>
+                        <th>Sexe / Âge</th>
+                        <th>Téléphone / CNI</th>
+                        <th>Adresse (Colline, Quartier, Avenue, N° Maison)</th>
+                        <th>Finances (Épargne / Crédit)</th>
+                        <th>Dernière Connexion Web</th>
+                        <th>Dernière Connexion App</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in membres %}
+                    <tr>
+                        <td>{{ m.id }}</td>
+                        <td><strong>{{ m.nom }} {{ m.prenom }}</strong></td>
+                        <td>{{ m.sexe|default:"N/A" }} / {{ m.age|default:"N/A" }} ans</td>
+                        <td>{{ m.telephone }}<br><small style="color: #7f8c8d;">CNI: {{ m.cni|default:"N/A" }}</small></td>
+                        <td>{{ m.colline|default:"-" }}, {{ m.quartier|default:"-" }}<br><small style="color: #7f8c8d;">Av. {{ m.avenue|default:"-" }} (N° {{ m.numero_maison|default:"N/A" }})</small></td>
+                        <td>
+                            <span style="color: #27ae60; font-weight: bold;">Ép: {{ m.solde_epargne|default:"0" }} BIF</span><br>
+                            <span style="color: #e67e22; font-weight: bold;">Cr: {{ m.credit_en_cours|default:"0" }} BIF</span>
+                        </td>
+                        <td>{{ m.last_login|default:"Jamais" }}</td>
+                        <td>{{ m.last_login_app|default:"Jamais" }}</td>
+                        <td>
+                            <a href="{% url 'add_transaction' m.id %}" class="btn-action">Transaction</a>
+                            <button class="btn-action" style="background-color:#3498db;">Crédit</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 20px;">Aucun membre trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if membres.has_other_pages %}
+            <div style="display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 10px;">
+                {% if membres.has_previous %}
+                    <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">&laquo; Première</a>
+                    <a href="?page={{ membres.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">Précédente</a>
+                {% endif %}
+
+                <span style="padding: 8px 15px; background-color: #3498db; color: white; border-radius: 4px; font-weight: bold; font-size: 14px;">
+                    Page {{ membres.number }} sur {{ membres.paginator.num_pages }}
+                </span>
+
+                {% if membres.has_next %}
+                    <a href="?page={{ membres.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">Suivante</a>
+                    <a href="?page={{ membres.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">Dernière &raquo;</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ================= ONGLET 3 : GROUPES ================= -->
+    <div id="tab-groupes" class="tab-content">
+        <div class="table-container">
+            <h2 style="color: #2c3e50; margin-top: 0;">Gestion des Groupes</h2>
+            <p style="color: #7f8c8d;">Section dédiée à la gestion des groupements et associations Sacco.</p>
+        </div>
+    </div>
+
+    <!-- ================= ONGLET 4 : TRANSACTIONS ================= -->
+    <div id="tab-transactions" class="tab-content">
+        <div class="table-container">
+            <h2 style="color: #2c3e50; margin-top: 0;">Historique des Transactions</h2>
+            <p style="color: #7f8c8d;">Suivi des versements, retraits et remboursements de crédits.</p>
+        </div>
+    </div>
+
+    <!-- ================= ONGLET 5 : PARAMÈTRES ================= -->
+    <div id="tab-parametres" class="tab-content">
+        <div class="table-container">
+            <h2 style="color: #2c3e50; margin-top: 0;">Paramètres de l'Application</h2>
+            <p style="color: #7f8c8d;">Configuration générale du système Sacco Connect.</p>
+        </div>
+    </div>
+
+    <!-- Scripts JavaScript (Horloge, Graphique et Gestion des Onglets) -->
+    <script>
+        function switchTab(tabId) {
+            // Masquer tous les contenus d'onglets
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Désactiver tous les boutons du menu
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active-tab'));
+
+            // Activer l'onglet sélectionné
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active-tab');
+
+            // Sauvegarder l'onglet actif dans sessionStorage
+            sessionStorage.setItem('activeTab', tabId);
+        }
+
+        // Restaurer l'onglet actif au rechargement (utile après une recherche ou pagination)
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTab = sessionStorage.getItem('activeTab');
+            {% if search_query or request.GET.page %}
+                // Si une recherche ou une pagination est en cours, s'ouvrir directement sur l'onglet Membres
+                switchTab('membres');
+            {% else %}
+                if (savedTab) {
+                    switchTab(savedTab);
+                }
+            {% endif %}
+        });
+
+        function updateBurundiClock() {
+            const optionsTime = { timeZone: 'Africa/Bujumbura', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const optionsDate = { timeZone: 'Africa/Bujumbura', day: '2-digit', month: '2-digit', year: 'numeric' };
+
+            const now = new Date();
+            const timeString = new Intl.DateTimeFormat([], optionsTime).format(now);
+            const dateString = new Intl.DateTimeFormat([], optionsDate).format(now);
+
+            const clockElement = document.getElementById('burundi-clock');
+            const dateElement = document.getElementById('burundi-date');
+
+            if (clockElement) clockElement.innerText = timeString + " CAT";
+            if (dateElement) dateElement.innerText = dateString;
+        }
+
+        setInterval(updateBurundiClock, 1000);
+        updateBurundiClock();
+    </script>
+
+    <script>
+        const ctx = document.getElementById('savingsChart').getContext('2d');
+        const savingsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ noms_membres|safe }},
+                datasets: [{
+                    label: 'Solde Épargne (BIF)',
+                    data: {{ soldes_epargne|safe }},
+                    backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                    borderColor: 'rgba(46, 204, 113, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

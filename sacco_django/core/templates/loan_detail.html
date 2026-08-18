@@ -1,0 +1,18 @@
+<h2>Suivi de votre demande #{{ pret.id }}</h2>
+{% include 'core/loan_tracking.html' %}
+
+{% if amortissement %}
+<table class="w-full mt-6">
+    <thead><tr><th>Mois</th><th>Principal</th><th>Intérêt</th><th>Reste</th></tr></thead>
+    <tbody>
+        {% for ligne in amortissement %}
+        <tr>
+            <td>{{ ligne.mois }}</td>
+            <td>{{ ligne.principal }}</td>
+            <td>{{ ligne.interet }}</td>
+            <td>{{ ligne.reste }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}

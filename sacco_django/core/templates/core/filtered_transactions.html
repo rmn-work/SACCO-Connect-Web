@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Filtrer les Transactions - SaccoFINtech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Filtrer les Transactions par Date</h1>
+
+        <!-- Formulaire de filtrage -->
+        <form method="GET" class="flex gap-4 items-end mb-6 bg-gray-50 p-4 rounded border border-gray-200">
+            <div>
+                <label class="block text-sm font-semibold text-gray-600 mb-1">Date début</label>
+                <input type="date" name="start_date" value="{{ start_date }}" class="border border-gray-300 rounded p-2">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-600 mb-1">Date fin</label>
+                <input type="date" name="end_date" value="{{ end_date }}" class="border border-gray-300 rounded p-2">
+            </div>
+            <div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded">
+                    Filtrer
+                </button>
+                <a href="?" class="ml-2 text-sm text-gray-600 hover:underline">Réinitialiser</a>
+            </div>
+        </form>
+
+        <div class="mb-4 text-gray-700 font-semibold">
+            Total période : <span class="text-blue-600">{{ total_montant }} BIF</span>
+        </div>
+
+        <!-- Tableau des résultats -->
+        <table class="w-full border-collapse border border-gray-200 text-left text-sm">
+            <thead>
+                <tr class="bg-gray-50">
+                    <th class="border border-gray-200 p-3">Date</th>
+                    <th class="border border-gray-200 p-3">Membre</th>
+                    <th class="border border-gray-200 p-3">Type</th>
+                    <th class="border border-gray-200 p-3">Montant (BIF)</th>
+                    <th class="border border-gray-200 p-3">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr>
+                    <td class="border border-gray-200 p-3">{{ tx.date_transaction|date:"d/m/Y H:i" }}</td>
+                    <td class="border border-gray-200 p-3">{{ tx.membre.nom }} {{ tx.membre.prenom }}</td>
+                    <td class="border border-gray-200 p-3 font-medium">{{ tx.type_operation }}</td>
+                    <td class="border border-gray-200 p-3">{{ tx.montant }}</td>
+                    <td class="border border-gray-200 p-3">{{ tx.statut }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="border border-gray-200 p-4 text-center text-gray-500">Aucune transaction trouvée pour cette période.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

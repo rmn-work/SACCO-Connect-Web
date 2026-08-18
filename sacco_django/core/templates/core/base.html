@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SACCO Connect</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans antialiased">
+
+    <!-- Barre de navigation globale -->
+    <nav class="bg-gray-900 text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <span class="font-bold text-lg">SACCO Connect</span>
+            <div class="space-x-4 text-sm">
+                <a href="{% url 'dashboard' %}" class="hover:text-blue-400">Tableau de bord</a>
+                <a href="{% url 'member_profile' %}" class="hover:text-blue-400">Mon Profil</a>
+                <a href="{% url 'request_loan' %}" class="hover:text-blue-400 transition">Demander un prêt</a>
+                <div class="relative group inline-block">
+                    <button class="hover:text-blue-400 transition flex items-center gap-1 py-2 focus:outline-none">
+                        Autres services ▾
+                    </button>
+                    <div class="absolute right-0 mt-0 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 hidden group-hover:block z-50 text-gray-800">
+                        <a href="{% url 'member_qr' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Mon QR Code</a>
+                        <a href="{% url 'ai_predictions' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Prédictions & IA Financière</a>
+                        <a href="{% url 'security_pin' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Sécurité du Compte (PIN)</a>
+                    </div>
+                </div>
+                <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-white font-medium transition">Se déconnecter</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages Flash -->
+    {% if messages %}
+    <div class="max-w-6xl mx-auto px-4 mt-4">
+        {% for message in messages %}
+        <div class="p-4 mb-2 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Contenu Principal -->
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+</body>
+</html>
