@@ -376,7 +376,7 @@ async def login(
 ):
     print(f"DEBUG LOGIN -> Tentative avec l'identifiant: {form_data.username}")
 
-    await db.execute("SELECT * FROM core_membres WHERE telephone = $1", (form_data.username,))
+    await db.execute("SELECT * FROM membres WHERE telephone = $1", (form_data.username,))
     user = await db.fetchone()
 
     if not user:
