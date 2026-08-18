@@ -2,7 +2,7 @@ name: sacco_mobile
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+63
+version: 1.0.0+64
 
 environment:
   sdk: ^3.12.1
