@@ -376,7 +376,7 @@ async def login(
 ):
     print(f"DEBUG LOGIN -> Tentative avec l'identifiant: {form_data.username}")
 
-    await db.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
+    db.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
     user = await db.fetchone()
 
     if not user:
@@ -397,7 +397,7 @@ async def login(
         raise HTTPException(status_code=403, detail="Ce compte est archivé ou bloqué.")
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    await db.execute(
+    db.execute(
         "UPDATE membres SET last_login_app = %s WHERE telephone = %s",
         (now_str, form_data.username)
     )
