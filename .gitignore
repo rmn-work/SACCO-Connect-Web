@@ -13,4 +13,6 @@ Web/.env
 # Documents locaux générés
 *.pdf
 *.jpg
-*.png
+*.png*.pyc
+__pycache__/
+*.db
