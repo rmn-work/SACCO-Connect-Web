@@ -248,7 +248,7 @@ def startup_db_setup():
             solde_epargne REAL DEFAULT 0, solde_pret REAL DEFAULT 0, is_active INTEGER DEFAULT 1,
             caisse_sociale REAL DEFAULT 0, last_login TEXT, status_presence TEXT DEFAULT 'A',
             credit_en_cours REAL DEFAULT 0, credit_rembourse REAL DEFAULT 0, 
-            credit_restant REAL DEFAULT 0, solde_pret_social REAL DEFAULT 0)''')
+            credit_restant REAL DEFAULT 0, solde_pret_social REAL DEFAULT 0, last_login_app TEXT)''')
 
         cursor.execute('''CREATE TABLE IF NOT EXISTS demandes_sociales 
             (id SERIAL PRIMARY KEY, membre_id INTEGER, montant_demande REAL, motif TEXT, status TEXT DEFAULT 'En attente', date_demande TEXT)''')
@@ -279,6 +279,12 @@ def startup_db_setup():
         columns_grp = [row[0] for row in cursor.fetchall()]
         if 'is_active' not in columns_grp:
             cursor.execute("ALTER TABLE groupes ADD COLUMN is_active INTEGER DEFAULT 1")
+
+        # Vérifier si la colonne last_login_app existe dans membres
+        cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'membres'")
+        columns_membres = [row[0] for row in cursor.fetchall()]
+        if 'last_login_app' not in columns_membres:
+            cursor.execute("ALTER TABLE membres ADD COLUMN last_login_app TEXT")
 
         cursor.execute("SELECT COUNT(*) FROM groupes WHERE id = 1")
         if cursor.fetchone()[0] == 0:
@@ -377,33 +383,10 @@ async def login(
     print(f"DEBUG LOGIN -> Tentative avec l'identifiant: {form_data.username}")
 
     db.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
-    user = await db.fetchone()
+    user = db.fetchone()
 
     if not user:
         raise HTTPException(status_code=400, detail="Identifiants incorrects")
-
-    hash_en_base = user['pin']
-
-    if hash_en_base and hash_en_base.startswith('$2b$'):
-        try:
-            if not pwd_context.verify(form_data.password, hash_en_base):
-                raise HTTPException(status_code=400, detail="Code PIN incorrect")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erreur de sécurité lors de la vérification : {e}")
-    else:
-        raise HTTPException(status_code=400, detail="Compte non migré. Veuillez contacter l'administrateur.")
-
-    if user.get('is_active') == 0:
-        raise HTTPException(status_code=403, detail="Ce compte est archivé ou bloqué.")
-
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    db.execute(
-        "UPDATE membres SET last_login_app = %s WHERE telephone = %s",
-        (now_str, form_data.username)
-    )
-
-    access_token = create_access_token(data={"sub": str(user['id']), "role": user['role']})
-    return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
 
 
 @app.post("/auth/inscription", status_code=status.HTTP_201_CREATED)
