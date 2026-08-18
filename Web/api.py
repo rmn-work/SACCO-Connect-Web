@@ -1,22 +1,16 @@
 import os
-import hashlib
 from datetime import datetime, date, timezone, timedelta
-import pytz
-import requests
-from bs4 import BeautifulSoup
-import qrcode
-from fpdf import FPDF
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extensions import register_adapter, AsIs
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, status, Query, Request, Depends, APIRouter, UploadFile, File
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, HTTPException, status, Query, Request, Depends, UploadFile, File, Form, APIRouter
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, validator
-from typing import List, Dict, Optional
+from pydantic import BaseModel
+from typing import List, Optional
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -30,7 +24,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 register_adapter(AsIs, AsIs)
-
 
 app = FastAPI(
     title="SACCO Connect Burundi",
@@ -47,7 +40,7 @@ else:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,7 +83,6 @@ try:
         print("✅ Pool de connexions PostgreSQL créé avec succès.")
 except Exception as e:
     print(f"❌ Erreur critique lors de la création du pool de connexions : {e}")
-
 
 if not os.path.exists("./static/documents"):
     os.makedirs("./static/documents", exist_ok=True)
@@ -141,6 +133,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), cursor=Depends(get_db_
     return user
 
 
+# ==========================================
+# SCHÉMAS PYDANTIC
+# ==========================================
 class LoginRequest(BaseModel):
     telephone: str
     pin: str
@@ -161,26 +156,9 @@ class InscriptionSchema(BaseModel):
     created_at_offline: Optional[str] = None
 
 
-class GroupeCreate(BaseModel):
-    nom_groupe: str
-    president_nom: str
-    secretaire_nom: str
-
-
-class GroupSettingsRequest(BaseModel):
-    date_reunion_prochaine: date
-    montant_hebdo: int
-
-
-class MembreUpdate(BaseModel):
-    role: str
-    groupe_id: int
-    admin_nom: str
-
-
 class MembreSaisieInput(BaseModel):
     membre_id: int
-    presence: str  # "P", "A" ou "E"
+    presence: str
     epargne: float
     caisse_sociale: float
     amende: bool
@@ -204,11 +182,6 @@ class DemandePretInput(BaseModel):
     taux_interet_applique: float = 5.0
 
 
-class ValidationPretSchema(BaseModel):
-    approuver: bool
-    admin_id: int
-
-
 class PenaliteSchema(BaseModel):
     taux_penalite_mensuel: float
     admin_id: int
@@ -218,6 +191,13 @@ class PenaliteSchema(BaseModel):
 class CotisationUpdateRequest(BaseModel):
     nouveau_montant: int
     admin_id: int
+
+
+class ValiderDemandeInput(BaseModel):
+    admin_id: int
+    id: int
+    type: str
+    approuver: bool
 
 
 def log_audit_api(user: str, action: str, details: str):
@@ -302,16 +282,21 @@ def startup_db_setup():
 
         cursor.execute("SELECT COUNT(*) FROM groupes WHERE id = 1")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO groupes (id, nom_groupe, montant_hebdo, is_active) VALUES (1, 'Groupe Alpha', 5000, 1)")
+            cursor.execute(
+                "INSERT INTO groupes (id, nom_groupe, montant_hebdo, is_active) VALUES (1, 'Groupe Alpha', 5000, 1)")
 
         pin_standard_hash = pwd_context.hash("1234")
         pin_admin_hash = pwd_context.hash("SACCO_Bujumbura-BBIN")
 
         comptes_init = [
-            {"nom": "ADMIN", "prenom": "Système", "telephone": "admin", "role": "admin_sys", "pin": pin_admin_hash, "groupe_id": None},
-            {"nom": "MEMBRE", "prenom": "Raphael", "telephone": "0000", "role": "membre", "pin": pin_standard_hash, "groupe_id": 1},
-            {"nom": "PRÉSIDENT", "prenom": "Bureau", "telephone": "1111", "role": "president", "pin": pin_standard_hash, "groupe_id": 1},
-            {"nom": "SECRÉTAIRE", "prenom": "Bureau", "telephone": "2222", "role": "secretaire", "pin": pin_standard_hash, "groupe_id": 1}
+            {"nom": "ADMIN", "prenom": "Système", "telephone": "admin", "role": "admin_sys", "pin": pin_admin_hash,
+             "groupe_id": None},
+            {"nom": "MEMBRE", "prenom": "Raphael", "telephone": "0000", "role": "membre", "pin": pin_standard_hash,
+             "groupe_id": 1},
+            {"nom": "PRÉSIDENT", "prenom": "Bureau", "telephone": "1111", "role": "president", "pin": pin_standard_hash,
+             "groupe_id": 1},
+            {"nom": "SECRÉTAIRE", "prenom": "Bureau", "telephone": "2222", "role": "secretaire",
+             "pin": pin_standard_hash, "groupe_id": 1}
         ]
 
         for c in comptes_init:
@@ -330,6 +315,9 @@ def startup_db_setup():
         print(f"❌ Erreur critique lors de l'initialisation de la base : {e}")
 
 
+# ==========================================
+# ROUTES
+# ==========================================
 @app.get('/')
 def read_root():
     return {
@@ -381,11 +369,15 @@ async def delete_account_instructions():
     </html>
     """
 
-
 @app.post("/auth/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_db_cursor)):
-    cursor.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
-    user = cursor.fetchone()
+async def login(
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db=Depends(get_db_cursor)
+):
+    print(f"DEBUG LOGIN -> Tentative avec l'identifiant: {form_data.username}")
+
+    await db.execute("SELECT * FROM core_membres WHERE telephone = $1", (form_data.username,))
+    user = await db.fetchone()
 
     if not user:
         raise HTTPException(status_code=400, detail="Identifiants incorrects")
@@ -404,8 +396,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), cursor=Depends(get_d
     if user.get('is_active') == 0:
         raise HTTPException(status_code=403, detail="Ce compte est archivé ou bloqué.")
 
-    heure_connexion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute("UPDATE membres SET last_login = %s WHERE id = %s", (heure_connexion, user['id']))
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    await db.execute(
+        "UPDATE membres SET last_login_app = $1 WHERE telephone = $2",
+        (now_str, form_data.username)
+    )
 
     access_token = create_access_token(data={"sub": str(user['id']), "role": user['role']})
     return {"access_token": access_token, "token_type": "bearer", "role": user['role']}
@@ -427,6 +422,30 @@ def inscrire_membre(data: InscriptionSchema, cursor=Depends(get_db_cursor)):
         raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé.")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/membres/nouveau")
+def creer_membre(
+        nom: str = Form(...),
+        prenom: str = Form(...),
+        telephone: str = Form(...),
+        colline: str = Form(None),
+        quartier: str = Form(None),
+        cursor=Depends(get_db_cursor)
+):
+    try:
+        cursor.execute(
+            """
+            INSERT INTO membres (nom, prenom, telephone, colline, quartier, solde_epargne, credit_en_cours)
+            VALUES (%s, %s, %s, %s, %s, 0.0, 0.0)
+            """,
+            (nom, prenom, telephone, colline, quartier)
+        )
+        return RedirectResponse(url="/manager?tab=membres", status_code=303)
+    except psycopg2.IntegrityError:
+        raise HTTPException(status_code=400, detail="Ce numéro de téléphone est déjà utilisé.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erreur lors de l'enregistrement : {str(e)}")
 
 
 @app.get('/membres/{membre_id}/dashboard')
@@ -511,7 +530,8 @@ def get_previsions_ia(
     capacite_reelle_estimee = (capacite_theorique * taux_presence) - credit_restant
     capacite_reelle_estimee = max(0.0, capacite_reelle_estimee)
 
-    score_endettement = 50 if capacite_theorique == 0 else (1 - min(1.0, credit_restant / max(1.0, capacite_theorique))) * 50
+    score_endettement = 50 if capacite_theorique == 0 else (1 - min(1.0,
+                                                                    credit_restant / max(1.0, capacite_theorique))) * 50
     score_sante = (taux_presence * 50) + score_endettement
 
     return {
@@ -542,9 +562,9 @@ def get_historique_epargne(membre_id: int, cursor=Depends(get_db_cursor)):
 
 @app.get('/membres/{membre_id}/profil')
 def get_membre_profil(
-    membre_id: int,
-    current_user: dict = Depends(get_current_user),
-    cursor=Depends(get_db_cursor)
+        membre_id: int,
+        current_user: dict = Depends(get_current_user),
+        cursor=Depends(get_db_cursor)
 ):
     target_id = current_user['id'] if current_user['role'] == 'membre' else membre_id
 
@@ -708,34 +728,28 @@ def submit_saisie_hebdo(groupe_id: int, data: SaisieHebdomadaireRequest, cursor=
 @app.get('/admin/prets-en-attente')
 def get_prets_en_attente(cursor=Depends(get_db_cursor)):
     query = """
-        SELECT id, montant, motif, date_demande, 'CREDIT' as type_pret, membre_id 
-        FROM prets WHERE UPPER(status) = 'EN ATTENTE'
+        SELECT p.id, p.montant, p.motif, p.date_demande, 'CREDIT' as type_pret, 
+               p.membre_id, m.nom, m.prenom, m.telephone
+        FROM prets p
+        LEFT JOIN membres m ON p.membre_id = m.id
+        WHERE UPPER(p.status) = 'EN ATTENTE'
+
         UNION ALL
-        SELECT id, montant_demande as montant, motif, date_demande, 'SOCIAL' as type_pret, membre_id 
-        FROM demandes_sociales WHERE UPPER(status) = 'EN ATTENTE'
+
+        SELECT d.id, d.montant_demande as montant, d.motif, d.date_demande, 'SOCIAL' as type_pret, 
+               d.membre_id, m.nom, m.prenom, m.telephone
+        FROM demandes_sociales d
+        LEFT JOIN membres m ON d.membre_id = m.id
+        WHERE UPPER(d.status) = 'EN ATTENTE'
+
         ORDER BY date_demande DESC
     """
     cursor.execute(query)
-    data = cursor.fetchall()
+    return {"status": "success", "data": cursor.fetchall()}
 
-    for row in data:
-        cursor.execute("SELECT nom, prenom, telephone FROM membres WHERE id = %s", (row['membre_id'],))
-        membre = cursor.fetchone()
-        row['nom'] = membre['nom'] if membre else "Inconnu"
-        row['prenom'] = membre['prenom'] if membre else ""
-        row['telephone'] = membre['telephone'] if membre else ""
-
-    return {"status": "success", "data": data}
-
-class ValiderDemandeInput(BaseModel):
-    admin_id: int
-    id: int
-    type: str
-    approuver: bool
 
 @app.post('/admin/valider-demande')
 def valider_demande(payload: ValiderDemandeInput, cursor=Depends(get_db_cursor)):
-
     cursor.execute("SELECT role FROM membres WHERE id = %s", (payload.admin_id,))
     admin = cursor.fetchone()
     if not admin or admin['role'].lower() not in ["president", "secretaire", "admin", "admin_sys"]:
@@ -846,5 +860,6 @@ def modifier_cotisation_groupe(groupe_id: int, payload: CotisationUpdateRequest,
 # ==========================================
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("api:app", host="0.0.0.0", port=port, reload=True)
