@@ -388,6 +388,20 @@ async def login(
     if not user:
         raise HTTPException(status_code=400, detail="Identifiants incorrects")
 
+    if not pwd_context.verify(form_data.password, user['pin']):
+        raise HTTPException(status_code=400, detail="Identifiants incorrects")
+
+    access_token = create_access_token(
+        data={"sub": str(user['id']), "role": user['role']}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": user["role"],
+        "membre_id": user["id"]
+    }
+
 
 @app.post("/auth/inscription", status_code=status.HTTP_201_CREATED)
 def inscrire_membre(data: InscriptionSchema, cursor=Depends(get_db_cursor)):
