@@ -380,15 +380,27 @@ async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db=Depends(get_db_cursor)
 ):
-    print(f"DEBUG LOGIN -> Tentative avec l'identifiant: {form_data.username}")
+    print(f"DEBUG LOGIN -> Recherche du téléphone: {form_data.username}")
 
     db.execute("SELECT * FROM membres WHERE telephone = %s", (form_data.username,))
     user = db.fetchone()
 
     if not user:
+        print(f"❌ DEBUG LOGIN -> Utilisateur {form_data.username} NON TROUVÉ en BDD")
         raise HTTPException(status_code=400, detail="Identifiants incorrects")
 
-    if not pwd_context.verify(form_data.password, user['pin']):
+    print(f"✅ DEBUG LOGIN -> Utilisateur trouvé: ID {user['id']}, Role {user.get('role')}")
+    print(f"DEBUG LOGIN -> PIN en BDD: {user.get('pin')}")
+
+    if not user.get('pin'):
+        print("❌ DEBUG LOGIN -> Le champ PIN est NULL ou vide en base de données !")
+        raise HTTPException(status_code=400, detail="Identifiants incorrects")
+
+    is_valid = pwd_context.verify(form_data.password, user['pin'])
+    print(f"DEBUG LOGIN -> Résultat vérification PIN: {is_valid}")
+
+    if not is_valid:
+        print("❌ DEBUG LOGIN -> Le code PIN ne correspond pas au hash")
         raise HTTPException(status_code=400, detail="Identifiants incorrects")
 
     access_token = create_access_token(
@@ -401,7 +413,6 @@ async def login(
         "role": user["role"],
         "membre_id": user["id"]
     }
-
 
 @app.post("/auth/inscription", status_code=status.HTTP_201_CREATED)
 def inscrire_membre(data: InscriptionSchema, cursor=Depends(get_db_cursor)):
