@@ -12,3 +12,4 @@ bcrypt
 requests
 reportlab
 beautifulsoup4
+passlib
