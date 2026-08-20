@@ -7,7 +7,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans antialiased">
+<!-- 1. Ajout de 'flex flex-col' pour étirer la page sur toute la hauteur -->
+<body class="bg-gray-50 min-h-screen font-sans antialiased flex flex-col">
 
     <!-- Barre de navigation globale -->
     <nav class="bg-gray-900 text-white shadow-sm">
@@ -43,11 +44,14 @@
     </div>
     {% endif %}
 
-    <!-- Contenu Principal -->
-    <main>
+    <!-- 2. Ajout de 'flex-grow' pour pousser le footer tout en bas -->
+    <main class="flex-grow">
         {% block content %}
         {% endblock %}
     </main>
+
+    <!-- 3. Pied de Page placé en fin de body -->
+    {% include 'core/footer.html' %}
 
 </body>
 </html>

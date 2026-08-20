@@ -59,11 +59,20 @@ class EmployeeCreationForm(UserCreationForm):
 class LoanRequestForm(forms.ModelForm):
     class Meta:
         model = Pret
-        fields = ['montant', 'duree_mois', 'motif']
+        fields = ['montant', 'duree_mois']
+        labels = {
+            'montant': 'Montant du prêt (BIF)',
+            'duree_mois': 'Durée de remboursement (mois)',
+        }
         widgets = {
-            'montant': forms.NumberInput(attrs={'class': 'w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-blue-500', 'placeholder': 'Ex: 100000'}),
-            'duree_mois': forms.NumberInput(attrs={'class': 'w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-blue-500', 'placeholder': 'Ex: 3'}),
-            'motif': forms.Textarea(attrs={'class': 'w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-blue-500', 'rows': 3, 'placeholder': 'Précisez le motif du prêt...'}),
+            'montant': forms.NumberInput(attrs={
+                'class': 'w-full p-2 border rounded focus:ring-2 focus:ring-blue-500',
+                'placeholder': 'Ex: 500000'
+            }),
+            'duree_mois': forms.NumberInput(attrs={
+                'class': 'w-full p-2 border rounded focus:ring-2 focus:ring-blue-500',
+                'placeholder': 'Ex: 12'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -72,10 +81,11 @@ class LoanRequestForm(forms.ModelForm):
 
     def clean_montant(self):
         montant = self.cleaned_data.get('montant')
-        if self.membre and self.membre.solde_epargne is not None:
-            solde_max_autorise = self.membre.solde_epargne * 3
-            if montant and montant > solde_max_autorise:
+        if self.membre and montant:
+            epargne = self.membre.solde_epargne or 0
+            plafond = epargne * 5
+            if montant > plafond:
                 raise forms.ValidationError(
-                    f"Le montant demandé dépasse votre plafond autorisé ({solde_max_autorise} BIF basé sur votre épargne)."
+                    f"Le montant ne peut pas dépasser 5 fois votre épargne ({plafond:,.0f} BIF max)."
                 )
         return montant

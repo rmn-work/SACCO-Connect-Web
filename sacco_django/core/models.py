@@ -3,6 +3,19 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
+class Partenaire(models.Model):
+    nom = models.CharField(max_length=150, verbose_name="Nom du partenaire")
+    code_partenaire = models.CharField(max_length=20, unique=True, verbose_name="Code unique")
+    email = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Email")
+    telephone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone")
+    adresse = models.TextField(blank=True, null=True, verbose_name="Adresse physique")
+    date_creation = models.DateTimeField(auto_now_add=True, verbose_name="Date d'enregistrement")
+    est_actif = models.BooleanField(default=True, verbose_name="Compte actif")
+
+    def __str__(self):
+        return f"{self.nom} ({self.code_partenaire})"
+
+
 class Amendes(models.Model):
     groupe_id = models.IntegerField(blank=True, null=True)
     membre = models.ForeignKey('Membres', models.DO_NOTHING, blank=True, null=True)
@@ -57,19 +70,19 @@ class DemandeCredit(models.Model):
         return f"Prêt de {self.montant} BIF - {self.membre.prenom} {self.membre.nom}"
 
 class Groupes(models.Model):
+    id = models.AutoField(primary_key=True)
     nom_groupe = models.TextField(blank=True, null=True)
     president_id = models.IntegerField(blank=True, null=True)
     secretaire_id = models.IntegerField(blank=True, null=True)
-    montant_hebdo = models.FloatField(blank=True, null=True)
-    derniere_reunion = models.DateField(null=True, blank=True)
-    prochaine_reunion = models.DateField(null=True, blank=True)
-    taux_amende = models.FloatField(blank=True, null=True)
-    is_active = models.IntegerField(blank=True, null=True)
+    est_archive = models.BooleanField(default=False)
+    #partenaire = models.ForeignKey(Partenaire, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Partenaire associé")
     cotisation_hebdo_fixee = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'groupes'
+        verbose_name = "Groupe"
+        verbose_name_plural = "Groupes"
 
 class HistoriqueEpargne(models.Model):
     membre = models.ForeignKey('Membres', models.DO_NOTHING, blank=True, null=True)
@@ -115,7 +128,7 @@ class JournalPrets(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'journal_prets'
+        db_table='journal_prets'
 
 class Logs(models.Model):
     utilisateur = models.TextField(blank=True, null=True)
@@ -144,7 +157,8 @@ class Membres(models.Model):
     maison = models.TextField(blank=True, null=True)
     pin = models.TextField(blank=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='membre', blank=True, null=True)
-    groupe_id = models.IntegerField(blank=True, null=True)
+    groupe = models.ForeignKey(
+        'Groupes', on_delete=models.SET_NULL, null=True, blank=True, default=1, db_column='groupe_id')
     doit_changer_pin = models.IntegerField(blank=True, null=True)
     solde_epargne = models.FloatField(blank=True, null=True)
     solde_pret = models.FloatField(blank=True, null=True)
@@ -181,38 +195,20 @@ class Presences(models.Model):
 
 class Pret(models.Model):
     STATUT_CHOICES = [
-        ('EN_ATTENTE', 'En attente'),
-        ('APPROUVE', 'Approuvé'),
-        ('REJETE', 'Rejeté'),
-        ('SOLDE', 'Soldé'),
-        ('EN_ATTENTE_AGENT', 'En attente de vérification (Agent)'),
-        ('EN_ATTENTE_DIRECTEUR', 'En attente d approbation (Directeur)'),
-        ('APPROUVE', 'Approuvé'),
-        ('REJETE', 'Rejeté'),
+        ('EN_ATTENTE', 'En attente'), ('APPROUVE', 'Approuvé'), ('REJETE', 'Rejeté'), ('SOLDE', 'Soldé'),
+        ('EN_ATTENTE_AGENT', 'En attente de vérification (Agent)'), ('EN_ATTENTE_DIRECTEUR', 'En attente d approbation (Directeur)'),
     ]
 
     membre = models.ForeignKey(
-        'Membres', on_delete=models.CASCADE, related_name='prets'
-    )
+        'Membres', on_delete=models.CASCADE, related_name='prets')
     montant = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        validators=[MinValueValidator(0)],
-        help_text='Montant demandé en BIF',
-    )
-    taux_interet = models.DecimalField(
-        max_digits=5, decimal_places=2, help_text="Taux d'intérêt trimestriel en %"
-    )
-    duree_mois = models.PositiveIntegerField(
-        help_text='Durée de remboursement en mois'
-    )
-    statut = models.CharField(
-        max_length=50, choices=STATUT_CHOICES, default='EN_ATTENTE'
-    )
-    motif = models.TextField(blank=True, null=True)
+        max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], help_text='Montant demandé en BIF',)
+    taux_interet = models.DecimalField(max_digits=5, decimal_places=2, help_text="Taux d'intérêt trimestriel en %")
+    duree_mois = models.PositiveIntegerField(help_text='Durée de remboursement en mois')
+    statut = models.CharField(max_length=50, choices=STATUT_CHOICES, default='EN_ATTENTE')
+    motif = models.TextField(verbose_name="Motif de la demande", blank=True, null=True)
     date_demande = models.DateTimeField(auto_now_add=True)
     date_approbation = models.DateTimeField(null=True, blank=True)
-    motif = models.TextField(verbose_name="Motif de la demande", blank=True, null=True)
 
     class Meta:
         verbose_name = 'Prêt'
@@ -227,23 +223,17 @@ class Pret(models.Model):
         taux = Decimal(str(self.taux_interet))
         duree = Decimal(str(self.duree_mois))
         interets = (montant * taux * (duree / Decimal('3'))) / Decimal('100')
-
         return montant + interets
+
 
 class TransactionHistory(models.Model):
     TYPE_CHOICES = [
-        ('DEPOT', 'Dépôt'),
-        ('RETRAIT', 'Retrait'),
-        ('PENALITE', 'Pénalité de retard'),
-        ('Octroi de Crédit', 'Octroi de Crédit'),
+        ('DEPOT', 'Dépôt'), ('RETRAIT', 'Retrait'), ('PENALITE', 'Pénalité de retard'), ('Octroi de Crédit', 'Octroi de Crédit'),
         ('Remboursement Crédit', 'Remboursement Crédit'),
     ]
 
     membre = models.ForeignKey(
-        Membres,
-        on_delete=models.CASCADE,
-        related_name='transactions'
-    )
+        Membres, on_delete=models.CASCADE, related_name='transactions')
     montant = models.DecimalField(max_digits=12, decimal_places=2)
     type_operation = models.CharField(max_length=50, choices=TYPE_CHOICES, default='DEPOT')
     statut = models.CharField(max_length=20, default='ACTIF')
@@ -257,15 +247,14 @@ class TransactionHistory(models.Model):
     class Meta:
         ordering = ['-date_transaction']
 
+
 class DemandePret(models.Model):
     membre = models.ForeignKey('Membres', on_delete=models.CASCADE, related_name='demandes_pret')
     montant = models.DecimalField(max_digits=12, decimal_places=2)
     motif = models.TextField()
     statut = models.CharField(
-        max_length=20,
-        choices=[('en_attente', 'En attente'), ('approuve', 'Approuvé'), ('rejete', 'Rejeté')],
-        default='en_attente'
-    )
+        max_length=20, choices=[('en_attente', 'En attente'), ('approuve', 'Approuvé'), ('rejete', 'Rejeté')],
+        default='en_attente')
     date_demande = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

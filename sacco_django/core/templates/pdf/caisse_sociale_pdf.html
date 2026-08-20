@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page { size: A4 landscape; margin: 1cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #333; }
+
+        /* Style pour l'en-tête avec logo */
+        .header-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .logo-img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 5px;
+        }
+        h2 { text-align: center; color: #2c3e50; margin: 0; padding: 0; }
+        p.subtitle { text-align: center; color: #7f8c8d; font-size: 9px; margin-top: 5px; margin-bottom: 15px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background-color: #2c3e50; color: white; padding: 6px; font-size: 9px; text-align: center; }
+        td { padding: 5px; border-bottom: 1px solid #ddd; text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        .bold { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- Bloc En-tête avec Logo -->
+    <div class="header-container">
+        <img src="{% static 'images/sacco-connect.png' %}" class="logo-img" alt="Logo SACCO Connect">
+        <h2>Rapport Caisse Sociale - {{ mois_filtre }}</h2>
+        <p class="subtitle">Généré automatiquement via SACCO FINtech</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th class="text-left">Membre</th>
+                <th>Report Antérieur</th>
+                {% for d in dates_reunions %}
+                <th>{{ d }}</th>
+                {% endfor %}
+                <th>Total Mois</th>
+                <th>Cumul Actuel</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in pivot_sociale %}
+            <tr>
+                <td>#{{ line.id }}</td>
+                <td class="text-left bold">{{ line.nom_complet }}</td>
+                <td class="text-right">{{ line.report_anterieur|floatformat:0 }} BIF</td>
+                {% for m in line.montants %}
+                <td>{{ m|floatformat:0 }}</td>
+                {% endfor %}
+                <td class="text-right bold">{{ line.total_mois|floatformat:0 }} BIF</td>
+                <td class="text-right bold">{{ line.cumul_actuel|floatformat:0 }} BIF</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

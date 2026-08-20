@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        /* Format Paysage obligatoire pour afficher toutes les colonnes */
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10px; /* Police réduite pour tout faire tenir */
+            color: #333;
+        }
+        /* Style pour l'en-tête avec logo */
+        .header-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo-img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 5px;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin: 0;
+            padding: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 8px 5px;
+            font-size: 10px;
+            text-align: left;
+            border: 1px solid #bdc3c7;
+        }
+        td {
+            padding: 8px 5px;
+            border: 1px solid #bdc3c7;
+            vertical-align: top;
+        }
+        .text-muted {
+            color: #7f8c8d;
+            font-size: 9px;
+        }
+        .finance-epargne {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .finance-credit {
+            color: #e67e22;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Bloc En-tête avec Logo -->
+    <div class="header-container">
+        <img src="{% static 'images/sacco-connect.png' %}" class="logo-img" alt="Logo SACCO Connect">
+        <h2>Gestion des Comptes Membres (Détails d'Inscription)</h2>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 4%;">ID</th>
+                <th style="width: 14%;">Nom & Prénom</th>
+                <th style="width: 9%;">Sexe / Âge</th>
+                <th style="width: 13%;">Téléphone / CNI</th>
+                <th style="width: 22%;">Adresse complète</th>
+                <th style="width: 12%;">Finances (Ép / Cr)</th>
+                <th style="width: 13%;">Connexion Web</th>
+                <th style="width: 13%;">Connexion App</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in membres %}
+            <tr>
+                <td>{{ m.id }}</td>
+                <td><strong>{{ m.nom|default:"" }} {{ m.prenom|default:"" }}</strong></td>
+                <td>{{ m.sexe|default:"N/A" }} / {{ m.age|default:"N/A" }} ans</td>
+                <td>
+                    {{ m.telephone|default:"-" }}<br>
+                    <span class="text-muted">CNI: {{ m.cni|default:"N/A" }}</span>
+                </td>
+                <td>
+                    {{ m.colline|default:"-" }}, {{ m.quartier|default:"-" }}<br>
+                    <span class="text-muted">Av. {{ m.avenue|default:"-" }} (N° {{ m.numero_maison|default:"N/A" }})</span>
+                </td>
+                <td>
+                    <span class="finance-epargne">Ép: {{ m.solde_epargne|default:"0" }} BIF</span><br>
+                    <span class="finance-credit">Cr: {{ m.credit_en_cours|default:"0" }} BIF</span>
+                </td>
+                <!-- Utilisation du filtre date pour bien formater l'heure si c'est un champ DateTime -->
+                <td>{{ m.last_login|date:"Y-m-d H:i"|default:"Jamais" }}</td>
+                <td>{{ m.last_login_app|date:"Y-m-d H:i"|default:"Jamais" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; color: #7f8c8d; font-style: italic;">Aucun membre trouvé.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

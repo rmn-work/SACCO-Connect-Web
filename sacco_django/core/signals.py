@@ -2,11 +2,11 @@ import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User, Group
-from .models import TransactionHistory
+from .models import TransactionHistory, Membres, Groupes
 from .utils import send_member_notification
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 @receiver(post_save, sender=TransactionHistory)
 def notify_transaction_created(sender, instance, created, **kwargs):
@@ -30,3 +30,11 @@ def assign_default_group(sender, instance, created, **kwargs):
         group, _ = Group.objects.get_or_create(name='Caissiers')
         instance.groups.add(group)
         logger.info(f"[SYSTEM] L'utilisateur {instance.username} a été ajouté au groupe 'Caissiers'.")
+
+@receiver(post_save, sender=Membres)
+def assigner_groupe_par_defaut(sender, instance, created, **kwargs):
+    if created and not instance.groupe:
+        premier_groupe = Groupes.objects.first()
+        if premier_groupe:
+            instance.groupe = premier_groupe
+            instance.save(update_fields=['groupe'])
