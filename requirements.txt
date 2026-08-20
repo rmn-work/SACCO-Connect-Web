@@ -13,3 +13,4 @@ requests
 reportlab
 beautifulsoup4
 passlib
+xhtml2pdf
