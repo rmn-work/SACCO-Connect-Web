@@ -134,7 +134,7 @@ def login_view(request):
                     request.session['membre_id'] = membre.id
                     request.session['membre_nom'] = f"{membre.prenom} {membre.nom}"
                     request.session['role'] = membre.role
-                    return redirect(get_redirect_url('dashboard'))
+                    return redirect(get_redirect_url('core:dashboard'))
                 else:
                     return render(request, 'core/login.html', {'error_message': 'Téléphone ou Code PIN incorrect.', 'next': next_url})
             except Membres.DoesNotExist:
@@ -145,7 +145,6 @@ def login_view(request):
                 is_partner = user.groups.filter(name='Partenaires').exists()
                 is_admin = user.is_superuser or user.is_staff
 
-                # Validation stricte du type d'utilisateur choisi par rapport au compte réel
                 if user_type == 'partenaire' and is_partner:
                     login(request, user)
                     request.session['user_id'] = user.id
