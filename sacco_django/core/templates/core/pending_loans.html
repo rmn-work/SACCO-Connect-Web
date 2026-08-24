@@ -8,7 +8,7 @@
                 <h1 class="text-2xl font-bold text-gray-800">Validation des demandes de prêts</h1>
                 <p class="text-xs text-gray-500 mt-1">Groupe : <span class="font-semibold text-blue-600">{{ admin_membre.groupe.nom|default:"Mon Groupe" }}</span></p>
             </div>
-            <a href="{% url 'dashboard' %}" class="text-sm text-blue-600 hover:underline font-medium">← Retour au tableau de bord</a>
+            <a href="{% url 'core:dashboard' %}" class="text-sm text-blue-600 hover:underline font-medium">← Retour au tableau de bord</a>
         </div>
 
         {% if messages %}
@@ -46,12 +46,12 @@
                                 <td class="p-3 text-gray-800 font-semibold">{{ pret.mont_total_a_rembourser|default:pret.montant_total_a_rembourser|floatformat:2 }} BIF</td>
                                 <td class="p-3 text-center">
                                     <div class="inline-flex items-center space-x-2">
-                                        <a href="{% url 'update_loan_status' pret.id 'approuver' %}"
+                                        <a href="{% url 'core:update_loan_status' pret.id 'approuver' %}"
                                            onclick="return confirm('Approuver ce prêt ?');"
                                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">
                                             Approuver
                                         </a>
-                                        <a href="{% url 'update_loan_status' pret.id 'rejeter' %}"
+                                        <a href="{% url 'core:update_loan_status' pret.id 'rejeter' %}"
                                            onclick="return confirm('Rejeter cette demande ?');"
                                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">
                                             Rejeter
@@ -59,7 +59,7 @@
                                     </div>
                                     {% if pret.id %}
                                         <div class="mt-2">
-                                            <a href="{% url 'generate_loan_contract' pret.id %}"
+                                            <a href="{% url 'core:generate_loan_contract' pret.id %}"
                                                class="bg-gray-700 hover:bg-gray-800 text-white px-2.5 py-1 rounded-md text-[11px] font-medium shadow-sm inline-block transition">
                                                 📄 Imprimer Contrat
                                             </a>

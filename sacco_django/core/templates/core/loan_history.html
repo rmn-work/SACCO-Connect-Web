@@ -16,9 +16,9 @@
 
         <!-- Boutons d'exportation avec conservation des filtres -->
         <div class="flex flex-wrap gap-2 mb-6">
-            <a href="{% url 'export_loans_csv' %}?{{ request.GET.urlencode }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export CSV</a>
-            <a href="{% url 'export_loans_excel' %}?{{ request.GET.urlencode }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export Excel</a>
-            <a href="{% url 'export_loans_pdf' %}?{{ request.GET.urlencode }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export PDF</a>
+            <a href="{% url 'core:export_loans_csv' %}?{{ request.GET.urlencode }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export CSV</a>
+            <a href="{% url 'core:export_loans_excel' %}?{{ request.GET.urlencode }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export Excel</a>
+            <a href="{% url 'core:export_loans_pdf' %}?{{ request.GET.urlencode }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Export PDF</a>
         </div>
 
         <!-- Tableau des prêts -->

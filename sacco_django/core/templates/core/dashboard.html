@@ -64,7 +64,7 @@
         <p class="text-sm text-blue-200 mb-4">Accédez aux fonctions de supervision et de validation des opérations de vos membres.</p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a href="{% url 'group_members_list' %}" class="bg-white/10 hover:bg-white/20 p-4 rounded-xl transition border border-white/10 flex justify-between items-center">
+            <a href="{% url 'core:group_members_list' %}" class="bg-white/10 hover:bg-white/20 p-4 rounded-xl transition border border-white/10 flex justify-between items-center">
                 <div>
                     <h3 class="font-semibold text-sm">Liste des membres du groupe</h3>
                     <p class="text-xs text-blue-200 mt-0.5">Consulter les soldes et présences</p>
@@ -73,7 +73,7 @@
             </a>
 
             {% if membre.role == 'president' %}
-            <a href="{% url 'group_validate_loans' %}" class="bg-white/10 hover:bg-white/20 p-4 rounded-xl transition border border-white/10 flex justify-between items-center">
+            <a href="{% url 'core:group_validate_loans' %}" class="bg-white/10 hover:bg-white/20 p-4 rounded-xl transition border border-white/10 flex justify-between items-center">
                 <div>
                     <h3 class="font-semibold text-sm">Validation des Prêts</h3>
                     <p class="text-xs text-blue-200 mt-0.5">Approuver ou rejeter les demandes de crédit</p>
@@ -224,7 +224,7 @@
 
     <!-- Bouton de retour -->
     <div class="flex justify-end">
-        <a href="{% url 'dashboard' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+        <a href="{% url 'core:dashboard' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
             Retour au Tableau de bord
         </a>
     </div>

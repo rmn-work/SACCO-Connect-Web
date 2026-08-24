@@ -15,20 +15,20 @@
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <span class="font-bold text-lg">SACCO Connect</span>
             <div class="space-x-4 text-sm">
-                <a href="{% url 'dashboard' %}" class="hover:text-blue-400">Tableau de bord</a>
-                <a href="{% url 'member_profile' %}" class="hover:text-blue-400">Mon Profil</a>
-                <a href="{% url 'request_loan' %}" class="hover:text-blue-400 transition">Demander un prêt</a>
+                <a href="{% url 'core:dashboard' %}" class="hover:text-blue-400">Tableau de bord</a>
+                <a href="{% url 'core:member_profile' %}" class="hover:text-blue-400">Mon Profil</a>
+                <a href="{% url 'core:request_loan' %}" class="hover:text-blue-400 transition">Demander un prêt</a>
                 <div class="relative group inline-block">
                     <button class="hover:text-blue-400 transition flex items-center gap-1 py-2 focus:outline-none">
                         Autres services ▾
                     </button>
                     <div class="absolute right-0 mt-0 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 hidden group-hover:block z-50 text-gray-800">
-                        <a href="{% url 'member_qr' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Mon QR Code</a>
-                        <a href="{% url 'ai_predictions' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Prédictions & IA Financière</a>
-                        <a href="{% url 'security_pin' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Sécurité du Compte (PIN)</a>
+                        <a href="{% url 'core:member_qr' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Mon QR Code</a>
+                        <a href="{% url 'core:ai_predictions' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Prédictions & IA Financière</a>
+                        <a href="{% url 'core:security_pin' %}" class="block px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-600 transition">Sécurité du Compte (PIN)</a>
                     </div>
                 </div>
-                <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-white font-medium transition">Se déconnecter</a>
+                <a href="{% url 'core:logout' %}" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-white font-medium transition">Se déconnecter</a>
             </div>
         </div>
     </nav>
@@ -44,13 +44,10 @@
     </div>
     {% endif %}
 
-    <!-- 2. Ajout de 'flex-grow' pour pousser le footer tout en bas -->
     <main class="flex-grow">
         {% block content %}
         {% endblock %}
     </main>
-
-    <!-- 3. Pied de Page placé en fin de body -->
     {% include 'core/footer.html' %}
 
 </body>

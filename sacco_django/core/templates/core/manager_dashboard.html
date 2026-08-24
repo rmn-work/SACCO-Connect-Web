@@ -72,7 +72,7 @@
     <!-- EN-TÊTE PRINCIPAL (Interface Web) -->
     <div class="header no-print">
         <h1>Sacco Admin | Connecté en tant que : {{ admin_nom }}</h1>
-        <a href="{% url 'logout' %}" class="btn-logout">Déconnexion</a>
+        <a href="{% url 'core:logout' %}" class="btn-logout">Déconnexion</a>
     </div>
 
     <!-- BARRE DE NAVIGATION INTERACTIVE DES ONGLETS -->
@@ -168,10 +168,10 @@
 
                 <!-- Ajout des boutons d'exportation avec le paramètre de recherche -->
                 <div style="display: flex; gap: 10px;">
-                    <a href="{% url 'export_members_excel' %}{% if search_query %}?q={{ search_query }}{% endif %}" style="background-color: #27ae60; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;">
+                    <a href="{% url 'core:export_members_excel' %}{% if search_query %}?q={{ search_query }}{% endif %}" style="background-color: #27ae60; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;">
                         📊 Exporter en Excel
                     </a>
-                    <a href="{% url 'export_members_pdf' %}{% if search_query %}?q={{ search_query }}{% endif %}" style="background-color: #e74c3c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;" target="_blank">
+                    <a href="{% url 'core:export_members_pdf' %}{% if search_query %}?q={{ search_query }}{% endif %}" style="background-color: #e74c3c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;" target="_blank">
                         📄 Exporter en PDF
                     </a>
                     <a href="/membres/nouveau" style="background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;">
@@ -181,11 +181,11 @@
             </div>
 
             <!-- Formulaire de recherche -->
-            <form method="GET" action="{% url 'manager_dashboard' %}" style="margin: 20px 0; display: flex; gap: 10px;">
+            <form method="GET" action="{% url 'core:manager_dashboard' %}" style="margin: 20px 0; display: flex; gap: 10px;">
                 <input type="text" name="q" value="{{ search_query }}" placeholder="Rechercher par nom, prénom ou téléphone..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
                 <button type="submit" style="background-color: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">Rechercher</button>
                 {% if search_query %}
-                    <a href="{% url 'manager_dashboard' %}" style="background-color: #7f8c8d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; display: flex; align-items: center;">Réinitialiser</a>
+                    <a href="{% url 'core:manager_dashboard' %}" style="background-color: #7f8c8d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; display: flex; align-items: center;">Réinitialiser</a>
                 {% endif %}
             </form>
 
@@ -220,8 +220,8 @@
                         <td>{{ m.last_login_app|default:"Jamais" }}</td>
                         <td>
                             <div style="display: flex; gap: 5px; flex-direction: column;">
-                                <a href="{% url 'add_transaction' m.id %}" class="btn-action">Transaction</a>
-                                <a href="{% url 'add_credit' m.id %}" class="btn-action" style="background-color: #3498db;">Crédit</a>
+                                <a href="{% url 'core:add_transaction' m.id %}" class="btn-action">Transaction</a>
+                                <a href="{% url 'core:add_credit' m.id %}" class="btn-action" style="background-color: #3498db;">Crédit</a>
                             </div>
                         </td>
                     </tr>
@@ -262,7 +262,7 @@
 
             <!-- Barre d'actions Groupe -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
-                <form method="POST" action="{% url 'creer_groupe' %}" style="display: flex; gap: 8px;">
+                <form method="POST" action="{% url 'core:creer_groupe' %}" style="display: flex; gap: 8px;">
                     {% csrf_token %}
                     <input type="text" name="nom_groupe" placeholder="Nom du nouveau groupe" required style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">
                     <button type="submit" style="background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">
@@ -272,7 +272,7 @@
 
                 <div style="display: flex; gap: 10px;">
                     {% if groupe_selectionne %}
-                    <form method="POST" action="{% url 'archiver_groupe' groupe_selectionne.id %}" onsubmit="return confirm('Archiver ce groupe ? Ses membres repasseront en \'Sans Groupe\'.');">
+                    <form method="POST" action="{% url 'core:archiver_groupe' groupe_selectionne.id %}" onsubmit="return confirm('Archiver ce groupe ? Ses membres repasseront en \'Sans Groupe\'.');">
                         {% csrf_token %}
                         <button type="submit" style="background-color: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">
                             🗑️ Archiver ce Groupe
@@ -287,7 +287,7 @@
             </div>
 
             <!-- Sélecteur de groupe -->
-            <form method="GET" action="{% url 'manager_dashboard' %}" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+            <form method="GET" action="{% url 'core:manager_dashboard' %}" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
                 <label for="gid" style="font-weight: bold; font-size: 13px; color: #555;">Sélectionner un Groupe ID :</label>
                 <input type="number" name="gid" value="{{ selected_gid|default:1 }}" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                 <button type="submit" style="background-color: #3498db; color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">Charger</button>
@@ -305,7 +305,7 @@
             <!-- Sous-onglet: Roles -->
             <div id="sub-tab-roles" class="sub-tab-content active-sub-content">
                 <h3 style="color: #2c3e50; font-size: 15px;">Attribution des Rôles (Président, Secrétaire, etc.)</h3>
-                <form method="GET" action="{% url 'manager_dashboard' %}" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                <form method="GET" action="{% url 'core:manager_dashboard' %}" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
                     <input type="hidden" name="gid" value="{{ selected_gid }}">
                     <input type="text" name="role_q" value="{{ role_query }}" placeholder="Rechercher par ID, Nom ou Téléphone..." style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 300px;">
                     <button type="submit" style="background-color: #2980b9; color: white; border: none; padding: 7px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">Rechercher</button>
@@ -384,7 +384,7 @@
                             <td style="padding: 12px 8px;">
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <!-- Formulaire 1 : Déplacer vers un autre groupe -->
-                                    <form method="POST" action="{% url 'changer_groupe' m.id %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
+                                    <form method="POST" action="{% url 'core:changer_groupe' m.id %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
                                         {% csrf_token %}
                                         <select name="nouveau_groupe_id" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
                                             <option value="">Changer groupe...</option>
@@ -398,7 +398,7 @@
                                     </form>
 
                                     <!-- Formulaire 2 : Retirer du groupe -->
-                                    <form method="POST" action="{% url 'retirer_groupe' m.id %}" style="margin: 0;">
+                                    <form method="POST" action="{% url 'core:retirer_groupe' m.id %}" style="margin: 0;">
                                         {% csrf_token %}
                                         <button type="submit"
                                                 onclick="return confirm('Voulez-vous vraiment retirer ce membre du groupe ?');"
@@ -424,7 +424,7 @@
                             <tr style="border-bottom: 1px solid #ddd; background-color: #f8f9fa;">
                                 <th style="padding: 12px 8px;">ID</th>
                                 <th style="padding: 12px 8px;">Nom du Groupe</th>
-                                <th style="padding: 12px 8px;">Partenaire Assigné</th> <!-- NOUVELLE COLONNE -->
+                                <th style="padding: 12px 8px;">Partenaire Assigné</th>
                                 <th style="padding: 12px 8px;">Actions</th>
                             </tr>
                         </thead>
@@ -436,7 +436,7 @@
 
                                 <!-- LISTE DÉROULANTE DES PARTENAIRES -->
                                 <td style="padding: 12px 8px;">
-                                    <form method="POST" action="{% url 'assigner_partenaire_groupe' groupe.id %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
+                                    <form method="POST" action="{% url 'core:assigner_partenaire_groupe' groupe.id %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
                                         {% csrf_token %}
                                         <select name="partenaire_id" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
                                             <option value="">Aucun partenaire</option>
@@ -449,7 +449,7 @@
                                 </td>
 
                                 <td style="padding: 12px 8px;">
-                                    <form method="POST" action="{% url 'archiver_groupe' groupe.id %}" style="margin: 0;">
+                                    <form method="POST" action="{% url 'core:archiver_groupe' groupe.id %}" style="margin: 0;">
                                         {% csrf_token %}
                                         <button type="submit" style="background-color: #7f8c8d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;" onclick="return confirm('Voulez-vous vraiment archiver ce groupe ?');">
                                             Archiver le groupe
@@ -560,7 +560,7 @@
                         Enregistrement des présences, cotisations d'épargne, caisse sociale et amendes pour le groupe.
                     </p>
 
-                    <form method="POST" action="{% url 'saisie_hebdomadaire' %}">
+                    <form method="POST" action="{% url 'core:saisie_hebdomadaire' %}">
                         {% csrf_token %}
                         <input type="hidden" name="groupe_id" value="{{ selected_gid }}">
 
@@ -651,11 +651,11 @@
 
                     <!-- Boutons d'action Exportation -->
                     <div style="display: flex; gap: 8px; margin-top: 18px; margin-left: auto;">
-                        <a href="{% url 'export_caisse_sociale_excel' %}?selected_gid={{ selected_gid }}&selected_member_id={{ selected_member_id }}&mois_filtre={{ mois_filtre_courant }}"
+                        <a href="{% url 'core:export_caisse_sociale_excel' %}?selected_gid={{ selected_gid }}&selected_member_id={{ selected_member_id }}&mois_filtre={{ mois_filtre_courant }}"
                            style="background-color: #27ae60; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;">
                             📊 Excel
                         </a>
-                        <a href="{% url 'export_caisse_sociale_pdf' %}?selected_gid={{ selected_gid }}&selected_member_id={{ selected_member_id }}&mois_filtre={{ mois_filtre_courant }}"
+                        <a href="{% url 'core:export_caisse_sociale_pdf' %}?selected_gid={{ selected_gid }}&selected_member_id={{ selected_member_id }}&mois_filtre={{ mois_filtre_courant }}"
                            style="background-color: #c0392b; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;"
                            target="_blank">
                             📄 PDF
@@ -703,7 +703,6 @@
                             {% for ligne in pivot_sociale %}
                             <tr style="border-bottom: 1px solid #f1f1f1;">
                                 <td style="padding: 10px;">
-                                    <!-- CORRECTION EFFECTUÉE ICI : Utilisation de ligne.membre_id -->
                                     <strong>#{{ ligne.membre_id|default:ligne.id }} - {{ ligne.nom_complet }}</strong>
                                 </td>
                                 <td style="text-align: right; padding: 10px; background-color: #fcfcfc; color: #7f8c8d;">
@@ -804,7 +803,7 @@
                 {% for g_arch in groupes_archives %}
                 <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
                     <span><strong>{{ g_arch.nom }}</strong> (Archivé)</span>
-                    <form method="POST" action="{% url 'restaurer_groupe' g_arch.id %}">
+                    <form method="POST" action="{% url 'core:restaurer_groupe' g_arch.id %}">
                         {% csrf_token %}
                         <button type="submit" style="background: #2ecc71; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">Restaurer</button>
                     </form>
@@ -829,7 +828,7 @@
                         <p class="text-sm text-gray-500">Suivi détaillé des versements, retraits, pénalités et octrois de crédits.</p>
                     </div>
                     <!-- BOUTON PDF MIS À JOUR -->
-                    <a href="{% url 'export_transactions_pdf' %}?q={{ search_query }}&type_op={{ selected_type }}"
+                    <a href="{% url 'core:export_transactions_pdf' %}?q={{ search_query }}&type_op={{ selected_type }}"
                        class="no-print bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded shadow flex items-center gap-2 text-decoration-none"
                        target="_blank">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -860,7 +859,7 @@
                 </div>
 
                 <!-- Filtres des transactions -->
-                <form method="GET" action="{% url 'manager_dashboard' %}" class="no-print bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
+                <form method="GET" action="{% url 'core:manager_dashboard' %}" class="no-print bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
                     <input type="hidden" name="tab" value="transactions">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Recherche (Membre / Groupe)</label>
@@ -950,7 +949,7 @@
                 <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
                     Déterminez la date et l'heure de la prochaine réunion pour un groupe spécifique. Cette information sera immédiatement visible par tous ses membres.
                 </p>
-                <form method="POST" action="{% url 'admin_planifier_reunion' %}">
+                <form method="POST" action="{% url 'core:admin_planifier_reunion' %}">
                     {% csrf_token %}
                     <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div style="flex: 1;">
@@ -981,7 +980,7 @@
             <!-- Réinitialisation PIN -->
             <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
                 <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">🔑 Réinitialisation du code PIN / Mot de passe d'un membre</h3>
-                <form method="POST" action="{% url 'admin_reset_pin' %}">
+                <form method="POST" action="{% url 'core:admin_reset_pin' %}">
                     {% csrf_token %}
                     <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div style="flex: 1;">
@@ -1000,7 +999,7 @@
             <!-- Suspension / Réactivation -->
             <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px;">
                 <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">🚫 Suspension / Changement de Statut d'un compte</h3>
-                <form method="POST" action="{% url 'admin_toggle_status' %}">
+                <form method="POST" action="{% url 'core:admin_toggle_status' %}">
                     {% csrf_token %}
                     <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div style="flex: 1;">

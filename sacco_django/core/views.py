@@ -38,9 +38,8 @@ import pandas as pd
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from xhtml2pdf import pisa
-
-
-
+from .decorators import partner_required
+from django.utils.http import url_has_allowed_host_and_scheme
 
 
 try:
@@ -74,13 +73,28 @@ def redirect_based_on_role(user):
 @ensure_csrf_cookie
 @never_cache
 def login_view(request):
+    next_url = request.POST.get('next') or request.GET.get('next')
+
+    def get_redirect_url(default_route):
+        """Valide l'URL 'next' ou renvoie la route par défaut."""
+        if next_url and url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        ):
+            return next_url
+        return redirect(default_route).url
+
     if request.user.is_authenticated:
-        if request.user.is_superuser or request.user.is_staff:
-            return redirect('manager_dashboard')
-        elif request.user.groups.filter(name='Partenaires').exists():
-            return redirect('partner_dashboard')
-    if 'membre_id' in request.session or 'user_id' in request.session:
-        return redirect('dashboard')
+        if request.user.groups.filter(name='Partenaires').exists():
+            return redirect(get_redirect_url('core:partner_dashboard'))
+        elif request.user.is_superuser or request.user.is_staff:
+            return redirect(get_redirect_url('core:manager_dashboard'))
+        else:
+            logout(request)
+
+    if 'membre_id' in request.session:
+        return redirect(get_redirect_url('dashboard'))
 
     if request.method == 'POST':
         user_type = request.POST.get('user_type')
@@ -92,6 +106,7 @@ def login_view(request):
             user_type = 'membre'
         if not secret and request.POST.get('pin'):
             secret = request.POST.get('pin')
+
         if user_type == 'membre':
             try:
                 membre = Membres.objects.get(telephone=identifier)
@@ -115,50 +130,63 @@ def login_view(request):
                     membre.last_login = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
                     membre.save()
                     request.session['user_id'] = membre.id
-                    request.session['user_type'] = user_type
+                    request.session['user_type'] = 'membre'
                     request.session['membre_id'] = membre.id
                     request.session['membre_nom'] = f"{membre.prenom} {membre.nom}"
                     request.session['role'] = membre.role
-                    return redirect('dashboard')
+                    return redirect(get_redirect_url('dashboard'))
                 else:
-                    return render(request, 'core/login.html', {'error_message': 'Téléphone ou Code PIN incorrect.'})
+                    return render(request, 'core/login.html', {'error_message': 'Téléphone ou Code PIN incorrect.', 'next': next_url})
             except Membres.DoesNotExist:
-                return render(request, 'core/login.html', {'error_message': 'Téléphone ou Code PIN incorrect.'})
+                return render(request, 'core/login.html', {'error_message': 'Téléphone ou Code PIN incorrect.', 'next': next_url})
         else:
             user = authenticate(request, username=identifier, password=secret)
             if user is not None and user.is_active:
-                login(request, user)
-                request.session['user_id'] = user.id
-                request.session['user_type'] = user_type
-                request.session['membre_id'] = user.id
-                request.session['role'] = 'admin'
+                is_partner = user.groups.filter(name='Partenaires').exists()
+                is_admin = user.is_superuser or user.is_staff
 
-                if user_type == 'admin' and (user.is_superuser or user.is_staff):
-                    return redirect('manager_dashboard')
-                elif user_type == 'partenaire' and user.groups.filter(name='Partenaires').exists():
-                    return redirect('partner_dashboard')
+                # Validation stricte du type d'utilisateur choisi par rapport au compte réel
+                if user_type == 'partenaire' and is_partner:
+                    login(request, user)
+                    request.session['user_id'] = user.id
+                    request.session['user_type'] = 'partenaire'
+                    request.session['role'] = 'partenaire'
+                    return redirect(get_redirect_url('core:partner_dashboard'))
+                elif user_type == 'admin' and is_admin:
+                    login(request, user)
+                    request.session['user_id'] = user.id
+                    request.session['user_type'] = 'admin'
+                    request.session['role'] = 'admin'
+                    return redirect(get_redirect_url('core:manager_dashboard'))
                 else:
                     return render(request, 'core/login.html',
-                                  {'error_message': "Vous n'avez pas les droits pour cet espace."})
+                                  {'error_message': "Vous n'avez pas les droits pour cet espace.", 'next': next_url})
             else:
                 return render(request, 'core/login.html',
-                              {'error_message': 'Nom d\'utilisateur ou mot de passe incorrect.'})
+                              {'error_message': 'Nom d\'utilisateur ou mot de passe incorrect.', 'next': next_url})
 
-    return render(request, 'core/login.html')
+    return render(request, 'core/login.html', {'next': next_url})
 
 universal_login_view = login_view
 
 
 def partner_login_view(request):
+    error_message = None
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            return redirect('partner_dashboard')
-    else:
-        form = AuthenticationForm()
-    return render(request, 'core/partner_login.html', {'form': form})
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None and user.is_active:
+            if user.groups.filter(name='Partenaires').exists() or user.is_superuser:
+                login(request, user)
+                return redirect('core:partner_dashboard')
+            else:
+                error_message = "Vous n'avez pas les droits d'accès partenaires."
+        else:
+            error_message = "Nom d'utilisateur ou mot de passe incorrect."
+
+    return render(request, 'core/partner_login.html', {'error_message': error_message})
 
 
 def manager_dashboard_view(request):
@@ -376,7 +404,7 @@ def manager_dashboard_view(request):
 
 def logout_view(request):
     request.session.flush()
-    return redirect('login')
+    return redirect('/')
 
 
 def member_profile_view(request):
@@ -621,12 +649,27 @@ def loan_calculator_view(request):
         'taux_saisi': taux_saisi, 'erreur': erreur}
     return render(request, 'core/loan_calculator.html', context)
 
-
 @login_required(login_url='/partenaire/login/')
 @user_passes_test(is_partner, login_url='/partenaire/login/')
 def partner_dashboard_view(request):
-    return render(request, 'core/partner_dashboard.html')
+    context = {
+        'partner_name': request.user.username,
+    }
+    return render(request, 'core/partner_dashboard.html', context)
 
+@login_required
+def partner_members_view(request):
+    context = {
+        'partner_name': request.user.username,
+    }
+    return render(request, 'core/partner_members.html', context)
+
+@login_required
+def partner_reports_view(request):
+    context = {
+        'partner_name': request.user.username,
+    }
+    return render(request, 'core/partner_reports.html', context)
 
 @user_passes_test(is_manager, login_url='/login/')
 def list_pending_loans_view(request):
@@ -1594,4 +1637,4 @@ def admin_planifier_reunion_view(request):
         # groupe.save()
 
         messages.success(request, "La date de la prochaine réunion a été planifiée avec succès pour le groupe.")
-    return redirect('manager_dashboard')  # Redirigez vers votre tableau de bord manager
+    return redirect('manager_dashboard')

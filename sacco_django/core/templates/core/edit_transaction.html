@@ -15,7 +15,7 @@
                 {{ form.as_p }}
             </div>
             <div class="mt-6 flex justify-end gap-3">
-                <a href="{% url 'transaction_detail' transaction.id %}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Annuler</a>
+                <a href="{% url 'core:transaction_detail' transaction.id %}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Annuler</a>
                 <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Enregistrer les modifications</button>
             </div>
         </form>

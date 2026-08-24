@@ -65,7 +65,7 @@
                             <td style="padding: 10px; border-bottom: 1px solid #eee; color: #27ae60; font-weight: bold;">{{ t.montant }} BIF</td>
                             <td style="padding: 10px; border-bottom: 1px solid #eee;">
                                 {% if t.type_operation == 'Octroi de Crédit' %}
-                                    <a href="{% url 'generate_loan_contract' t.id %}" style="background-color: #34495e; color: white; padding: 5px 10px; text-decoration: none; border-radius: 4px; font-size: 11px;">
+                                    <a href="{% url 'core:generate_loan_contract' t.id %}" style="background-color: #34495e; color: white; padding: 5px 10px; text-decoration: none; border-radius: 4px; font-size: 11px;">
                                         📄 Imprimer Contrat
                                     </a>
                                 {% endif %}
@@ -81,7 +81,7 @@
 
         <div style="background: #fff; padding: 15px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
             <h4 style="margin-top: 0; color: #c0392b;">Appliquer une pénalité de retard</h4>
-            <form method="POST" action="{% url 'apply_penalty' membre.id %}">
+            <form method="POST" action="{% url 'core:apply_penalty' membre.id %}">
                 {% csrf_token %}
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <input type="number" name="montant_penalite" placeholder="Montant de la pénalité (BIF)" required min="1" step="any" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1;">
@@ -91,9 +91,9 @@
         </div>
 
         <div class="actions">
-            <a href="{% url 'add_transaction' membre.id %}" class="btn btn-green">Ajouter une transaction</a>
-            <a href="{% url 'grant_credit' membre.id %}" class="btn btn-orange">Octroyer un crédit</a>
-            <a href="{% url 'manager_dashboard' %}" class="btn btn-gray">Retour au tableau de bord</a>
+            <a href="{% url 'core:add_transaction' membre.id %}" class="btn btn-green">Ajouter une transaction</a>
+            <a href="{% url 'core:grant_credit' membre.id %}" class="btn btn-orange">Octroyer un crédit</a>
+            <a href="{% url 'core:manager_dashboard' %}" class="btn btn-gray">Retour au tableau de bord</a>
         </div>
     </div>
 

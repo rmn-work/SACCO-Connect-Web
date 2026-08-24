@@ -50,17 +50,17 @@
 
             <div class="space-x-2">
                 <!-- Bouton Modifier -->
-                <a href="{% url 'edit_transaction' transaction.id %}" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                <a href="{% url 'core:edit_transaction' transaction.id %}" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold px-4 py-2 rounded shadow">
                     ✏️ Modifier
                 </a>
                 <!-- Bouton d'export PDF -->
-                <a href="{% url 'export_transaction_pdf' transaction.id %}" class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                <a href="{% url 'core:export_transaction_pdf' transaction.id %}" class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded shadow">
                     📄 Télécharger en PDF
                 </a>
-                <a href="{% url 'filtered_transactions' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                <a href="{% url 'core:filtered_transactions' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded shadow">
                     Voir toutes les transactions
                 </a>
-                <a href="{% url 'delete_transaction' transaction.id %}"nclass="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded shadow">
+                <a href="{% url 'core:delete_transaction' transaction.id %}"nclass="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded shadow">
                     🗑️ Supprimer
                 </a>
             </div>
