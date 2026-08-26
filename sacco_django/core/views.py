@@ -27,10 +27,11 @@ from django.contrib.auth.decorators import permission_required, user_passes_test
 from django.utils import timezone
 from .utils import calculer_amortissement
 from django.conf import settings
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
+from django.middleware.csrf import rotate_token
 from django.contrib.staticfiles import finders
 from bs4 import BeautifulSoup
 from passlib.context import CryptContext
@@ -40,6 +41,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from xhtml2pdf import pisa
 from .decorators import partner_required
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.shortcuts import render, redirect
+from django.urls import reverse
 
 
 try:
@@ -69,35 +72,38 @@ def redirect_based_on_role(user):
         return redirect('partner_dashboard')
     return redirect('dashboard')
 
-
-@ensure_csrf_cookie
 @never_cache
+@ensure_csrf_cookie
 def login_view(request):
     next_url = request.POST.get('next') or request.GET.get('next')
 
-    def get_redirect_url(default_route):
-        """Valide l'URL 'next' ou renvoie la route par défaut."""
+    def get_redirect_url(default_route, is_admin_route=False):
+        """
+        Valide l'URL 'next' uniquement si elle correspond aux droits de l'utilisateur,
+        sinon retourne l'URL par défaut pour éviter les boucles de redirection.
+        """
         if next_url and url_has_allowed_host_and_scheme(
             url=next_url,
             allowed_hosts={request.get_host()},
             require_https=request.is_secure()
         ):
+            if '/manager/' in next_url and not is_admin_route:
+                return reverse(default_route)
             return next_url
-        return redirect(default_route).url
+        return reverse(default_route)
 
-    if request.user.is_authenticated:
-        if request.user.groups.filter(name='Partenaires').exists():
-            return redirect(get_redirect_url('core:partner_dashboard'))
-        elif request.user.is_superuser or request.user.is_staff:
-            return redirect(get_redirect_url('core:manager_dashboard'))
-        else:
-            logout(request)
+    if request.method == 'GET':
+        if request.session.get('is_member_authenticated'):
+            return redirect(get_redirect_url('core:dashboard', is_admin_route=False))
 
-    if 'membre_id' in request.session:
-        return redirect(get_redirect_url('dashboard'))
+        if request.user.is_authenticated:
+            if request.user.groups.filter(name='Partenaires').exists():
+                return redirect(get_redirect_url('core:partner_dashboard', is_admin_route=False))
+            elif request.user.is_superuser or request.user.is_staff:
+                return redirect(get_redirect_url('core:manager_dashboard', is_admin_route=True))
 
     if request.method == 'POST':
-        user_type = request.POST.get('user_type')
+        user_type = request.POST.get('user_type', 'membre')
         identifier = request.POST.get('identifier', '').strip()
         secret = request.POST.get('secret', '').strip()
 
@@ -127,18 +133,31 @@ def login_view(request):
                         authenticated = True
 
                 if authenticated:
+                    request.session.cycle_key()
+                    rotate_token(request)
                     membre.last_login = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
                     membre.save()
+
+                    request.session['is_member_authenticated'] = True
                     request.session['user_id'] = membre.id
                     request.session['user_type'] = 'membre'
                     request.session['membre_id'] = membre.id
                     request.session['membre_nom'] = f"{membre.prenom} {membre.nom}"
                     request.session['role'] = membre.role
-                    return redirect(get_redirect_url('core:dashboard'))
+
+                    # REDIRECTION FIXE : Toujours rediriger vers l'espace membre
+                    return redirect(get_redirect_url('core:dashboard', is_admin_route=False))
                 else:
-                    return render(request, 'core/login.html', {'error_message': 'Téléphone ou Code PIN incorrect.', 'next': next_url})
+                    return render(request, 'core/login.html', {
+                        'error_message': 'Téléphone ou Code PIN incorrect.',
+                        'next': next_url
+                    })
             except Membres.DoesNotExist:
-                return render(request, 'core/login.html', {'error_message': 'Téléphone ou Code PIN incorrect.', 'next': next_url})
+                return render(request, 'core/login.html', {
+                    'error_message': 'Téléphone ou Code PIN incorrect.',
+                    'next': next_url
+                })
+
         else:
             user = authenticate(request, username=identifier, password=secret)
             if user is not None and user.is_active:
@@ -150,23 +169,45 @@ def login_view(request):
                     request.session['user_id'] = user.id
                     request.session['user_type'] = 'partenaire'
                     request.session['role'] = 'partenaire'
-                    return redirect(get_redirect_url('core:partner_dashboard'))
+                    return redirect(get_redirect_url('core:partner_dashboard', is_admin_route=False))
                 elif user_type == 'admin' and is_admin:
                     login(request, user)
                     request.session['user_id'] = user.id
                     request.session['user_type'] = 'admin'
                     request.session['role'] = 'admin'
-                    return redirect(get_redirect_url('core:manager_dashboard'))
+                    return redirect(get_redirect_url('core:manager_dashboard', is_admin_route=True))
                 else:
-                    return render(request, 'core/login.html',
-                                  {'error_message': "Vous n'avez pas les droits pour cet espace.", 'next': next_url})
+                    return render(request, 'core/login.html', {
+                        'error_message': "Vous n'avez pas les droits pour cet espace.",
+                        'next': next_url
+                    })
             else:
-                return render(request, 'core/login.html',
-                              {'error_message': 'Nom d\'utilisateur ou mot de passe incorrect.', 'next': next_url})
+                return render(request, 'core/login.html', {
+                    'error_message': "Nom d'utilisateur ou mot de passe incorrect.",
+                    'next': next_url
+                })
 
     return render(request, 'core/login.html', {'next': next_url})
 
 universal_login_view = login_view
+
+
+def logout_view(request):
+    """
+    Déconnecte un utilisateur (Membre, Partenaire ou Admin)
+    et nettoie intégralement les données de session.
+    """
+    # 1. Déconnexion de l'utilisateur Django standard (si connecté via User)
+    logout(request)
+
+    # 2. Suppression de toutes les variables de session (y compris is_member_authenticated, user_id, etc.)
+    request.session.flush()
+
+    # 3. Message de confirmation (optionnel)
+    messages.success(request, "Vous avez été déconnecté avec succès.")
+
+    # 4. Redirection vers la page de connexion
+    return redirect('core:login')
 
 
 def partner_login_view(request):
@@ -189,13 +230,17 @@ def partner_login_view(request):
 
 
 def manager_dashboard_view(request):
-    is_admin_auth = request.user.is_authenticated and (
+    is_django_admin = request.user.is_authenticated and (
             request.user.is_superuser or request.user.is_staff or is_manager(request.user)
     )
-    role = str(request.session.get('role', '')).lower()
-    is_session_admin = 'membre_id' in request.session and ('admin' in role or 'gestionnaire' in role)
-    if not is_admin_auth and not is_session_admin:
-        return redirect('login')
+
+    role_session = str(request.session.get('role', '')).upper()
+    is_session_admin = (
+                               request.session.get('is_member_authenticated') is True or 'membre_id' in request.session
+                       ) and role_session in ['ADMIN', 'MANAGER', 'GESTIONNAIRE', 'SECRETAIRE']
+
+    if not (is_django_admin or is_session_admin):
+        return redirect('core:login')
 
     if request.method == 'POST' and 'update_role' in request.POST:
         membre_id = request.POST.get('membre_id')
@@ -307,18 +352,26 @@ def manager_dashboard_view(request):
 
         cumul_actuel = report_anterieur + sum_mois
         pivot_sociale.append({
-            'id': m.pk, 'nom_complet': f"{m.prenom or ''} {m.nom}", 'report_anterieur': report_anterieur,
-            'montants': montants_mois, 'total_mois': sum_mois, 'cumul_actuel': cumul_actuel,
+            'id': m.pk,
+            'nom_complet': f"{m.prenom or ''} {m.nom}",
+            'report_anterieur': report_anterieur,
+            'montants': montants_mois,
+            'total_mois': sum_mois,
+            'cumul_actuel': cumul_actuel,
         })
 
         pivot_presences.append({
-            'id': m.id, 'nom_complet': f"{m.prenom or ''} {m.nom}", 'statuts': statuts_list
+            'id': m.id,
+            'nom_complet': f"{m.prenom or ''} {m.nom}",
+            'statuts': statuts_list
         })
 
         solde_total_avec_sociale = cumul_epargne + total_caisse_sociale_membre
 
         table_epargne.append({
-            'id': m.id, 'nom_complet': f"{m.prenom or ''} {m.nom}", 'details': details_epargne,
+            'id': m.id,
+            'nom_complet': f"{m.prenom or ''} {m.nom}",
+            'details': details_epargne,
             'caisse_sociale': total_caisse_sociale_membre,
             'solde_total_avec_sociale': f"{solde_total_avec_sociale:,.0f}",
         })
@@ -361,7 +414,8 @@ def manager_dashboard_view(request):
     ]
 
     context = {
-        'admin_nom': request.session.get('membre_nom') or request.user.username,
+        'admin_nom': request.session.get('membre_nom') or (
+            request.user.username if request.user.is_authenticated else "Administrateur"),
         'membres': membres_pagines,
         'total_membres': Membres.objects.count(),
         'total_epargne': total_epargne,
@@ -394,12 +448,11 @@ def manager_dashboard_view(request):
         'membres_groupe': tous_les_membres,
         'tous_les_membres': Membres.objects.filter(is_active=True),
         'tous_les_groupes': tous_les_groupes,
-        'groupes_disponibles': groupes_disponibles,  # Ajouté ici
+        'groupes_disponibles': groupes_disponibles,
         'tous_les_partenaires': Partenaire.objects.all(),
     }
 
     return render(request, 'core/manager_dashboard.html', context)
-
 
 def logout_view(request):
     request.session.flush()
@@ -409,7 +462,7 @@ def logout_view(request):
 def member_profile_view(request):
     membre_id = request.session.get('membre_id') or request.session.get('user_id')
     if not membre_id:
-        return redirect('login')
+        return redirect('core:login')
 
     membre = get_object_or_404(Membres, id=membre_id)
     context = {
@@ -422,7 +475,7 @@ def member_qr_view(request):
     """Génère un QR Code unique pour identifier le membre."""
     membre_id = request.session.get('membre_id')
     if not membre_id:
-        return redirect('login')
+        return redirect('core:login')
 
     membre = get_object_or_404(Membres, id=membre_id)
     qr_data = f"SACCO-ID:{membre.id} | Nom: {membre.nom} {membre.prenom} | Tél: {membre.telephone}"
@@ -440,7 +493,7 @@ def member_qr_view(request):
 def ai_predictions_view(request):
     membre_id = request.session.get('membre_id')
     if not membre_id:
-        return redirect('login')
+        return redirect('core:login')
 
     membre = get_object_or_404(Membres, id=membre_id)
     epargne_actuelle = membre.solde_epargne or 0
@@ -488,7 +541,7 @@ def add_transaction_view(request, membre_id=None):
 
     if not is_staff_admin and (
             'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role)):
-        return redirect('login')
+        return redirect('core:login')
 
     membre = None
     if membre_id:
@@ -516,7 +569,7 @@ def add_transaction_view(request, membre_id=None):
 def add_member_view(request):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
     error = None
     if request.method == 'POST':
         nom = request.POST.get('nom', '').strip()
@@ -541,7 +594,7 @@ def grant_credit_view(request, membre_id):
 
     if not is_staff_admin and (
             'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role)):
-        return redirect('login')
+        return redirect('core:login')
 
     try:
         membre = Membres.objects.get(id=membre_id)
@@ -567,7 +620,7 @@ def grant_credit_view(request, membre_id):
 def member_detail_view(request, membre_id):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
     try:
         membre = Membres.objects.get(id=membre_id)
         transactions = membre.transactions.all().order_by('-date_transaction')
@@ -582,7 +635,7 @@ def member_detail_view(request, membre_id):
 def export_members_pdf(request):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
 
     search_query = request.GET.get('q', '')
     membres_qs = Membres.objects.all().order_by('nom')
@@ -611,7 +664,7 @@ def export_members_pdf(request):
 def loan_calculator_view(request):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
     schedule = []
     montant = 0
     taux_saisi = ""
@@ -693,7 +746,7 @@ def update_loan_status_view(request, pret_id, action):
 def generate_loan_contract_pdf(request, transaction_id):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
     transaction = get_object_or_404(TransactionHistory, id=transaction_id, type_operation="Octroi de Crédit")
     membre = transaction.membre
     buffer = io.BytesIO()
@@ -740,7 +793,7 @@ def generate_loan_contract_pdf(request, transaction_id):
 def apply_penalty_view(request, membre_id):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
     membre = get_object_or_404(Membres, id=membre_id)
     if request.method == 'POST':
         try:
@@ -762,7 +815,7 @@ def apply_penalty_view(request, membre_id):
 def financial_report_view(request):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
 
     transactions = TransactionHistory.objects.all().select_related('membre').order_by('-date_operation')
     type_op = request.GET.get('type_op', '').strip()
@@ -830,7 +883,7 @@ def get_brb_exchange_rates():
 
 def dashboard_view(request):
     if 'user_id' not in request.session and 'membre_id' not in request.session:
-        return redirect('login')
+        return redirect('core:login')
 
     membre = None
     membre_id = request.session.get('membre_id')
@@ -856,7 +909,7 @@ def dashboard_view(request):
 def filtered_transactions_view(request):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
     transactions = TransactionHistory.objects.all().select_related('membre')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
@@ -874,7 +927,7 @@ def filtered_transactions_view(request):
 def search_member_view(request):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
-        return redirect('login')
+        return redirect('core:login')
     query = request.GET.get('q', '')
     membres = []
     if query:
@@ -997,7 +1050,7 @@ def export_members_csv(request):
 def request_loan_view(request):
     membre_id = request.session.get('membre_id')
     if not membre_id:
-        return redirect('login')
+        return redirect('core:login')
 
     membre = get_object_or_404(Membres, id=membre_id)
 
@@ -1092,7 +1145,7 @@ def loan_detail_view(request, pret_id):
     membre_id = request.session.get('membre_id')
     role = str(request.session.get('role', '')).lower()
     if not membre_id and ('admin' not in role and 'gestionnaire' not in role and not request.user.is_authenticated):
-        return redirect('login')
+        return redirect('core:login')
     if membre_id and 'admin' not in role and 'gestionnaire' not in role:
         pret = get_object_or_404(Pret, id=pret_id, membre_id=membre_id)
     else:
@@ -1146,7 +1199,7 @@ def approbation_finale_directeur(request, pret_id):
 def security_pin_view(request):
     membre_id = request.session.get('membre_id')
     if not membre_id:
-        return redirect('login')
+        return redirect('core:login')
 
     membre = get_object_or_404(Membres, id=membre_id)
     success_message = None
@@ -1173,12 +1226,12 @@ def security_pin_view(request):
 def group_validate_loans_view(request):
     membre_id = request.session.get('membre_id')
     if not membre_id:
-        return redirect('login')
+        return redirect('core:login')
 
     membre = get_object_or_404(Membres, id=membre_id)
 
     if membre.role != 'president':
-        return redirect('dashboard')
+        return redirect('core:dashboard')
 
     return render(request, 'core/group_validate_loans.html', {'membre': membre})
 
@@ -1637,3 +1690,89 @@ def admin_planifier_reunion_view(request):
 
         messages.success(request, "La date de la prochaine réunion a été planifiée avec succès pour le groupe.")
     return redirect('manager_dashboard')
+
+def home_view(request):
+    return render(request, 'core/home.html')
+
+def custom_csrf_failure(request, reason=""):
+    """Gestionnaire sur mesure pour les erreurs de validation CSRF (403)."""
+    context = {
+        'reason': reason,
+    }
+    return render(request, 'core/403_csrf.html', context, status=403)
+
+
+def ajouter_partenaire_view(request):
+    role = str(request.session.get('role', '')).lower()
+    if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
+        return redirect('core:login')
+
+    if request.method == 'POST':
+        nom = request.POST.get('nom', '').strip()
+        email = request.POST.get('email', '').strip()
+
+        if not nom or not email:
+            messages.error(request, "Veuillez remplir tous les champs obligatoires.")
+        else:
+            # Option A : Si vous avez un modèle Partenaire
+            # Partenaire.objects.create(nom=nom, email=email)
+
+            # Option B : Si le partenaire est un enregistrement dans le modèle Membres
+            # Membres.objects.create(nom=nom, email=email, role='partenaire', ...)
+
+            messages.success(request, f"Le partenaire {nom} a été ajouté.")
+
+    return redirect('core:manager_dashboard')
+
+
+def enregistrer_presences_view(request):
+    role = str(request.session.get('role', '')).lower()
+    if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
+        return redirect('core:login')
+
+    if request.method == 'POST':
+        date_reunion = request.POST.get('date_reunion')
+        # Logique de sauvegarde des présences en base de données...
+
+        messages.success(request, "Les présences ont été enregistrées avec succès.")
+
+    return redirect('core:manager_dashboard')
+
+def enregistrer_caisse_sociale_view(request):
+    role = str(request.session.get('role', '')).lower()
+    if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
+        return redirect('core:login')
+
+    if request.method == 'POST':
+        # Logique d'enregistrement de la caisse sociale
+        messages.success(request, "Cotisation enregistrée.")
+
+    return redirect('core:manager_dashboard')
+
+def about_view(request):
+    return render(request, 'core/about.html')
+
+
+def contact_view(request):
+    if request.method == 'POST':
+        # Récupération des données du formulaire
+        name = request.POST.get('name')
+        contact_info = request.POST.get('contact_info')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+
+        # Ici vous pouvez ajouter l'envoi d'un email ou la sauvegarde en BDD
+
+        messages.success(request, "Votre message a bien été envoyé. Nous vous répondrons dans les plus brefs délais.")
+        return redirect('core:contact')
+
+    return render(request, 'core/contact.html')
+
+def privacy_view(request):
+    return render(request, 'core/privacy.html')
+
+def terms_view(request):
+    return render(request, 'core/terms.html')
+
+def accessibility_view(request):
+    return render(request, 'core/accessibility.html')

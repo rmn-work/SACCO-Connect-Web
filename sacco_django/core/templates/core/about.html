@@ -1,0 +1,160 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}À propos - SACCO Connect{% endblock %}
+
+{% block content %}
+<section class="about-section">
+  <div class="about-container">
+
+    <!-- En-tête -->
+    <div class="about-header">
+      <span class="badge-tag">NOTRE HISTOIRE & MISSION</span>
+      <h1>À propos de SACCO Connect</h1>
+      <p class="lead-text">
+        Une solution technologique conçue pour moderniser la gestion de l'épargne collective et renforcer la solidarité financière au Burundi.
+      </p>
+    </div>
+
+    <!-- Grille de présentation (Cartes d'informations) -->
+    <div class="about-grid">
+
+      <div class="about-card">
+        <div class="card-icon">🌱</div>
+        <h3>Notre Mission</h3>
+        <p>
+          Faciliter l'accès aux services financiers de proximité en offrant aux membres une plateforme simple, sécurisée et transparente pour piloter leurs épargnes et leurs tontines au quotidien.
+        </p>
+      </div>
+
+      <div class="about-card">
+        <div class="card-icon">🤝</div>
+        <h3>Tradition & Innovation</h3>
+        <p>
+          Nous combinons la force des pratiques traditionnelles de solidarité financière burundaise avec des outils numériques modernes pour garantir un suivi fluide et automatisé.
+        </p>
+      </div>
+
+      <div class="about-card">
+        <div class="card-icon">🛡️</div>
+        <h3>Transparence & Sécurité</h3>
+        <p>
+          Chaque transaction, cotisations et rapports financiers sont centralisés pour assurer une visibilité totale aux membres, aux administrateurs et aux partenaires de développement.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Section Impact local -->
+    <div class="impact-box">
+      <h2>Un impact direct pour nos communautés</h2>
+      <p>
+        En numérisant les processus de gestion des SACCO et des groupes d'épargne, SACCO Connect permet de réduire les erreurs manuelles, d'accélérer l'octroi des crédits internes et de renforcer la confiance au sein des communautés à Bujumbura et dans tout le pays.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .about-section {
+    padding: 60px 20px;
+    background-color: #f8faf9;
+    color: #2a3a30;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .about-container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .about-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .badge-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ea8223;
+    background-color: rgba(234, 130, 35, 0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+  }
+
+  .about-header h1 {
+    font-size: 2.2rem;
+    color: #1b4985;
+    margin-bottom: 15px;
+    font-weight: 800;
+  }
+
+  .lead-text {
+    font-size: 1.1rem;
+    color: #4a5568;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+  }
+
+  .about-card {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #d2dbcf;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  }
+
+  .card-icon {
+    font-size: 2rem;
+    margin-bottom: 15px;
+  }
+
+  .about-card h3 {
+    color: #1b4985;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+  }
+
+  .about-card p {
+    color: #4a5568;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .impact-box {
+    background-color: #1b4985;
+    color: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .impact-box h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+  }
+
+  .impact-box p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    opacity: 0.95;
+  }
+</style>
+{% endblock %}

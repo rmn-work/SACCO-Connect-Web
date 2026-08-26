@@ -1,10 +1,14 @@
 from django.urls import path
 from . import views
+from core import views
+from django.views.generic import TemplateView
 
 app_name = 'core'
 
 urlpatterns = [
     path('', views.login_view, name='home'),
+    path('', views.home_view, name='home'),
+    path('dashboard/', views.dashboard_view, name='dashboard'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('partner/login/', views.partner_login_view, name='partner_login'),
@@ -19,6 +23,9 @@ urlpatterns = [
     path('manager/export/excel/', views.export_caisse_sociale_excel, name='export_caisse_sociale_excel'),
     path('manager/export/pdf/', views.export_caisse_sociale_pdf, name='export_caisse_sociale_pdf'),
     path('manager/nouveau-membre/', views.add_member_view, name='add_member'),
+    path('manager/partenaire/ajouter/', views.ajouter_partenaire_view, name='ajouter_partenaire'),
+    path('manager/caisse-sociale/enregistrer/', views.enregistrer_caisse_sociale_view, name='enregistrer_caisse_sociale'),
+    path('manager/presences/enregistrer/', views.enregistrer_presences_view, name='enregistrer_presences'),
     path('manager/transaction/<int:membre_id>/', views.add_transaction_view, name='add_member_transaction'),
     path('membre/<int:membre_id>/', views.member_detail_view, name='member_detail'),
     path('membres/rechercher/', views.search_member_view, name='search_member'),
@@ -64,4 +71,10 @@ urlpatterns = [
     path('groupes/<int:groupe_id>/restaurer/', views.restaurer_groupe_view, name='restaurer_groupe'),
     path('groupes/<int:groupe_id>/assigner-partenaire/', views.assigner_partenaire_groupe_view, name='assigner_partenaire_groupe'),
     path('saisie-hebdomadaire/', views.saisie_hebdomadaire_view, name='saisie_hebdomadaire'),
+    path('about/', views.about_view, name='about'),
+    path('about/', TemplateView.as_view(template_name='about.html'), name='about'),
+    path('contact/', views.contact_view, name='contact'),
+    path('privacy/', views.privacy_view, name='privacy'),
+    path('terms/', views.terms_view, name='terms'),
+    path('accessibility/', views.accessibility_view, name='accessibility'),
 ]

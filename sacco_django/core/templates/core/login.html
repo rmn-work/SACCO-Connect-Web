@@ -1,55 +1,226 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - SACCO Connect</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-        <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">SACCO Connect</h1>
+{% extends 'core/base.html' %}
+{% load static %}
 
-        {% if error_message %}
-            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-                <p class="text-red-700 text-sm text-center">{{ error_message }}</p>
-            </div>
-        {% elif error %}
-            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-                <p class="text-red-700 text-sm text-center">{{ error }}</p>
-            </div>
-        {% endif %}
+{% block content %}
+<style>
+    /* Effet 3D pour le téléphone */
+    .phone-mockup-3d {
+        transform: perspective(1200px) rotateY(-20deg) rotateX(5deg) rotateZ(2deg);
+        box-shadow: -20px 20px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 4px #1f2937;
+        transition: transform 0.5s ease-in-out;
+    }
 
-        <form action="{% url 'core:login' %}" method="POST">
-            {% csrf_token %}
+    .phone-mockup-3d:hover {
+        transform: perspective(1200px) rotateY(-10deg) rotateX(2deg) rotateZ(0deg);
+    }
+</style>
 
-            <div class="mb-4">
-                <label for="user_type" class="block text-sm font-medium text-gray-700 mb-1">Type d'utilisateur</label>
-                <select id="user_type" name="user_type" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-white text-gray-700">
-                    <option value="membre">Membre (Téléphone + PIN)</option>
-                    <option value="partenaire">Partenaire</option>
-                    <option value="admin">Administrateur</option>
-                </select>
-            </div>
+<!-- SECTION HERO / LOGIN -->
+<div class="relative min-h-screen flex items-center overflow-hidden bg-gray-900">
 
-            <!-- Identifiant mis à jour : 'username' remplacé par 'identifier' -->
-            <div class="mb-4">
-                <label for="identifier" class="block text-sm font-medium text-gray-700 mb-1">Identifiant / Téléphone</label>
-                <input type="text" name="identifier" id="identifier" required placeholder="Identifiant ou Téléphone"
-                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
-            </div>
-
-            <div class="mb-6">
-                <label for="secret" class="block text-sm font-medium text-gray-700 mb-1">Mot de passe / Code PIN</label>
-                <input type="password" name="secret" id="secret" required placeholder="Mot de passe ou Code PIN"
-                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
-            </div>
-
-            <button type="submit"
-                class="w-full bg-slate-800 text-white font-medium py-2.5 rounded-lg hover:bg-slate-700 transition-colors">
-                Se connecter
-            </button>
-        </form>
+    <!-- Background Image avec Overlay -->
+    <div class="absolute inset-0 z-0">
+        <img src="{% static 'images/burundi.png' %}" alt="Fond Burundi"
+             class="w-full h-full object-cover object-center opacity-30">
+        <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/80"></div>
     </div>
-</body>
-</html>
+
+    <!-- Conteneur principal -->
+    <div class="relative z-10 container mx-auto px-4 lg:px-12 py-12 flex flex-col lg:flex-row items-center justify-between gap-12">
+
+        <!-- Mockup Téléphone -->
+        <div class="hidden lg:flex w-full lg:w-1/2 justify-center pt-10">
+            <div class="phone-mockup-3d relative w-[280px] h-[580px] bg-black rounded-[3rem] p-3 border-[6px] border-gray-800">
+                <div class="absolute top-3 inset-x-0 h-6 bg-black rounded-b-2xl w-32 mx-auto z-20"></div>
+                <div class="relative w-full h-full bg-white rounded-[2.2rem] overflow-hidden">
+                    <img src="{% static 'images/sacco_app.jpg' %}" alt="Interface SACCO Connect"
+                         class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire de connexion -->
+        <div class="w-full lg:w-1/2 flex justify-center lg:justify-end">
+            <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Bienvenue sur SACCO</h2>
+                <p class="text-sm text-center text-gray-500 mb-6">Connectez-vous à votre espace</p>
+
+                <!-- Erreurs AJAX -->
+                <div id="ajax-error-container" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                    <p id="ajax-error-message" class="text-red-700 text-sm text-center"></p>
+                </div>
+
+                {% if error_message %}
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                        <p class="text-red-700 text-sm text-center">{{ error_message }}</p>
+                    </div>
+                {% elif error %}
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                        <p class="text-red-700 text-sm text-center">{{ error }}</p>
+                    </div>
+                {% endif %}
+
+                <!-- Onglets Utilisateurs -->
+                <div class="flex border-b border-gray-200 mb-6 text-sm font-medium">
+                    <button type="button" id="tab-membre" onclick="selectTab('membre')"
+                        class="tab-btn flex-1 py-2.5 text-center text-blue-600 border-b-2 border-blue-600 font-semibold focus:outline-none transition-colors">
+                        Membre
+                    </button>
+                    <button type="button" id="tab-partenaire" onclick="selectTab('partenaire')"
+                        class="tab-btn flex-1 py-2.5 text-center text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
+                        Partenaire
+                    </button>
+                    <button type="button" id="tab-admin" onclick="selectTab('admin')"
+                        class="tab-btn flex-1 py-2.5 text-center text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
+                        Admin
+                    </button>
+                </div>
+
+                <form id="login-form" action="{% url 'core:login' %}" method="POST">
+                    {% csrf_token %}
+
+                    {% if next %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                    {% endif %}
+
+                    <input type="hidden" name="user_type" id="user_type_input" value="membre">
+
+                    <div class="mb-4">
+                        <label for="identifier" id="identifier_label" class="block text-sm font-medium text-gray-700 mb-1">
+                            Téléphone
+                        </label>
+                        <input type="text" name="identifier" id="identifier" required placeholder="Numéro de téléphone"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="secret" id="secret_label" class="block text-sm font-medium text-gray-700 mb-1">
+                            Code PIN
+                        </label>
+                        <input type="password" name="secret" id="secret" required placeholder="Code PIN"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
+                    </div>
+
+                    <button type="submit" id="submit-btn"
+                        class="w-full bg-slate-800 text-white font-medium py-2.5 rounded-lg hover:bg-slate-700 transition-colors">
+                        Se connecter
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- SECTION NOS SERVICES -->
+<section id="services" class="py-20 bg-white scroll-mt-16">
+    <div class="container mx-auto px-6">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-3">Nos Services</h2>
+        <div class="w-16 h-1 bg-blue-600 mx-auto mb-12 rounded-full"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">
+                    💰
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-3">Épargne</h3>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    Constituez votre épargne en toute sécurité et gérez vos cotisations de groupe grâce à nos outils intelligents.
+                </p>
+            </div>
+
+            <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">
+                    📈
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-3">Crédit Rapide</h3>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    Soumettez vos demandes de prêt en ligne et obtenez un accord rapide adapté à vos capacités financières.
+                </p>
+            </div>
+
+            <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">
+                    📱
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-3">Paiement QR & IA</h3>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    Effectuez des transactions instantanées par QR Code et bénéficiez de conseils financiers propulsés par l'IA.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function selectTab(type) {
+        document.getElementById('user_type_input').value = type;
+
+        const tabs = ['membre', 'partenaire', 'admin'];
+        tabs.forEach(t => {
+            const btn = document.getElementById('tab-' + t);
+            if (btn) {
+                btn.className = "tab-btn flex-1 py-2.5 text-center text-gray-500 hover:text-gray-700 focus:outline-none transition-colors";
+            }
+        });
+
+        const activeBtn = document.getElementById('tab-' + type);
+        if (activeBtn) {
+            activeBtn.className = "tab-btn flex-1 py-2.5 text-center text-blue-600 border-b-2 border-blue-600 font-semibold focus:outline-none transition-colors";
+        }
+
+        const identifierLabel = document.getElementById('identifier_label');
+        const identifierInput = document.getElementById('identifier');
+        const secretLabel = document.getElementById('secret_label');
+        const secretInput = document.getElementById('secret');
+
+        if (type === 'membre') {
+            identifierLabel.innerText = "Téléphone";
+            identifierInput.placeholder = "Numéro de téléphone";
+            secretLabel.innerText = "Code PIN";
+            secretInput.placeholder = "Code PIN";
+        } else {
+            identifierLabel.innerText = "Nom d'utilisateur / Identifiant";
+            identifierInput.placeholder = "Identifiant";
+            secretLabel.innerText = "Mot de passe";
+            secretInput.placeholder = "Mot de passe";
+        }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const url = this.action;
+
+        const formData = new FormData(this);
+        const urlEncodedData = new URLSearchParams(formData).toString();
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: urlEncodedData
+        })
+        .then(response => {
+            if (response.ok) {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    window.location.href = "/";
+                }
+            } else {
+                const errorContainer = document.getElementById('ajax-error-container');
+                const errorMessage = document.getElementById('ajax-error-message');
+                errorContainer.classList.remove('hidden');
+                errorMessage.innerText = "Identifiants invalides ou erreur serveur.";
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la requête:', error);
+        });
+    });
+</script>
+{% endblock %}

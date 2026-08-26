@@ -1,0 +1,248 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Contact - SACCO Connect{% endblock %}
+
+{% block content %}
+<section class="contact-section">
+  <div class="contact-container">
+
+    <div class="contact-header">
+      <span class="badge-tag">BESOIN D'AIDE ?</span>
+      <h1>Contactez-nous</h1>
+      <p class="lead-text">
+        Notre équipe est à votre disposition pour répondre à toutes vos questions concernant vos comptes, vos épargnes ou vos partenariats.
+      </p>
+    </div>
+
+    <div class="contact-grid">
+
+      <!-- Informations de contact -->
+      <div class="contact-info-card">
+        <h3>Nos Coordonnées</h3>
+        <p>N'hésitez pas à nous joindre directement ou à nous rendre visite dans nos locaux.</p>
+
+        <div class="info-list">
+          <div class="info-item">
+            <span class="icon">📍</span>
+            <div>
+              <strong>Adresse</strong>
+              <p>Bujumbura, Burundi</p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <span class="icon">📞</span>
+            <div>
+              <strong>Téléphone</strong>
+              <p>+257 22 00 00 00</p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <span class="icon">✉</span>
+            <div>
+              <strong>Email</strong>
+              <p><a href="mailto:contact@saccoconnect.bi">contact@saccoconnect.bi</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulaire de contact -->
+      <div class="contact-form-card">
+        <h3>Envoyez-nous un message</h3>
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="post" action="{% url 'core:contact' %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="name">Nom complet</label>
+            <input type="text" id="name" name="name" required placeholder="Votre nom">
+          </div>
+
+          <div class="form-group">
+            <label for="email">Adresse Email ou Téléphone</label>
+            <input type="text" id="email" name="contact_info" required placeholder="Ex: email@domaine.bi ou +257...">
+          </div>
+
+          <div class="form-group">
+            <label for="subject">Sujet</label>
+            <input type="text" id="subject" name="subject" required placeholder="Objet de votre message">
+          </div>
+
+          <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="5" required placeholder="Écrivez votre message ici..."></textarea>
+          </div>
+
+          <button type="submit" class="btn-submit">Envoyer le message</button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .contact-section {
+    padding: 60px 20px;
+    background-color: #f8faf9;
+    color: #2a3a30;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .contact-container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .contact-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .badge-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ea8223;
+    background-color: rgba(234, 130, 35, 0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+  }
+
+  .contact-header h1 {
+    font-size: 2.2rem;
+    color: #1b4985;
+    margin-bottom: 15px;
+    font-weight: 800;
+  }
+
+  .lead-text {
+    font-size: 1.05rem;
+    color: #4a5568;
+    max-width: 650px;
+    margin: 0 auto;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 40px;
+  }
+
+  .contact-info-card, .contact-form-card {
+    background: #ffffff;
+    padding: 35px;
+    border-radius: 8px;
+    border: 1px solid #d2dbcf;
+  }
+
+  .contact-info-card h3, .contact-form-card h3 {
+    color: #1b4985;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+  }
+
+  .info-list {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .info-item .icon {
+    font-size: 1.4rem;
+  }
+
+  .info-item strong {
+    display: block;
+    color: #1b4985;
+    font-size: 0.9rem;
+  }
+
+  .info-item p {
+    margin: 3px 0 0 0;
+    color: #4a5568;
+    font-size: 0.95rem;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1b4985;
+    margin-bottom: 6px;
+  }
+
+  .form-group input, .form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d2dbcf;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+  }
+
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #ea8223;
+  }
+
+  .btn-submit {
+    background-color: #ea8223;
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    width: 100%;
+  }
+
+  .btn-submit:hover {
+    background-color: #d6731a;
+  }
+
+  .alert {
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+  }
+
+  .alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  @media (max-width: 800px) {
+    .contact-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}

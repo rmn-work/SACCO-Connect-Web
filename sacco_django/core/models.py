@@ -2,6 +2,44 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+
+class User(AbstractUser):
+    ROLE_CHOICES = (
+        ('member', 'Membre'),
+        ('partner', 'Partenaire'),
+        ('admin', 'Administrateur'),
+    )
+
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
+
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='core_user_groups',
+        related_query_name='core_user',
+    )
+
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='core_user_permissions',
+        related_query_name='core_user',
+    )
+
+    @property
+    def is_partner(self):
+        return self.role == 'partner'
+
+    @property
+    def is_member(self):
+        return self.role == 'member'
 
 class Partenaire(models.Model):
     nom = models.CharField(max_length=150, verbose_name="Nom du partenaire")

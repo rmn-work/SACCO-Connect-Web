@@ -1,0 +1,141 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Déclaration d'Accessibilité - SACCO Connect{% endblock %}
+
+{% block content %}
+<section class="legal-section">
+  <div class="legal-container">
+
+    <div class="legal-header">
+      <span class="badge-tag">INCLUSION NUMÉRIQUE</span>
+      <h1>Déclaration d'Accessibilité</h1>
+      <p class="lead-text">
+        Dernière mise à jour : {% now "j F Y" %}
+      </p>
+    </div>
+
+    <div class="legal-content">
+      <article class="legal-card">
+        <h2>1. Engagement de SACCO Connect</h2>
+        <p>
+          SACCO Connect s'engage à rendre son application web accessible au plus grand nombre, quelles que soient les capacités physiques, visuelles ou technologiques des utilisateurs.
+        </p>
+        <p>
+          Nous nous efforçons d'aligner l'interface sur les normes internationales d'accessibilité (WCAG 2.1) afin de garantir une utilisation équitable pour tous les membres de la communauté.
+        </p>
+      </article>
+
+      <article class="legal-card">
+        <h2>2. Fonctionnalités d'Accessibilité Intégrées</h2>
+        <p>Afin de faciliter la navigation, l'application intègre :</p>
+        <ul>
+          * **Lisibilité et contrastes :** Des palettes de couleurs contrastées pour garantir une lecture aisée sur mobile et écran d'ordinateur.
+          * **Navigation au clavier :** La possibilité de parcourir les formulaires et boutons sans utiliser de souris.
+          * **Support des lecteurs d'écran :** Une structure HTML sémantique facilitant l'interprétation par les outils d'assistance.
+          * **Design adaptatif (Responsive) :** Un affichage optimisé pour toutes les tailles d'écrans et connexions à faible débit.
+        </ul>
+      </article>
+
+      <article class="legal-card">
+        <h2>3. Amélioration Continue</h2>
+        <p>
+          Bien que nous nous efforcions d'assurer une accessibilité totale, certains contenus ou fonctionnalités récentes peuvent être en cours d'optimisation. Si vous rencontrez un obstacle d'accessibilité, nous vous invitons à nous le signaler.
+        </p>
+      </article>
+
+      <article class="legal-card">
+        <h2>4. Contact et Assistance</h2>
+        <p>
+          Si vous rencontrez des difficultés d'accès à l'un de nos services ou souhaitez obtenir une assistance particulière :
+        </p>
+        <p>
+          * **Email :** <a href="mailto:contact@saccoconnect.bi">contact@saccoconnect.bi</a>
+          * **Téléphone :** +257 22 00 00 00
+        </p>
+      </article>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .legal-section {
+    padding: 60px 20px;
+    background-color: #f8faf9;
+    color: #2a3a30;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .legal-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .legal-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .badge-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ea8223;
+    background-color: rgba(234, 130, 35, 0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+  }
+
+  .legal-header h1 {
+    font-size: 2.2rem;
+    color: #1b4985;
+    margin-bottom: 10px;
+    font-weight: 800;
+  }
+
+  .lead-text {
+    font-size: 0.95rem;
+    color: #64748b;
+  }
+
+  .legal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+  }
+
+  .legal-card {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #d2dbcf;
+  }
+
+  .legal-card h2 {
+    color: #1b4985;
+    font-size: 1.25rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #f8faf9;
+    padding-bottom: 8px;
+  }
+
+  .legal-card p, .legal-card ul {
+    color: #4a5568;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 10px 0;
+  }
+
+  .legal-card ul {
+    padding-left: 20px;
+  }
+
+  .legal-card li {
+    margin-bottom: 8px;
+  }
+</style>
+{% endblock %}
