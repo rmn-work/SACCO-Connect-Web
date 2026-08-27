@@ -16,7 +16,7 @@
 
         <!-- Logo et Nom -->
         <a href="{% if user.is_authenticated or is_member_logged_in %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="flex items-center gap-3">
-            <img src="{% static 'images/sacco_logo.png' %}" alt="SACCO Logo" class="h-10 w-auto">
+            <img src="{% static 'images/logo.png' %}" alt="SACCO Logo" class="h-10 w-auto">
             <span class="text-xl font-bold text-slate-900 tracking-wide">SACCO Connect</span>
         </a>
 
