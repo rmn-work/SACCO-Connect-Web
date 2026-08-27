@@ -3,16 +3,18 @@
 .idea/
 Web/.idea/
 
-# Les deux environnements virtuels (racine et dossier Web)
+# Environnements virtuels
 .venv/
 Web/venv/
 
-# Le fichier secret (une fois déplacé dans Web)
+# Fichiers secrets & BDD
 Web/.env
-
-# Documents locaux générés
-*.pdf
-*.jpg
-*.png*.pyc
-__pycache__/
 *.db
+.env
+
+# Fichiers Python compilés
+*.pyc
+__pycache__/
+
+# Documents générés (sauf assets statiques)
+*.pdf

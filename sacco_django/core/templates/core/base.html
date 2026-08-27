@@ -10,34 +10,34 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans antialiased flex flex-col">
 
-<!-- HEADER -->
-<header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50">
-    <div class="container mx-auto px-6 py-3 flex items-center justify-between">
+<!-- NAV HEADER UNIFIÉE AVEC LE FOOTER -->
+<header class="w-full bg-[#f4f4f0] border-b border-stone-200 sticky top-0 z-50">
+    <div class="container mx-auto px-6 py-4 flex items-center justify-between">
 
-        <!-- GAUCHE : Logo + Nom -->
-        <a href="{% if user.is_authenticated or is_member_logged_in %}{% url 'core:dashboard' %}{% else %}/{% endif %}" class="flex items-center gap-3">
-            <img src="{% static 'images/logo.png' %}" alt="SACCO Logo" class="h-8 w-auto">
-            <span class="text-xl font-bold tracking-wide text-white">SACCO Connect</span>
+        <!-- Logo et Nom -->
+        <a href="{% if user.is_authenticated or is_member_logged_in %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="flex items-center gap-3">
+            <img src="{% static 'images/sacco_logo.png' %}" alt="SACCO Logo" class="h-10 w-auto">
+            <span class="text-xl font-bold text-slate-900 tracking-wide">SACCO Connect</span>
         </a>
 
-        <!-- CENTRE : Navigation avec ancres universelles -->
-        <nav class="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-300">
-            <a href="/" class="hover:text-blue-400 transition-colors">Accueil</a>
-            <a href="/#services" class="hover:text-blue-400 transition-colors">Nos Services</a>
-            <a href="/#partenaires" class="hover:text-blue-400 transition-colors">Partenaires</a>
-<!--            <a href="/#contact" class="hover:text-blue-400 transition-colors">Contact</a>-->
+        <!-- Liens de Navigation -->
+        <nav class="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-700">
+            <a href="{% url 'core:home' %}" class="hover:text-blue-600 transition-colors">Accueil</a>
+            <a href="/#services" class="hover:text-blue-600 transition-colors">Nos Services</a>
+            <a href="/#partenaires" class="hover:text-blue-600 transition-colors">Partenaires</a>
+            <a href="/#contact" class="hover:text-blue-600 transition-colors">Contact</a>
         </nav>
 
-        <!-- DROITE : Menu Utilisateur -->
-        <div class="flex items-center">
+        <!-- Bouton d'action ou Menu Utilisateur -->
+        <div class="flex items-center gap-4">
             {% if user.is_authenticated or is_member_logged_in %}
             <div class="hidden md:flex items-center space-x-4 text-sm">
-                <a href="{% url 'core:dashboard' %}" class="text-gray-300 hover:text-blue-400 transition-colors">Tableau de bord</a>
-                <a href="{% url 'core:member_profile' %}" class="text-gray-300 hover:text-blue-400 transition-colors">Mon Profil</a>
-                <a href="{% url 'core:request_loan' %}" class="text-gray-300 hover:text-blue-400 transition-colors">Demander un prêt</a>
+                <a href="{% url 'core:dashboard' %}" class="text-slate-700 hover:text-blue-600 transition-colors">Tableau de bord</a>
+                <a href="{% url 'core:member_profile' %}" class="text-slate-700 hover:text-blue-600 transition-colors">Mon Profil</a>
+                <a href="{% url 'core:request_loan' %}" class="text-slate-700 hover:text-blue-600 transition-colors">Demander un prêt</a>
 
                 <div class="relative group inline-block">
-                    <button class="text-gray-300 hover:text-blue-400 transition-colors flex items-center gap-1 py-2 focus:outline-none">
+                    <button class="text-slate-700 hover:text-blue-600 transition-colors flex items-center gap-1 py-2 focus:outline-none">
                         Autres services ▾
                     </button>
                     <div class="absolute right-0 mt-0 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 hidden group-hover:block z-50 text-gray-800">
@@ -47,8 +47,12 @@
                     </div>
                 </div>
 
-                <a href="{% url 'core:logout' %}" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-white font-medium transition">Se déconnecter</a>
+                <a href="{% url 'core:logout' %}" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-white font-medium transition shadow-sm">Se déconnecter</a>
             </div>
+            {% else %}
+            <a href="#login-form" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm">
+                Connexion
+            </a>
             {% endif %}
         </div>
 
