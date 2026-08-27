@@ -112,41 +112,52 @@
     </div>
 </div>
 
-<!-- SECTION NOS SERVICES -->
-<section id="services" class="py-20 bg-white scroll-mt-16">
+<!-- SECTION 1 : NOS SERVICES -->
+<section id="services" class="min-h-screen py-20 bg-white scroll-mt-16 flex items-center">
     <div class="container mx-auto px-6">
         <h2 class="text-3xl font-bold text-center text-gray-800 mb-3">Nos Services</h2>
         <div class="w-16 h-1 bg-blue-600 mx-auto mb-12 rounded-full"></div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">
-                    💰
-                </div>
-                <h3 class="text-xl font-bold text-gray-800 mb-3">Épargne</h3>
-                <p class="text-gray-600 text-sm leading-relaxed">
-                    Constituez votre épargne en toute sécurité et gérez vos cotisations de groupe grâce à nos outils intelligents.
-                </p>
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">💰</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-3">Épargne & Tontines</h3>
+                <p class="text-gray-600 text-sm leading-relaxed">Constituez votre épargne en toute sécurité et gérez vos cotisations de groupe grâce à nos outils intelligents.</p>
             </div>
 
             <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">
-                    📈
-                </div>
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">📈</div>
                 <h3 class="text-xl font-bold text-gray-800 mb-3">Crédit Rapide</h3>
-                <p class="text-gray-600 text-sm leading-relaxed">
-                    Soumettez vos demandes de prêt en ligne et obtenez un accord rapide adapté à vos capacités financières.
-                </p>
+                <p class="text-gray-600 text-sm leading-relaxed">Soumettez vos demandes de prêt en ligne et obtenez un accord rapide adapté à vos capacités financières.</p>
             </div>
 
             <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">
-                    📱
-                </div>
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl font-bold">📱</div>
                 <h3 class="text-xl font-bold text-gray-800 mb-3">Paiement QR & IA</h3>
-                <p class="text-gray-600 text-sm leading-relaxed">
-                    Effectuez des transactions instantanées par QR Code et bénéficiez de conseils financiers propulsés par l'IA.
-                </p>
+                <p class="text-gray-600 text-sm leading-relaxed">Effectuez des transactions instantanées par QR Code et bénéficiez de conseils financiers propulsés par l'IA.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 2 : NOS PARTENAIRES -->
+<section id="partenaires" class="min-h-screen py-20 bg-gray-50 scroll-mt-16 flex items-center">
+    <div class="container mx-auto px-6 text-center">
+        <h2 class="text-3xl font-bold text-gray-800 mb-3">Nos Partenaires</h2>
+        <div class="w-16 h-1 bg-blue-600 mx-auto mb-12 rounded-full"></div>
+
+        <div class="flex flex-wrap items-center justify-center gap-8 max-w-5xl mx-auto">
+            <a href="https://www.bbin.bi/" target="_blank" rel="noopener noreferrer"
+               class="group bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 transition-all duration-300 w-56 h-36 flex items-center justify-center transform hover:-translate-y-1">
+                <img src="{% static 'images/bbin_logo.png' %}" alt="BBIN Logo"
+                     class="max-h-20 max-w-full object-contain grayscale group-hover:grayscale-0 transition-all duration-300">
+            </a>
+
+            <div class="bg-white/50 p-6 rounded-2xl border border-dashed border-gray-300 w-56 h-36 flex flex-col items-center justify-center text-gray-400">
+                <span class="text-sm font-medium">Bientôt disponible</span>
+            </div>
+            <div class="bg-white/50 p-6 rounded-2xl border border-dashed border-gray-300 w-56 h-36 flex flex-col items-center justify-center text-gray-400">
+                <span class="text-sm font-medium">Bientôt disponible</span>
             </div>
         </div>
     </div>
