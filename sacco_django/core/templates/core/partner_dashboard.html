@@ -1,10 +1,104 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 my-8">
-    <h1 class="text-2xl font-bold text-gray-800 mb-4">
-        Tableau de bord de {{ request.user.username|default:partner_name }}
-    </h1>
-    <p class="text-gray-600">Bienvenue dans votre espace partenaire SACCO Connect.</p>
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- En-tête et Actions Rapides -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Tableau de bord Partenaire</h1>
+                <p class="text-gray-600">Bienvenue, {{ partner_name }}</p>
+            </div>
+
+            <div class="flex gap-3">
+                <a href="{% url 'core:partner_register_member' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                    + Inscrire un membre
+                </a>
+                <a href="{% url 'core:partner_deposit' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">
+                    Enregistrer un dépôt
+                </a>
+            </div>
+        </div>
+
+        <!-- 4 Cartes KPI -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500 font-medium mb-1">Fonds Gérés</p>
+                <h3 class="text-2xl font-bold text-gray-900">{{ fonds_geres }} BIF</h3>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500 font-medium mb-1">Membres Actifs</p>
+                <h3 class="text-2xl font-bold text-gray-900">{{ total_membres }}</h3>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500 font-medium mb-1">Commissions (Mois)</p>
+                <h3 class="text-2xl font-bold text-green-600">{{ commissions_mois }} BIF</h3>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500 font-medium mb-1">Transactions du jour</p>
+                <h3 class="text-2xl font-bold text-gray-900">{{ transactions_recentes|length }}</h3>
+            </div>
+        </div>
+
+        <!-- Graphique et Transactions Récentes -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Évolution des transactions (6 mois)</h3>
+                <canvas id="activityChart" height="100"></canvas>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Transactions Récentes</h3>
+                <div class="space-y-4">
+                    {% for tx in transactions_recentes %}
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-50 last:border-0">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">{{ tx.membre.nom }}</p>
+                            <p class="text-xs text-gray-500">{{ tx.date_transaction|date:"d M Y, H:i" }}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold {% if tx.type == 'depot' %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if tx.type == 'depot' %}+{% else %}-{% endif %}{{ tx.montant }} BIF
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500">Aucune transaction récente.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
+
+<!-- Script Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ labels_graphique|safe }},
+            datasets: [{
+                label: 'Volume de transactions',
+                data: {{ donnees_graphique|safe }},
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
 {% endblock %}

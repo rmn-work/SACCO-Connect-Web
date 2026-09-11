@@ -1,45 +1,77 @@
-{% extends 'core/base.html' %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demander un prêt - SACCO Connect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
 
-{% block content %}
-<div class="max-w-3xl mx-auto px-4 py-8">
+        <!-- Menu de navigation -->
+        <nav class="bg-slate-800 text-white shadow-md mb-6 px-6 py-4 flex justify-between items-center rounded-xl">
+            <div class="font-bold text-lg tracking-wide">SACCO Connect</div>
+            <div class="space-x-6 flex items-center text-sm font-medium">
+                <a href="{% url 'core:dashboard' %}" class="hover:text-blue-300 transition-colors">Tableau de bord</a>
+                <a href="{% url 'core:request_loan' %}" class="text-blue-300 font-semibold">Demander un prêt</a>
+                <a href="{% url 'core:logout' %}" class="bg-red-500 px-3.5 py-1.5 rounded-lg text-sm hover:bg-red-600 transition-colors font-medium">Se déconnecter</a>
+            </div>
+        </nav>
 
-    <!-- En-tête de la page -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Demander un nouveau prêt</h1>
-        <p class="text-sm text-gray-500 mt-1">Remplissez les informations ci-dessous pour soumettre votre demande de crédit.</p>
-    </div>
+        <!-- En-tête de la page -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Demander un nouveau prêt</h1>
+            <p class="text-sm text-gray-500 mt-1">Remplissez les informations ci-dessous pour soumettre votre demande de crédit.</p>
+        </div>
 
-    <!-- Formulaire en carte -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <form method="post" class="space-y-4">
-            {% csrf_token %}
+        <!-- Formulaire en carte -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
 
-            {% for field in form %}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+                <!-- Champs générés automatiquement par Django -->
+                {% for field in form %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <!-- Champ Motif de la demande (Ajouté) -->
+                {% if not form.motif %}
+                <div>
+                    <label for="motif" class="block text-sm font-medium text-gray-700 mb-1">Motif de la demande</label>
+                    <textarea
+                        id="motif"
+                        name="motif"
+                        rows="3"
+                        placeholder="Précisez le motif de votre prêt (ex: projet professionnel, frais d'études, urgence médicale...)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        required></textarea>
+                </div>
                 {% endif %}
-            </div>
-            {% endfor %}
 
-            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
-                <a href="{% url 'core:dashboard' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-medium transition">
-                    Annuler
-                </a>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
-                    Soumettre la demande
-                </button>
-            </div>
-        </form>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
+<!--                    <a href="{% url 'core:dashboard' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-medium transition">-->
+<!--                        Annuler-->
+<!--                    </a>-->
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                        Soumettre la demande
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="flex justify-end">
+            <a href="{% url 'core:dashboard' %}" class="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                Retour au Tableau de bord
+            </a>
+        </div>
+
     </div>
-
-    <div class="flex justify-end">
-        <a href="{% url 'core:dashboard' %}" class="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
-            Retour au Tableau de bord
-        </a>
-    </div>
-
-</div>
-{% endblock %}
+</body>
+</html>

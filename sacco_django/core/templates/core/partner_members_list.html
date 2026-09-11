@@ -1,0 +1,74 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- En-tête avec Titre et Action -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Mes Membres Affiliés</h1>
+                <p class="text-sm text-gray-500 mt-1">Consultez la liste des membres enregistrés et gérez leurs comptes.</p>
+            </div>
+            <div>
+                <a href="{% url 'core:partner_register_member' %}" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm px-4 py-2.5 rounded-xl shadow-sm transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Enregistrer un nouveau membre
+                </a>
+            </div>
+        </div>
+
+        <!-- Tableau des Membres -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-4">Nom & Prénom</th>
+                            <th class="px-6 py-4">Téléphone</th>
+                            <th class="px-6 py-4">Groupe</th>
+                            <th class="px-6 py-4">Solde Épargne</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+                        {% for m in membres %}
+                        <tr class="hover:bg-gray-50/60 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-gray-900">
+                                {{ m.nom }} {{ m.prenom }}
+                            </td>
+                            <td class="px-6 py-4 text-gray-600 font-mono text-xs">
+                                {{ m.telephone|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                                    {{ m.groupe.nom_groupe|default:"Sans groupe" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 font-bold text-gray-900">
+                                {{ m.solde_epargne }} <span class="text-xs font-normal text-gray-500">BIF</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{% url 'core:partner_member_detail' m.id %}" class="inline-flex items-center text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
+                                    Voir profil
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                Aucun membre affilié trouvé pour le moment.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

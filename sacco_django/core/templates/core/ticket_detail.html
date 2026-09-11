@@ -1,0 +1,64 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-8 px-4 flex flex-col h-[80vh]">
+
+    <!-- En-tête du ticket -->
+    <div class="bg-white p-4 border-b border-gray-200 rounded-t-xl flex justify-between items-center shadow-sm">
+        <div>
+            <h2 class="text-lg font-bold text-gray-900">{{ ticket.sujet }}</h2>
+            <p class="text-sm text-gray-500">Membre : {{ ticket.membre.nom }} {{ ticket.membre.prenom }}</p>
+        </div>
+        <a href="{% url 'core:contact' %}" class="text-sm text-blue-600 hover:underline">Retour</a>
+    </div>
+
+    <!-- Zone des messages (Scrollable) -->
+    <div class="flex-grow bg-gray-50 p-6 overflow-y-auto border-x border-gray-200 space-y-6">
+        {% for message in ticket.messages.all %}
+
+            {% if message.expediteur_membre %}
+                <!-- Message du membre (Aligné à droite si c'est le membre connecté, à gauche sinon) -->
+                <div class="flex {% if is_membre %}justify-end{% else %}justify-start{% endif %}">
+                    <div class="max-w-[75%] {% if is_membre %}bg-blue-600 text-white{% else %}bg-white text-gray-800 border border-gray-200{% endif %} p-4 rounded-2xl shadow-sm">
+                        <p class="text-sm mb-1 whitespace-pre-wrap">{{ message.contenu }}</p>
+                        <span class="text-xs {% if is_membre %}text-blue-200{% else %}text-gray-400{% endif %} block mt-2 text-right">
+                            {{ message.date_envoi|date:"d M à H:i" }}
+                        </span>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Message de l'Admin/Partenaire -->
+                <div class="flex {% if not is_membre %}justify-end{% else %}justify-start{% endif %}">
+                    <div class="max-w-[75%] {% if not is_membre %}bg-blue-600 text-white{% else %}bg-slate-200 text-slate-800{% endif %} p-4 rounded-2xl shadow-sm">
+                        <p class="text-xs font-semibold mb-1 opacity-75">
+                            {% if message.expediteur_user.groups.all.0.name == 'Partenaires' %}Partenaire{% else %}Administration SACCO{% endif %}
+                        </p>
+                        <p class="text-sm whitespace-pre-wrap">{{ message.contenu }}</p>
+                        <span class="text-xs opacity-75 block mt-2 text-right">
+                            {{ message.date_envoi|date:"d M à H:i" }}
+                        </span>
+                    </div>
+                </div>
+            {% endif %}
+
+        {% endfor %}
+    </div>
+
+    <!-- Zone de saisie -->
+    {% if not ticket.est_resolu %}
+    <div class="bg-white p-4 border border-gray-200 rounded-b-xl shadow-sm">
+        <form method="POST" class="flex gap-4 items-end">
+            {% csrf_token %}
+            <div class="flex-grow">
+                <textarea name="contenu" rows="2" required placeholder="Écrivez votre réponse..."
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"></textarea>
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors h-full">
+                Envoyer
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

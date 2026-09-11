@@ -2,9 +2,8 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, User
 from django.db import models
-
 
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -41,6 +40,7 @@ class User(AbstractUser):
     def is_member(self):
         return self.role == 'member'
 
+
 class Partenaire(models.Model):
     nom = models.CharField(max_length=150, verbose_name="Nom du partenaire")
     code_partenaire = models.CharField(max_length=20, unique=True, verbose_name="Code unique")
@@ -52,6 +52,21 @@ class Partenaire(models.Model):
 
     def __str__(self):
         return f"{self.nom} ({self.code_partenaire})"
+
+
+class CollaborateurPartenaire(models.Model):
+    ROLE_CHOICES = [
+        ('ADMIN', 'Administrateur Partenaire'),
+        ('OPERATEUR', 'Opérateur de Saisie'),
+    ]
+
+    partenaire = models.ForeignKey(Partenaire, on_delete=models.CASCADE, related_name='collaborateurs')
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='OPERATEUR')
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} ({self.get_role_display()}) - {self.partenaire.nom}"
 
 
 class Amendes(models.Model):
@@ -113,7 +128,7 @@ class Groupes(models.Model):
     president_id = models.IntegerField(blank=True, null=True)
     secretaire_id = models.IntegerField(blank=True, null=True)
     est_archive = models.BooleanField(default=False)
-    #partenaire = models.ForeignKey(Partenaire, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Partenaire associé")
+    partenaire = models.ForeignKey(Partenaire, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Partenaire associé")
     cotisation_hebdo_fixee = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
 
     class Meta:
@@ -297,3 +312,26 @@ class DemandePret(models.Model):
 
     def __str__(self):
         return f"Prêt de {self.montant} BIF - {self.membre.nom}"
+
+
+class TicketSupport(models.Model):
+    sujet = models.CharField(max_length=255)
+    membre = models.ForeignKey('Membres', on_delete=models.CASCADE, related_name='tickets')
+    partenaire_assigne = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                           related_name='tickets_partenaire')
+    date_creation = models.DateTimeField(auto_now_add=True)
+    est_resolu = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.sujet} - {self.membre.nom} {self.membre.prenom}"
+
+
+class MessageTicket(models.Model):
+    ticket = models.ForeignKey(TicketSupport, on_delete=models.CASCADE, related_name='messages')
+    expediteur_membre = models.ForeignKey('Membres', on_delete=models.CASCADE, null=True, blank=True)
+    expediteur_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    contenu = models.TextField()
+    date_envoi = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date_envoi']

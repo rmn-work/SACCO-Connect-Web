@@ -1,11 +1,8 @@
 {% load static %}
 
-
-<!-- SECTION FOOTER -->
 <footer class="sacco-footer">
   <div class="sacco-footer-container">
 
-    <!-- Colonne 1: Branding & Description -->
     <div class="footer-col branding-col">
       <div class="brand-wrapper">
         <img src="{% static 'img/sacco-connect.png' %}" alt="Logo SACCO Connect" class="logo-img">
@@ -21,32 +18,27 @@
       </div>
     </div>
 
-    <!-- Colonne 2: Navigation dynamique + Réseaux Sociaux -->
     <div class="footer-col nav-col">
       <h3 class="col-title">NAVIGATION</h3>
       <ul class="nav-grid">
         <li><a href="{% url 'core:home' %}"><span class="arrow">▸</span> Accueil</a></li>
 
         {% if not user.is_authenticated and not request.session.membre_id %}
-          <!-- Visiteur anonyme -->
           <li><a href="{% url 'core:about' %}"><span class="arrow">▸</span> À propos</a></li>
-          <li><a href="{% url 'core:contact' %}"><span class="arrow">▸</span> Contact</a></li>
-<!--          <li><a href="{% url 'core:login' %}"><span class="arrow">▸</span> Connexion</a></li>-->
+          <li><a href="{% url 'core:contact_public' %}"><span class="arrow">▸</span> Contact</a></li>
 
         {% else %}
-          <!-- Utilisateur connecté -->
           {% if user.is_superuser or user.is_staff or request.session.user_type == 'admin' %}
-            <li><a href="{% url 'admin:index' %}"><span class="arrow">▸</span> Administration</a></li>
-            <li><a href="#reports"><span class="arrow">▸</span> Rapports Globaux</a></li>
+            <!-- LIEN CORRIGÉ ICI -->
+            <li><a href="{% url 'core:partner_reports' %}"><span class="arrow">▸</span> Rapports Globaux</a></li>
 
           {% elif request.session.user_type == 'partenaire' or request.session.role == 'partenaire' %}
             <li><a href="{% url 'core:partner_dashboard' %}"><span class="arrow">▸</span> Espace Partenaire</a></li>
             <li><a href="#projets"><span class="arrow">▸</span> Projets d'Épargne</a></li>
 
           {% else %}
-            <!-- Membre SACCO -->
-            <li><a href="#my-savings"><span class="arrow">▸</span> Mon Épargne</a></li>
-            <li><a href="#tontines"><span class="arrow">▸</span> Mes Tontines</a></li>
+            <li><a href="{% url 'core:dashboard' %}#situation-financiere"><span class="arrow">▸</span> Mon Épargne</a></li>
+<!--            <li><a href="#tontines"><span class="arrow">▸</span> Mes Tontines</a></li>-->
           {% endif %}
 
           <li><a href="{% url 'core:logout' %}"><span class="arrow">▸</span> Déconnexion</a></li>
@@ -131,7 +123,7 @@
       </p>
       <div class="legal-links">
         <a href="{% url 'core:about' %}">À propos</a>
-        <a href="{% url 'core:contact' %}">Contact</a>
+        <a href="{% url 'core:contact_public' %}">Contact</a>
         <a href="{% url 'core:privacy' %}">Confidentialité</a>
         <a href="{% url 'core:terms' %}">Conditions</a>
         <a href="{% url 'core:accessibility' %}">Accessibilité</a>

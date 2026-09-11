@@ -1,0 +1,112 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Bouton Retour & Titre -->
+        <div class="mb-6">
+            <a href="{% url 'core:partner_members' %}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 mb-4 transition">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Retour à la liste des membres
+            </a>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ membre.nom }} {{ membre.prenom }}</h1>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Membre du groupe :
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700">
+                            {{ membre.groupe.nom_groupe|default:"Aucun groupe" }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartes d'informations principales -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Solde Épargne</p>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ membre.solde_epargne }} <span class="text-sm font-normal text-gray-500">BIF</span></p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</p>
+                <p class="text-2xl font-bold text-gray-900 mt-2 font-mono text-lg">{{ membre.telephone|default:"Non renseigné" }}</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Prêts en cours</p>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ prets_en_cours.count }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Historique des Transactions (2 Cols) -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-base font-semibold text-gray-900">Historique des Transactions</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                                <th class="px-6 py-3">Date</th>
+                                <th class="px-6 py-3">Type</th>
+                                <th class="px-6 py-3 text-right">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            {% for t in transactions %}
+                            <tr class="hover:bg-gray-50/60 transition-colors">
+                                <td class="px-6 py-3.5 text-gray-600 font-mono text-xs">
+                                    {{ t.date_transaction|date:"d/m/Y H:i" }}
+                                </td>
+                                <td class="px-6 py-3.5">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                        {{ t.type_transaction|default:"Transaction" }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-3.5 text-right font-bold text-gray-900">
+                                    {{ t.montant }} <span class="text-xs font-normal text-gray-500">BIF</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="px-6 py-8 text-center text-gray-500">
+                                    Aucune transaction enregistrée pour ce membre.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Liste des Prêts (1 Col) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-fit">
+                <h2 class="text-base font-semibold text-gray-900 mb-4">Prêts Actifs</h2>
+                <div class="space-y-4">
+                    {% for pret in prets_en_cours %}
+                    <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                                {{ pret.statut }}
+                            </span>
+                            <span class="text-xs text-gray-500">{{ pret.date_demande|date:"d/m/Y" }}</span>
+                        </div>
+                        <p class="text-lg font-bold text-gray-900">{{ pret.montant }} <span class="text-xs font-normal text-gray-500">BIF</span></p>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500 text-center py-4">
+                        Aucun prêt en cours ou en attente.
+                    </p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

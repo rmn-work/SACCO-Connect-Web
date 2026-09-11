@@ -1,0 +1,64 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Suivi Financier et Rapports</h2>
+
+    <!-- Boutons d'exportation -->
+    <div class="mb-3">
+        <a href="{% url 'core:export_transactions_csv' %}" class="btn btn-success">📥 Exporter en Excel / CSV</a>
+    </div>
+
+    <!-- Filtres -->
+    <form method="GET" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="type_operation" class="form-label">Type d'opération</label>
+            <select name="type_operation" class="form-control">
+                <option value="">Tous les types</option>
+                {% for code, label in type_operation_choices %}
+                <option value="{{ code }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="date_debut" class="form-label">Date début</label>
+            <input type="date" name="date_debut" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label for="date_fin" class="form-label">Date fin</label>
+            <input type="date" name="date_fin" class="form-control">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+        </div>
+    </form>
+
+    <!-- Tableau des transactions -->
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Membre</th>
+                <th>Type d'opération</th>
+                <th>Montant</th>
+                <th>Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.date_transaction|date:"d/m/Y H:i" }}</td>
+                <td>{{ tx.membre.nom }} {{ tx.membre.prenom }}</td>
+                <td>{{ tx.get_type_operation_display }}</td>
+                <td>{{ tx.montant }} BIF</td>
+                <td><span class="badge bg-info">{{ tx.statut }}</span></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Aucune transaction trouvée pour cette période.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

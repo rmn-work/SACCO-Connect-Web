@@ -1,248 +1,97 @@
-{% extends 'core/base.html' %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact & Support - SACCO Connect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
 
-{% block title %}Contact - SACCO Connect{% endblock %}
-
-{% block content %}
-<section class="contact-section">
-  <div class="contact-container">
-
-    <div class="contact-header">
-      <span class="badge-tag">BESOIN D'AIDE ?</span>
-      <h1>Contactez-nous</h1>
-      <p class="lead-text">
-        Notre équipe est à votre disposition pour répondre à toutes vos questions concernant vos comptes, vos épargnes ou vos partenariats.
-      </p>
-    </div>
-
-    <div class="contact-grid">
-
-      <!-- Informations de contact -->
-      <div class="contact-info-card">
-        <h3>Nos Coordonnées</h3>
-        <p>N'hésitez pas à nous joindre directement ou à nous rendre visite dans nos locaux.</p>
-
-        <div class="info-list">
-          <div class="info-item">
-            <span class="icon">📍</span>
-            <div>
-              <strong>Adresse</strong>
-              <p>Bujumbura, Burundi</p>
+        <!-- Menu de navigation -->
+        <nav class="bg-slate-800 text-white shadow-md mb-6 px-6 py-4 flex justify-between items-center rounded-xl">
+            <div class="font-bold text-lg tracking-wide">SACCO Connect</div>
+            <div class="space-x-6 flex items-center text-sm font-medium">
+                <a href="{% url 'core:dashboard' %}" class="hover:text-blue-300 transition-colors">Tableau de bord</a>
+                <a href="{% url 'core:contact' %}" class="text-blue-300 font-semibold">Contact</a>
+                <a href="{% url 'core:logout' %}" class="bg-red-500 px-3.5 py-1.5 rounded-lg text-sm hover:bg-red-600 transition-colors font-medium">Se déconnecter</a>
             </div>
-          </div>
+        </nav>
 
-          <div class="info-item">
-            <span class="icon">📞</span>
-            <div>
-              <strong>Téléphone</strong>
-              <p>+257 22 00 00 00</p>
-            </div>
-          </div>
-
-          <div class="info-item">
-            <span class="icon">✉</span>
-            <div>
-              <strong>Email</strong>
-              <p><a href="mailto:contact@saccoconnect.bi">contact@saccoconnect.bi</a></p>
-            </div>
-          </div>
+        <!-- En-tête centré -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-3">Contactez-nous</h1>
+            <p class="text-gray-500 text-sm max-w-lg mx-auto">
+                Vous avez une question sur SACCO Connect ? Envoyez-nous un message et notre équipe vous répondra dans les plus brefs délais.
+            </p>
+            <div class="w-10 h-1 bg-blue-600 mx-auto mt-6 rounded-full"></div>
         </div>
-      </div>
 
-      <!-- Formulaire de contact -->
-      <div class="contact-form-card">
-        <h3>Envoyez-nous un message</h3>
+        <!-- Formulaire centralisé -->
+        <div class="bg-white max-w-2xl mx-auto p-8 rounded-2xl shadow-sm border border-gray-100 mb-12">
+            <form method="POST" action="{% url 'core:contact' %}" class="space-y-5">
+                {% csrf_token %}
 
-        {% if messages %}
-          {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label for="nom" class="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                        <input type="text" id="nom" name="nom" placeholder="Votre nom" required
+                               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder-gray-400">
+                    </div>
+                    <div>
+                        <label for="contact_info" class="block text-sm font-medium text-gray-700 mb-1">Téléphone / Email</label>
+                        <input type="text" id="contact_info" name="contact_info" placeholder="Vos coordonnées" required
+                               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder-gray-400">
+                    </div>
+                </div>
 
-        <form method="post" action="{% url 'core:contact' %}">
-          {% csrf_token %}
-          <div class="form-group">
-            <label for="name">Nom complet</label>
-            <input type="text" id="name" name="name" required placeholder="Votre nom">
-          </div>
+                <div>
+                    <label for="sujet" class="block text-sm font-medium text-gray-700 mb-1">Sujet</label>
+                    <input type="text" id="sujet" name="sujet" required placeholder="L'objet de votre demande"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder-gray-400">
+                </div>
 
-          <div class="form-group">
-            <label for="email">Adresse Email ou Téléphone</label>
-            <input type="text" id="email" name="contact_info" required placeholder="Ex: email@domaine.bi ou +257...">
-          </div>
+                <div>
+                    <label for="contenu" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <textarea id="contenu" name="contenu" rows="4" required placeholder="Comment pouvons-nous vous aider ?"
+                              class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder-gray-400"></textarea>
+                </div>
 
-          <div class="form-group">
-            <label for="subject">Sujet</label>
-            <input type="text" id="subject" name="subject" required placeholder="Objet de votre message">
-          </div>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-3 rounded-xl transition-colors shadow-sm text-sm">
+                        Envoyer le message
+                    </button>
+                </div>
+            </form>
+        </div>
 
-          <div class="form-group">
-            <label for="message">Message</label>
-            <textarea id="message" name="message" rows="5" required placeholder="Écrivez votre message ici..."></textarea>
-          </div>
-
-          <button type="submit" class="btn-submit">Envoyer le message</button>
-        </form>
-      </div>
+        <!-- Section des conversations -->
+        <div class="max-w-2xl mx-auto">
+            <h3 class="text-xl font-bold text-slate-900 mb-5">Vos conversations</h3>
+            {% if tickets %}
+                <div class="space-y-4">
+                    {% for ticket in tickets %}
+                    <a href="{% url 'core:ticket_detail' ticket.id %}" class="block bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-semibold text-gray-800">{{ ticket.sujet }}</h4>
+                            {% if ticket.est_resolu %}
+                                <span class="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Fermé</span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">En cours</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-sm text-gray-500">Créé le {{ ticket.date_creation|date:"d M Y à H:i" }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="bg-white p-8 rounded-xl text-center text-gray-500 border border-gray-100 shadow-sm text-sm">
+                    Vous n'avez aucune conversation en cours.
+                </div>
+            {% endif %}
+        </div>
 
     </div>
-
-  </div>
-</section>
-
-<style>
-  .contact-section {
-    padding: 60px 20px;
-    background-color: #f8faf9;
-    color: #2a3a30;
-    font-family: system-ui, -apple-system, sans-serif;
-  }
-
-  .contact-container {
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
-  .contact-header {
-    text-align: center;
-    margin-bottom: 40px;
-  }
-
-  .badge-tag {
-    display: inline-block;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 1px;
-    color: #ea8223;
-    background-color: rgba(234, 130, 35, 0.1);
-    padding: 6px 14px;
-    border-radius: 20px;
-    margin-bottom: 15px;
-  }
-
-  .contact-header h1 {
-    font-size: 2.2rem;
-    color: #1b4985;
-    margin-bottom: 15px;
-    font-weight: 800;
-  }
-
-  .lead-text {
-    font-size: 1.05rem;
-    color: #4a5568;
-    max-width: 650px;
-    margin: 0 auto;
-  }
-
-  .contact-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.5fr;
-    gap: 40px;
-  }
-
-  .contact-info-card, .contact-form-card {
-    background: #ffffff;
-    padding: 35px;
-    border-radius: 8px;
-    border: 1px solid #d2dbcf;
-  }
-
-  .contact-info-card h3, .contact-form-card h3 {
-    color: #1b4985;
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.3rem;
-  }
-
-  .info-list {
-    margin-top: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .info-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
-  }
-
-  .info-item .icon {
-    font-size: 1.4rem;
-  }
-
-  .info-item strong {
-    display: block;
-    color: #1b4985;
-    font-size: 0.9rem;
-  }
-
-  .info-item p {
-    margin: 3px 0 0 0;
-    color: #4a5568;
-    font-size: 0.95rem;
-  }
-
-  .form-group {
-    margin-bottom: 20px;
-  }
-
-  .form-group label {
-    display: block;
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: #1b4985;
-    margin-bottom: 6px;
-  }
-
-  .form-group input, .form-group textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d2dbcf;
-    border-radius: 4px;
-    font-size: 0.95rem;
-    box-sizing: border-box;
-  }
-
-  .form-group input:focus, .form-group textarea:focus {
-    outline: none;
-    border-color: #ea8223;
-  }
-
-  .btn-submit {
-    background-color: #ea8223;
-    color: #ffffff;
-    border: none;
-    padding: 12px 24px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    width: 100%;
-  }
-
-  .btn-submit:hover {
-    background-color: #d6731a;
-  }
-
-  .alert {
-    padding: 10px 15px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    font-size: 0.9rem;
-  }
-
-  .alert-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-
-  @media (max-width: 800px) {
-    .contact-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>
-{% endblock %}
+</body>
+</html>

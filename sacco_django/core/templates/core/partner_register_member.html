@@ -1,0 +1,128 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto my-10 px-4 sm:px-6">
+    <!-- Carte Principale -->
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+
+        <!-- En-tête -->
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 px-8 py-6 text-white flex items-center justify-between">
+            <div>
+                <h3 class="text-2xl font-bold tracking-tight">Enregistrer un nouveau membre</h3>
+                <p class="text-blue-100 text-sm mt-1">Remplissez les informations ci-dessous pour ajouter un membre au réseau SACCO.</p>
+            </div>
+            <div class="hidden sm:block bg-white/10 p-3 rounded-xl backdrop-blur-sm">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Formulaire -->
+        <form method="POST" class="p-8 space-y-8">
+            {% csrf_token %}
+
+            <!-- Section 1: Informations Personnelles -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <h4 class="text-lg font-bold">Informations Personnelles</h4>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nom</label>
+                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                            {{ form.nom }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Prénom</label>
+                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                            {{ form.prenom }}
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Numéro CNI</label>
+                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                            {{ form.cni }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Coordonnées & Localisation -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <h4 class="text-lg font-bold">Coordonnées & Localisation</h4>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Téléphone</label>
+                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                            {{ form.telephone }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Colline</label>
+                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                            {{ form.colline }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Quartier</label>
+                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                            {{ form.quartier }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Informations SACCO -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 class="text-lg font-bold">Informations SACCO</h4>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Groupe</label>
+                        <div class="[&>select]:w-full [&>select]:px-4 [&>select]:py-2.5 [&>select]:rounded-lg [&>select]:border [&>select]:border-gray-300 [&>select]:focus:ring-2 [&>select]:focus:ring-blue-500 [&>select]:bg-white [&>select]:outline-none">
+                            {{ form.groupe }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Solde épargne initial (BIF)</label>
+                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                            {{ form.solde_epargne }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
+                <a href="{% url 'core:partner_members' %}" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition duration-150">
+                    Annuler
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md hover:shadow-lg transition duration-150 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Enregistrer le membre
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

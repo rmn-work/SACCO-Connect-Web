@@ -9,9 +9,9 @@ import base64
 from io import BytesIO
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db import connection, transaction
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.http import require_POST
 from django.http import FileResponse, HttpResponse
@@ -20,8 +20,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from .models import Membres, Groupes as Groupe, Partenaire, Pret, TransactionHistory, Pret, DemandeCredit, HistoriqueEpargne
-from .forms import TransactionForm, EmployeeCreationForm, LoanRequestForm
+from .models import (Membres as Membre, Groupes as Groupe, Partenaire, Pret, TransactionHistory, Pret, DemandeCredit,
+                     HistoriqueEpargne, TicketSupport, MessageTicket)
+from .forms import TransactionForm, EmployeeCreationForm, LoanRequestForm, PartnerMemberOnboardingForm, PartnerDepositForm
 from reportlab.pdfgen import canvas
 from django.contrib.auth.decorators import permission_required, user_passes_test, login_required
 from django.utils import timezone
@@ -115,7 +116,7 @@ def login_view(request):
 
         if user_type == 'membre':
             try:
-                membre = Membres.objects.get(telephone=identifier)
+                membre = Membre.objects.get(telephone=identifier) # Corrigé : Membres -> Membre
                 stored_pin = str(membre.pin)
                 authenticated = False
 
@@ -152,7 +153,7 @@ def login_view(request):
                         'error_message': 'Téléphone ou Code PIN incorrect.',
                         'next': next_url
                     })
-            except Membres.DoesNotExist:
+            except Membre.DoesNotExist: # Corrigé : Membres -> Membre
                 return render(request, 'core/login.html', {
                     'error_message': 'Téléphone ou Code PIN incorrect.',
                     'next': next_url
@@ -246,11 +247,11 @@ def manager_dashboard_view(request):
         membre_id = request.POST.get('membre_id')
         nouveau_role = request.POST.get('nouveau_role')
         try:
-            membre_a_modifier = Membres.objects.get(id=membre_id)
+            membre_a_modifier = Membre.objects.get(id=membre_id)
             membre_a_modifier.role = nouveau_role
             membre_a_modifier.save()
             messages.success(request, f"Le rôle de {membre_a_modifier.nom} a été mis à jour avec succès.")
-        except Membres.DoesNotExist:
+        except Membre.DoesNotExist:
             messages.error(request, "Membre introuvable.")
         return redirect(f"{request.path}?gid={request.GET.get('gid', 1)}")
 
@@ -265,7 +266,7 @@ def manager_dashboard_view(request):
         annee, mois = map(int, mois_filtre.split('-'))
 
     prefixe_mois = f"{annee}-{mois:02d}"
-    membres_qs = Membres.objects.filter(is_active=True)
+    membres_qs = Membre.objects.filter(is_active=True)
     if selected_gid:
         membres_qs = membres_qs.filter(groupe_id=selected_gid)
     if selected_member_id:
@@ -273,24 +274,24 @@ def manager_dashboard_view(request):
 
     query = request.GET.get('q', '').strip()
     if query:
-        tous_les_membres = Membres.objects.filter(
+        tous_les_membres = Membre.objects.filter(
             Q(nom__icontains=query) |
             Q(prenom__icontains=query) |
             Q(telephone__icontains=query)
         ).order_by('nom')
     else:
-        tous_les_membres = Membres.objects.all().order_by('nom')
+        tous_les_membres = Membre.objects.all().order_by('nom')
 
     role_query = request.GET.get('role_q', '').strip()
     if role_query:
-        membres_pour_role = Membres.objects.filter(
+        membres_pour_role = Membre.objects.filter(
             Q(id__icontains=role_query) |
             Q(nom__icontains=role_query) |
             Q(prenom__icontains=role_query) |
             Q(telephone__icontains=role_query)
         ).order_by('nom')[:15]
     else:
-        membres_pour_role = Membres.objects.all().order_by('nom')[:15]
+        membres_pour_role = Membre.objects.all().order_by('nom')[:15]
 
     page_number = request.GET.get('page', 1)
     paginator = Paginator(tous_les_membres, 10)
@@ -383,10 +384,10 @@ def manager_dashboard_view(request):
         grand_total_general += solde_total_avec_sociale
 
     totaux_par_colonne = [f"{totaux_par_colonne_dict[d]:,.0f}" for d in dates_reunions]
-    total_epargne = sum(m.solde_epargne or 0 for m in Membres.objects.all())
-    total_caisse_sociale = sum(m.caisse_sociale or 0 for m in Membres.objects.all())
-    total_credits_en_cours = sum(m.credit_en_cours or 0 for m in Membres.objects.all())
-    top_membres = Membres.objects.all().order_by('-solde_epargne')[:10]
+    total_epargne = sum(m.solde_epargne or 0 for m in Membre.objects.all())
+    total_caisse_sociale = sum(m.caisse_sociale or 0 for m in Membre.objects.all())
+    total_credits_en_cours = sum(m.credit_en_cours or 0 for m in Membre.objects.all())
+    top_membres = Membre.objects.all().order_by('-solde_epargne')[:10]
     noms_membres = [f"{m.prenom} {m.nom}" for m in top_membres]
     soldes_epargne = [float(m.solde_epargne or 0) for m in top_membres]
     brb_rates = get_brb_exchange_rates()
@@ -417,7 +418,7 @@ def manager_dashboard_view(request):
         'admin_nom': request.session.get('membre_nom') or (
             request.user.username if request.user.is_authenticated else "Administrateur"),
         'membres': membres_pagines,
-        'total_membres': Membres.objects.count(),
+        'total_membres': Membre.objects.count(),
         'total_epargne': total_epargne,
         'total_caisse_sociale': total_caisse_sociale,
         'total_credits': total_credits_en_cours,
@@ -446,7 +447,7 @@ def manager_dashboard_view(request):
         'total_appels': total_appels,
         'taux_presence_global': taux_presence_global,
         'membres_groupe': tous_les_membres,
-        'tous_les_membres': Membres.objects.filter(is_active=True),
+        'tous_les_membres': Membre.objects.filter(is_active=True),
         'tous_les_groupes': tous_les_groupes,
         'groupes_disponibles': groupes_disponibles,
         'tous_les_partenaires': Partenaire.objects.all(),
@@ -464,7 +465,7 @@ def member_profile_view(request):
     if not membre_id:
         return redirect('core:login')
 
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
     context = {
         'membre': membre, 'admin_nom': request.session.get('membre_nom'),
     }
@@ -477,7 +478,7 @@ def member_qr_view(request):
     if not membre_id:
         return redirect('core:login')
 
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
     qr_data = f"SACCO-ID:{membre.id} | Nom: {membre.nom} {membre.prenom} | Tél: {membre.telephone}"
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
     qr.add_data(qr_data)
@@ -495,7 +496,7 @@ def ai_predictions_view(request):
     if not membre_id:
         return redirect('core:login')
 
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
     epargne_actuelle = membre.solde_epargne or 0
     epargne_predite_6m = epargne_actuelle * (1.05 ** 6)
     montant_simule = request.GET.get('montant_simule')
@@ -545,7 +546,7 @@ def add_transaction_view(request, membre_id=None):
 
     membre = None
     if membre_id:
-        membre = get_object_or_404(Membres, id=membre_id)
+        membre = get_object_or_404(Membre, id=membre_id)
 
     if request.method == 'POST':
         form = TransactionForm(request.POST)
@@ -579,10 +580,10 @@ def add_member_view(request):
         role_membre = request.POST.get('role', 'membre').strip()
         if not nom or not telephone or not pin:
             error = "Veuillez remplir tous les champs obligatoires."
-        elif Membres.objects.filter(telephone=telephone).exists():
+        elif Membre.objects.filter(telephone=telephone).exists():
             error = "Ce numéro de téléphone est déjà utilisé par un autre membre."
         else:
-            Membres.objects.create(nom=nom, prenom=prenom, telephone=telephone, pin=pin, role=role_membre, solde_epargne=0.0,
+            Membre.objects.create(nom=nom, prenom=prenom, telephone=telephone, pin=pin, role=role_membre, solde_epargne=0.0,
                 caisse_sociale=0.0, credit_en_cours=0.0)
             return redirect('manager_dashboard')
     return render(request, 'core/add_member.html', {'error': error})
@@ -597,8 +598,8 @@ def grant_credit_view(request, membre_id):
         return redirect('core:login')
 
     try:
-        membre = Membres.objects.get(id=membre_id)
-    except Membres.DoesNotExist:
+        membre = Membre.objects.get(id=membre_id)
+    except Membre.DoesNotExist:
         return redirect('manager_dashboard')
 
     if request.method == 'POST':
@@ -622,9 +623,9 @@ def member_detail_view(request, membre_id):
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
         return redirect('core:login')
     try:
-        membre = Membres.objects.get(id=membre_id)
+        membre = Membre.objects.get(id=membre_id)
         transactions = membre.transactions.all().order_by('-date_transaction')
-    except Membres.DoesNotExist:
+    except Membre.DoesNotExist:
         return redirect('manager_dashboard')
     context = {
         'membre': membre, 'transactions': transactions,
@@ -638,7 +639,7 @@ def export_members_pdf(request):
         return redirect('core:login')
 
     search_query = request.GET.get('q', '')
-    membres_qs = Membres.objects.all().order_by('nom')
+    membres_qs = Membre.objects.all().order_by('nom')
 
     if search_query:
         membres_qs = membres_qs.filter(
@@ -701,32 +702,229 @@ def loan_calculator_view(request):
         'taux_saisi': taux_saisi, 'erreur': erreur}
     return render(request, 'core/loan_calculator.html', context)
 
+
 @login_required(login_url='/partenaire/login/')
 @user_passes_test(is_partner, login_url='/partenaire/login/')
 def partner_dashboard_view(request):
+    user = request.user
+    now = timezone.now()
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    if partenaire_obj:
+        membres_qs = Membre.objects.filter(groupe__partenaire=partenaire_obj)
+        transactions_qs = TransactionHistory.objects.filter(membre__groupe__partenaire=partenaire_obj)
+    else:
+        membres_qs = Membre.objects.none()
+        transactions_qs = TransactionHistory.objects.none()
+
+    total_membres = membres_qs.count()
+    fonds_geres = membres_qs.aggregate(
+        total=Sum('solde_epargne')
+    )['total'] or 0.00
+    commissions_mois = 0.00
+    transactions_recentes = transactions_qs.order_by('-date_transaction')[:5]
+    donnees_graphique = []
+    labels_graphique = []
+    for i in range(5, -1, -1):
+        mois_cible = now - timedelta(days=30 * i)
+        mensuel = transactions_qs.filter(
+            date_transaction__year=mois_cible.year,
+            date_transaction__month=mois_cible.month
+        ).aggregate(total=Sum('montant'))['total'] or 0
+
+        labels_graphique.append(mois_cible.strftime("%b %Y"))
+        donnees_graphique.append(float(mensuel))
+
     context = {
-        'partner_name': request.user.username,
+        'is_partner': True,
+        'partner_name': user.username,
+        'total_membres': total_membres,
+        'fonds_geres': fonds_geres,
+        'commissions_mois': commissions_mois,
+        'transactions_recentes': transactions_recentes,
+        'labels_graphique': labels_graphique,
+        'donnees_graphique': donnees_graphique,
     }
     return render(request, 'core/partner_dashboard.html', context)
 
-@login_required
-def partner_members_view(request):
-    context = {
-        'partner_name': request.user.username,
-    }
-    return render(request, 'core/partner_members.html', context)
 
-@login_required
-def partner_reports_view(request):
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_members_list_view(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+    membres = Membre.objects.filter(groupe__partenaire=partenaire_obj)
+    status_filter = request.GET.get('status')
+    if status_filter:
+        membres = membres.filter(status_presence=status_filter)
+
     context = {
-        'partner_name': request.user.username,
+        'membres': membres,
+        'is_partner': True,
     }
-    return render(request, 'core/partner_reports.html', context)
+    return render(request, 'core/partner_members_list.html', context)
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_member_detail_view(request, member_id):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+    membre = get_object_or_404(Membre, id=member_id, groupe__partenaire=partenaire_obj)
+    transactions = membre.transactions.all().order_by('-date_transaction')
+    prets_en_cours = membre.prets.filter(statut__in=['EN_ATTENTE', 'APPROUVE'])
+
+    context = {
+        'is_partner': True,
+        'membre': membre,
+        'transactions': transactions,
+        'prets_en_cours': prets_en_cours,
+    }
+    return render(request, 'core/partner_member_detail.html', context)
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_register_member_view(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    if request.method == 'POST':
+        form = PartnerMemberOnboardingForm(request.POST)
+        if partenaire_obj:
+            form.fields['groupe'].queryset = Groupes.objects.filter(partenaire=partenaire_obj)
+        else:
+            form.fields['groupe'].queryset = Groupes.objects.none()
+
+        if form.is_valid():
+            nouveau_membre = form.save(commit=False)
+            nouveau_membre.is_active = 1
+            nouveau_membre.save()
+            return redirect('partner_members')
+    else:
+        form = PartnerMemberOnboardingForm()
+        if partenaire_obj:
+            form.fields['groupe'].queryset = Groupes.objects.filter(partenaire=partenaire_obj)
+        else:
+            form.fields['groupe'].queryset = Groupes.objects.none()
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'core/partner_register_member.html', context)
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_reports_view(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    transactions = TransactionHistory.objects.filter(membre__groupe__partenaire=partenaire_obj)
+
+    type_op = request.GET.get('type_operation')
+    if type_op:
+        transactions = transactions.filter(type_operation=type_op)
+
+    date_debut = request.GET.get('date_debut')
+    date_fin = request.GET.get('date_fin')
+    if date_debut and date_fin:
+        transactions = transactions.filter(date_transaction__range=[date_debut, date_fin])
+
+    context = {
+        'transactions': transactions.order_by('-date_transaction'),
+        'type_operation_choices': TransactionHistory.TYPE_CHOICES,
+    }
+    return render(request, 'core/partner_financial_report.html', context)
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def export_transactions_csv(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="rapport_financier.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Membre', 'Type d\'opération', 'Montant (BIF)', 'Statut'])
+
+    transactions = TransactionHistory.objects.filter(membre__groupe__partenaire=partenaire_obj)
+    for tx in transactions:
+        nom_complet = f"{tx.membre.nom} {tx.membre.prenom}"
+        writer.writerow([tx.date_transaction, nom_complet, tx.type_operation, tx.montant, tx.statut])
+
+    return response
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_settings_view(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    if not partenaire_obj:
+        return redirect('partner_dashboard')
+
+    if request.method == 'POST':
+        form = PartnerProfileForm(request.POST, instance=partenaire_obj)
+        if form.is_valid():
+            form.save()
+            return redirect('partner_settings')
+    else:
+        form = PartnerProfileForm(instance=partenaire_obj)
+
+    context = {
+        'form': form,
+        'partenaire': partenaire_obj,
+    }
+    return render(request, 'core/partner_settings.html', context)
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_deposit_view(request):
+    if request.method == 'POST':
+        form = PartnerDepositForm(request.POST)
+        if form.is_valid():
+            deposit = form.save(commit=False)
+            deposit.save()
+            return redirect('core:partner_dashboard')
+    else:
+        form = PartnerDepositForm()
+
+    context = {
+        'form': form,
+        'is_partner': True,
+    }
+    return render(request, 'core/partner_deposit.html', context)
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_register_member_view(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    if request.method == 'POST':
+        form = PartnerMemberOnboardingForm(request.POST, request.FILES)
+        if form.is_valid():
+            member = form.save(commit=False)
+            member.save()
+            return redirect('partner_dashboard')
+    else:
+        form = PartnerMemberOnboardingForm()
+
+    context = {'form': form}
+    return render(request, 'core/partner_register_member.html', context)
+
 
 @user_passes_test(is_manager, login_url='/login/')
 def list_pending_loans_view(request):
     prets_en_attente = Pret.objects.filter(statut='EN_ATTENTE').select_related('membre')
+
     return render(request, 'core/pending_loans.html', {'prets': prets_en_attente})
+
 
 @user_passes_test(is_manager, login_url='/login/')
 def update_loan_status_view(request, pret_id, action):
@@ -794,7 +992,7 @@ def apply_penalty_view(request, membre_id):
     role = str(request.session.get('role', '')).lower()
     if 'membre_id' not in request.session or ('admin' not in role and 'gestionnaire' not in role):
         return redirect('core:login')
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
     if request.method == 'POST':
         try:
             montant_penalite = float(request.POST.get('montant_penalite', 0))
@@ -888,7 +1086,7 @@ def dashboard_view(request):
     membre = None
     membre_id = request.session.get('membre_id')
     if membre_id:
-        membre = get_object_or_404(Membres, id=membre_id)
+        membre = get_object_or_404(Membre, id=membre_id)
 
     transactions = TransactionHistory.objects.values('type_operation').annotate(total=Sum('montant'))
     labels = [item['type_operation'] for item in transactions]
@@ -934,7 +1132,7 @@ def search_member_view(request):
         filters = Q(nom__icontains=query) | Q(prenom__icontains=query) | Q(telephone__icontains=query)
         if query.isdigit():
             filters |= Q(id=int(query))
-        membres = Membres.objects.filter(filters)
+        membres = Membre.objects.filter(filters)
     return render(request, 'core/search_member.html', {'membres': membres, 'query': query})
 
 
@@ -1041,7 +1239,7 @@ def export_members_csv(request):
     response['Content-Disposition'] = 'attachment; filename="liste_membres.csv"'
     writer = csv.writer(response)
     writer.writerow(['ID', 'Nom', 'Email', 'Téléphone', 'Solde'])
-    members = Membres.objects.all().values_list('id', 'nom', 'telephone', 'solde_epargne')
+    members = Membre.objects.all().values_list('id', 'nom', 'telephone', 'solde_epargne')
     for member in members:
         writer.writerow(member)
     return response
@@ -1052,7 +1250,7 @@ def request_loan_view(request):
     if not membre_id:
         return redirect('core:login')
 
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
 
     if request.method == 'POST':
         form = LoanRequestForm(request.POST, membre=membre)
@@ -1201,7 +1399,7 @@ def security_pin_view(request):
     if not membre_id:
         return redirect('core:login')
 
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
     success_message = None
     error_message = None
 
@@ -1228,7 +1426,7 @@ def group_validate_loans_view(request):
     if not membre_id:
         return redirect('core:login')
 
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
 
     if membre.role != 'president':
         return redirect('core:dashboard')
@@ -1347,7 +1545,7 @@ def restaurer_groupe_view(request, groupe_id):
 
 def retirer_groupe_view(request, membre_id):
     if request.method == 'POST':
-        membre = get_object_or_404(Membres, id=membre_id)
+        membre = get_object_or_404(Membre, id=membre_id)
         membre.groupe = None  # Dissocie le groupe du membre
         membre.save()
     return redirect(request.META.get('HTTP_REFERER', 'manager_dashboard_view'))
@@ -1366,7 +1564,7 @@ def changer_groupe_membre_view(request, membre_id):
 @require_POST
 def retirer_groupe_view(request, membre_id):
     if request.method == 'POST':
-        membre = get_object_or_404(Membres, id=membre_id)
+        membre = get_object_or_404(Membre, id=membre_id)
         membre.groupe = None
         membre.save()
     return redirect(request.META.get('HTTP_REFERER', 'manager_dashboard_view'))
@@ -1382,7 +1580,7 @@ def creer_groupe_view(request):
 
 @require_POST
 def changer_groupe_view(request, membre_id):
-    membre = get_object_or_404(Membres, id=membre_id)
+    membre = get_object_or_404(Membre, id=membre_id)
     nouveau_groupe_id = request.POST.get('nouveau_groupe_id')
 
     if nouveau_groupe_id:
@@ -1425,7 +1623,7 @@ def saisie_hebdomadaire_view(request):
                         heure_enregistrement=heure_actuelle
                     )
 
-                    membre = Membres.objects.get(id=m_id)
+                    membre = Membre.objects.get(id=m_id)
                     membre.solde_epargne = (membre.solde_epargne or 0) + epargne
                     membre.caisse_sociale = (membre.caisse_sociale or 0) + sociale
                     membre.status_presence = presence
@@ -1442,7 +1640,7 @@ def get_context_caisse_sociale(selected_gid):
     if not selected_gid:
         return {}
 
-    membres = Membres.objects.filter(groupe_id=selected_gid, is_active=True).order_by('nom')
+    membres = Membre.objects.filter(groupe_id=selected_gid, is_active=True).order_by('nom')
     historique_qs = HistoriqueEpargne.objects.filter(groupe_id=selected_gid).order_by('date_reunion')
     dates_reunions = list(historique_qs.values_list('date_reunion', flat=True).distinct())
     pivot_sociale = []
@@ -1492,7 +1690,7 @@ def tout_recuperer_donnees_caisse(request):
     mois_filtre = request.GET.get('mois_filtre', datetime.now().strftime('%Y-%m'))
     annee, mois = map(int, mois_filtre.split('-'))
     prefixe_mois = f"{annee}-{mois:02d}"
-    membres_qs = Membres.objects.filter(is_active=True)
+    membres_qs = Membre.objects.filter(is_active=True)
     if selected_gid:
         membres_qs = membres_qs.filter(groupe_id=selected_gid)
     if selected_member_id:
@@ -1581,7 +1779,7 @@ def export_caisse_sociale_pdf(request):
 
 def export_members_excel(request):
     search_query = request.GET.get('q', '')
-    membres_qs = Membres.objects.all()
+    membres_qs = Membre.objects.all()
     if search_query:
         membres_qs = membres_qs.filter(
             Q(nom__icontains=search_query) |
@@ -1691,8 +1889,15 @@ def admin_planifier_reunion_view(request):
         messages.success(request, "La date de la prochaine réunion a été planifiée avec succès pour le groupe.")
     return redirect('manager_dashboard')
 
+
 def home_view(request):
-    return render(request, 'core/home.html')
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'partenaire') or getattr(request.user, 'is_partner', False):
+            return redirect('core:partner_dashboard')
+
+        return redirect('core:dashboard')
+
+    return redirect('core:login')
 
 def custom_csrf_failure(request, reason=""):
     """Gestionnaire sur mesure pour les erreurs de validation CSRF (403)."""
@@ -1776,3 +1981,115 @@ def terms_view(request):
 
 def accessibility_view(request):
     return render(request, 'core/accessibility.html')
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_team_view(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    # Récupérer les collaborateurs de ce partenaire
+    collaborateurs = CollaborateurPartenaire.objects.filter(partenaire=partenaire_obj) if partenaire_obj else []
+
+    context = {
+        'collaborateurs': collaborateurs,
+        'partenaire': partenaire_obj,
+    }
+    return render(request, 'core/partner_team.html', context)
+
+
+@login_required(login_url='/partenaire/login/')
+@user_passes_test(is_partner, login_url='/partenaire/login/')
+def partner_add_collaborateur_view(request):
+    user = request.user
+    partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
+
+    if request.method == 'POST':
+        form = CollaborateurCreationForm(request.POST)
+        if form.is_valid():
+            form.save(partenaire=partenaire_obj)
+            return redirect('partner_team')
+    else:
+        form = CollaborateurCreationForm()
+
+    context = {'form': form}
+    return render(request, 'core/partner_add_collaborateur.html', context)
+
+def services_view(request):
+    return redirect('/#services')
+
+def contact_view(request):
+    is_membre = request.session.get('user_type') == 'membre'
+
+    if is_membre:
+        membre = get_object_or_404(Membre, id=request.session.get('membre_id'))
+
+        if request.method == 'POST':
+            sujet = request.POST.get('sujet')
+            contenu = request.POST.get('contenu')
+
+            if sujet and contenu:
+                ticket = TicketSupport.objects.create(
+                    sujet=sujet,
+                    membre=membre
+                )
+                MessageTicket.objects.create(
+                    ticket=ticket,
+                    expediteur_membre=membre,
+                    contenu=contenu
+                )
+                messages.success(request, "Votre message a été envoyé avec succès.")
+                return redirect('core:ticket_detail', ticket_id=ticket.id)
+
+        tickets = TicketSupport.objects.filter(membre=membre).order_by('-date_creation')
+        return render(request, 'core/contact.html', {'tickets': tickets})
+
+    elif request.user.is_authenticated:
+        if request.user.groups.filter(name='Partenaires').exists():
+            tickets = TicketSupport.objects.filter(partenaire_assigne=request.user).order_by('-date_creation')
+        else:
+            tickets = TicketSupport.objects.all().order_by('-date_creation')  # Admin voit tout
+
+        return render(request, 'core/contact_admin.html', {'tickets': tickets})
+
+    return redirect('core:login')
+
+
+def contact_public_view(request):
+    if request.method == 'POST':
+        # Ici vous pourrez ajouter la logique pour gérer le formulaire public
+        # (ex: envoyer un email à l'admin avec send_mail)
+        messages.success(request, "Votre message a bien été envoyé. Nous vous répondrons très vite.")
+        return redirect('core:contact_public')
+
+    return render(request, 'core/contact_public.html')
+
+
+def ticket_detail_view(request, ticket_id):
+    ticket = get_object_or_404(TicketSupport, id=ticket_id)
+    is_membre = request.session.get('user_type') == 'membre'
+
+    if request.method == 'POST':
+        contenu = request.POST.get('contenu')
+        if contenu:
+            if is_membre:
+                membre = get_object_or_404(Membre, id=request.session.get('membre_id'))
+                MessageTicket.objects.create(ticket=ticket, expediteur_membre=membre, contenu=contenu)
+            elif request.user.is_authenticated:
+                MessageTicket.objects.create(ticket=ticket, expediteur_user=request.user, contenu=contenu)
+
+            return redirect('core:ticket_detail', ticket_id=ticket.id)
+
+    return render(request, 'core/ticket_detail.html', {
+        'ticket': ticket,
+        'is_membre': is_membre
+    })
+
+
+@login_required
+def global_reports_view(request):
+    context = {
+        'partner_name': request.user.username,
+    }
+    return render(request, 'core/partner_reports.html', context)

@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Paramètres du Compte Partenaire</h2>
+    <hr>
+
+    <div class="row">
+        <!-- Formulaire Profil Organisation -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Informations de l'Organisation</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        {{ form.non_field_errors }}
+
+                        <div class="mb-3">
+                            {{ form.nom.label_tag }} {{ form.nom }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.email.label_tag }} {{ form.email }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.telephone.label_tag }} {{ form.telephone }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.adresse.label_tag }} {{ form.adresse }}
+                        </div>
+
+                        <button type="submit" class="btn btn-success">Enregistrer les modifications</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Sécurité et Accès -->
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Sécurité & Accès</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Gérez la sécurité de votre compte et mettez à jour votre mot de passe régulièrement.</p>
+                    <a href="{% url 'partner_password_change' %}" class="btn btn-warning w-100 mb-3">Modifier le mot de passe</a>
+
+                    <hr>
+                    <h6>Gestion des rôles (Collaborateurs)</h6>
+                    <p class="small text-muted">Ajoutez et gérez vos opérateurs de saisie ou administrateurs secondaires.</p>
+                    <!-- Bouton corrigé qui redirige vers la liste des collaborateurs -->
+                    <a href="{% url 'partner_team' %}" class="btn btn-outline-primary w-100">Gérer l'équipe</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
