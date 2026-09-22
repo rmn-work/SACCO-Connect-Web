@@ -13,11 +13,8 @@ class ApiResponse {
 
 class ApiService {
   static const String productionUrl = "https://sacco-connect-web.onrender.com";
-
-  static const bool isLocalEnvironment = false;
-
+  static const bool isLocalEnvironment = true;
   static final AuthenticatedClient _client = AuthenticatedClient();
-
   static String get baseUrl {
     if (isLocalEnvironment) {
       if (kIsWeb) return 'http://localhost:8000';
@@ -48,7 +45,6 @@ class ApiService {
       final response = await http.post(
         loginUri,
         headers: {
-          // 👈 INDISPENSABLE pour FastAPI OAuth2PasswordRequestForm
           "Content-Type": "application/x-www-form-urlencoded",
           "Accept": "application/json",
         },
