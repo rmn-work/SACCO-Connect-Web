@@ -1,0 +1,2 @@
+Nom,Prénom,Âge,Sexe,Téléphone,Colline,Quartier,Avenue_Rue,Numéro_Maison,PIN,Statut,Solde_Epargne,Solde_Social,Groupe,Rôle,Min_Hebdo,Dernier_P,Prochain_P,Penalite_Taux
+SYSTEM,Admin,,,admin,,,,,1234,,100000.0,,Groupe 1,Président,5000.0,,,
