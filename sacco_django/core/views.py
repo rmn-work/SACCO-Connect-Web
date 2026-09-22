@@ -6,6 +6,7 @@ import requests
 import csv
 import qrcode
 import base64
+import urllib3
 from io import BytesIO
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -14,14 +15,15 @@ from django.db import connection, transaction
 from django.db.models import Sum, Q, Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.http import require_POST
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from .models import (Membres as Membre, Groupes as Groupe, Partenaire, Pret, TransactionHistory, Pret, DemandeCredit,
-                     HistoriqueEpargne, TicketSupport, MessageTicket)
+from .models import (
+    Membres as Membre, Groupes as Groupe, Partenaire, Pret, TransactionHistory, DemandeCredit,HistoriqueEpargne,
+    TicketSupport, MessageTicket, Presences, Amendes)
 from .forms import TransactionForm, EmployeeCreationForm, LoanRequestForm, PartnerMemberOnboardingForm, PartnerDepositForm
 from reportlab.pdfgen import canvas
 from django.contrib.auth.decorators import permission_required, user_passes_test, login_required
@@ -42,8 +44,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from xhtml2pdf import pisa
 from .decorators import partner_required
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.core.cache import cache
 
 
 try:
@@ -73,20 +75,19 @@ def redirect_based_on_role(user):
         return redirect('partner_dashboard')
     return redirect('dashboard')
 
+
 @never_cache
 @ensure_csrf_cookie
 def login_view(request):
     next_url = request.POST.get('next') or request.GET.get('next')
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get(
+        'Accept', '')
 
     def get_redirect_url(default_route, is_admin_route=False):
-        """
-        Valide l'URL 'next' uniquement si elle correspond aux droits de l'utilisateur,
-        sinon retourne l'URL par défaut pour éviter les boucles de redirection.
-        """
         if next_url and url_has_allowed_host_and_scheme(
-            url=next_url,
-            allowed_hosts={request.get_host()},
-            require_https=request.is_secure()
+                url=next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure()
         ):
             if '/manager/' in next_url and not is_admin_route:
                 return reverse(default_route)
@@ -103,20 +104,25 @@ def login_view(request):
             elif request.user.is_superuser or request.user.is_staff:
                 return redirect(get_redirect_url('core:manager_dashboard', is_admin_route=True))
 
-    if request.method == 'POST':
-        user_type = request.POST.get('user_type', 'membre')
-        identifier = request.POST.get('identifier', '').strip()
-        secret = request.POST.get('secret', '').strip()
+        return render(request, 'core/login.html', {'next': next_url})
 
-        if not identifier and request.POST.get('telephone'):
-            identifier = request.POST.get('telephone')
-            user_type = 'membre'
-        if not secret and request.POST.get('pin'):
-            secret = request.POST.get('pin')
+    if request.method == 'POST':
+        if is_ajax and request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body)
+                user_type = data.get('user_type', 'membre')
+                identifier = data.get('identifier', '').strip() or data.get('telephone', '').strip()
+                secret = data.get('secret', '').strip() or data.get('pin', '').strip()
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'error': 'Format de requête invalide.'}, status=400)
+        else:
+            user_type = request.POST.get('user_type', 'membre')
+            identifier = request.POST.get('identifier', '').strip() or request.POST.get('telephone', '').strip()
+            secret = request.POST.get('secret', '').strip() or request.POST.get('pin', '').strip()
 
         if user_type == 'membre':
             try:
-                membre = Membre.objects.get(telephone=identifier) # Corrigé : Membres -> Membre
+                membre = Membre.objects.get(telephone=identifier)
                 stored_pin = str(membre.pin)
                 authenticated = False
 
@@ -138,7 +144,6 @@ def login_view(request):
                     rotate_token(request)
                     membre.last_login = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
                     membre.save()
-
                     request.session['is_member_authenticated'] = True
                     request.session['user_id'] = membre.id
                     request.session['user_type'] = 'membre'
@@ -146,18 +151,21 @@ def login_view(request):
                     request.session['membre_nom'] = f"{membre.prenom} {membre.nom}"
                     request.session['role'] = membre.role
 
-                    # REDIRECTION FIXE : Toujours rediriger vers l'espace membre
-                    return redirect(get_redirect_url('core:dashboard', is_admin_route=False))
+                    redirect_url = get_redirect_url('core:dashboard', is_admin_route=False)
+                    if is_ajax:
+                        return JsonResponse({'success': True, 'redirect_url': redirect_url})
+                    return redirect(redirect_url)
                 else:
-                    return render(request, 'core/login.html', {
-                        'error_message': 'Téléphone ou Code PIN incorrect.',
-                        'next': next_url
-                    })
-            except Membre.DoesNotExist: # Corrigé : Membres -> Membre
-                return render(request, 'core/login.html', {
-                    'error_message': 'Téléphone ou Code PIN incorrect.',
-                    'next': next_url
-                })
+                    error_msg = 'Téléphone ou Code PIN incorrect.'
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'error': error_msg}, status=401)
+                    return render(request, 'core/login.html', {'error_message': error_msg, 'next': next_url})
+
+            except Membre.DoesNotExist:
+                error_msg = 'Téléphone ou Code PIN incorrect.'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': error_msg}, status=401)
+                return render(request, 'core/login.html', {'error_message': error_msg, 'next': next_url})
 
         else:
             user = authenticate(request, username=identifier, password=secret)
@@ -170,25 +178,33 @@ def login_view(request):
                     request.session['user_id'] = user.id
                     request.session['user_type'] = 'partenaire'
                     request.session['role'] = 'partenaire'
-                    return redirect(get_redirect_url('core:partner_dashboard', is_admin_route=False))
+
+                    redirect_url = get_redirect_url('core:partner_dashboard', is_admin_route=False)
+                    if is_ajax:
+                        return JsonResponse({'success': True, 'redirect_url': redirect_url})
+                    return redirect(redirect_url)
+
                 elif user_type == 'admin' and is_admin:
                     login(request, user)
                     request.session['user_id'] = user.id
                     request.session['user_type'] = 'admin'
                     request.session['role'] = 'admin'
-                    return redirect(get_redirect_url('core:manager_dashboard', is_admin_route=True))
-                else:
-                    return render(request, 'core/login.html', {
-                        'error_message': "Vous n'avez pas les droits pour cet espace.",
-                        'next': next_url
-                    })
-            else:
-                return render(request, 'core/login.html', {
-                    'error_message': "Nom d'utilisateur ou mot de passe incorrect.",
-                    'next': next_url
-                })
 
-    return render(request, 'core/login.html', {'next': next_url})
+                    redirect_url = get_redirect_url('core:manager_dashboard', is_admin_route=True)
+                    if is_ajax:
+                        return JsonResponse({'success': True, 'redirect_url': redirect_url})
+                    return redirect(redirect_url)
+                else:
+                    error_msg = "Vous n'avez pas les droits pour cet espace."
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'error': error_msg}, status=403)
+                    return render(request, 'core/login.html', {'error_message': error_msg, 'next': next_url})
+            else:
+                error_msg = "Nom d'utilisateur ou mot de passe incorrect."
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': error_msg}, status=401)
+                return render(request, 'core/login.html', {'error_message': error_msg, 'next': next_url})
+
 
 universal_login_view = login_view
 
@@ -343,7 +359,7 @@ def manager_dashboard_view(request):
             he = HistoriqueEpargne.objects.filter(membre_id=m.id, date_reunion=d).first()
             valeur_sociale = he.caisse_sociale if (he and he.caisse_sociale) else 0
             valeur_epargne = he.epargne if (he and he.epargne) else 0
-            statut = he.status_presence if he else '-'
+            statut = he.membre.status_presence if he else '-'
             montants_mois.append(valeur_sociale)
             sum_mois += valeur_sociale
             statuts_list.append(statut)
@@ -387,12 +403,13 @@ def manager_dashboard_view(request):
     total_epargne = sum(m.solde_epargne or 0 for m in Membre.objects.all())
     total_caisse_sociale = sum(m.caisse_sociale or 0 for m in Membre.objects.all())
     total_credits_en_cours = sum(m.credit_en_cours or 0 for m in Membre.objects.all())
-    top_membres = Membre.objects.all().order_by('-solde_epargne')[:10]
-    noms_membres = [f"{m.prenom} {m.nom}" for m in top_membres]
+    top_membres = Membre.objects.all().order_by('-solde_epargne')
+    noms_membres = [f"{m.prenom or ''} {m.nom}".strip() for m in top_membres]
     soldes_epargne = [float(m.solde_epargne or 0) for m in top_membres]
     brb_rates = get_brb_exchange_rates()
     tous_les_groupes = Groupe.objects.filter(est_archive=False)
     groupes_disponibles = tous_les_groupes
+
     historique_raw = HistoriqueEpargne.objects.filter(date_reunion__startswith=prefixe_mois)
     if selected_gid:
         historique_raw = historique_raw.filter(groupe_id=selected_gid)
@@ -400,7 +417,7 @@ def manager_dashboard_view(request):
     total_presences_effectives = 0
     total_absences_effectives = 0
     for h in historique_raw:
-        statut_val = str(h.status_presence).strip().lower()
+        statut_val = str(h.membre.status_presence).strip().lower()
         if statut_val in ['p', 'présent', 'present', '1', 'oui']:
             total_presences_effectives += 1
         elif statut_val in ['a', 'absent', '0', 'non']:
@@ -462,12 +479,43 @@ def logout_view(request):
 
 def member_profile_view(request):
     membre_id = request.session.get('membre_id') or request.session.get('user_id')
-    if not membre_id:
+    telephone = request.session.get('telephone') or request.session.get('phone')
+
+    if not membre_id and not telephone:
         return redirect('core:login')
 
-    membre = get_object_or_404(Membre, id=membre_id)
+    try:
+        if membre_id:
+            membre = Membre.objects.filter(id=membre_id).first()
+        else:
+            membre = Membre.objects.filter(telephone=telephone).first()
+
+        if not membre:
+            return redirect('core:login')
+
+        dernier_historique = HistoriqueEpargne.objects.filter(membre=membre).order_by('-id').first()
+
+        if dernier_historique:
+            derniere_reunion = getattr(dernier_historique, 'date_reunion', None) or getattr(dernier_historique, 'date',
+                                                                                            None)
+        else:
+            derniere_reunion = "Non définie"
+
+        if hasattr(derniere_reunion, 'strftime'):
+            derniere_reunion_str = derniere_reunion.strftime('%Y-%m-%d')
+        elif derniere_reunion:
+            derniere_reunion_str = str(derniere_reunion)
+        else:
+            derniere_reunion_str = "Non définie"
+
+    except Exception as e:
+        print(f"Erreur dans member_profile_view : {e}")
+        derniere_reunion_str = "Non définie"
+        membre = None
+
     context = {
-        'membre': membre, 'admin_nom': request.session.get('membre_nom'),
+        'membre': membre,
+        'derniere_reunion': derniere_reunion_str,
     }
     return render(request, 'core/member_profile.html', context)
 
@@ -625,13 +673,63 @@ def member_detail_view(request, membre_id):
     try:
         membre = Membre.objects.get(id=membre_id)
         transactions = membre.transactions.all().order_by('-date_transaction')
+        dernier_historique = HistoriqueEpargne.objects.filter(membre=membre).order_by('-date_reunion').first()
+        derniere_date = dernier_historique.date_reunion if dernier_historique else "Non définie"
+
     except Membre.DoesNotExist:
         return redirect('manager_dashboard')
+
     context = {
-        'membre': membre, 'transactions': transactions,
+        'membre': membre,
+        'transactions': transactions,
+        'derniere_reunion': derniere_date,
     }
     return render(request, 'core/member_detail.html', context)
 
+
+def api_profil_complet_view(request, membre_id):
+    try:
+        membre = Membre.objects.get(id=membre_id)
+        dernier_historique = HistoriqueEpargne.objects.filter(membre=membre).order_by('-date_reunion', '-id').first()
+        date_derniere = dernier_historique.date_reunion.strftime(
+            '%Y-%m-%d') if dernier_historique and dernier_historique.date_reunion else None
+        groupe = getattr(membre, 'groupe', None)
+        montant_hebdo_val = getattr(groupe, 'cotisation_fixe', None) or getattr(groupe, 'montant_hebdo',
+                                                                                '5 000') if groupe else '5 000'
+        date_prochaine_val = getattr(groupe, 'date_reunion_prochaine',
+                                     None) or "À déterminer" if groupe else "À déterminer"
+
+        president_val = getattr(groupe, 'president', None) or 'N/D' if groupe else 'N/D'
+        secretaire_val = getattr(groupe, 'secretaire', None) or 'N/D' if groupe else 'N/D'
+        admin_sys_val = getattr(groupe, 'admin_sys', None) or getattr(groupe, 'administrateur',
+                                                                      'N/D') if groupe else 'N/D'
+
+        data = {
+            "id": membre.id,
+            "nom": membre.nom,
+            "prenom": membre.prenom,
+            "telephone": getattr(membre, 'telephone', ''),
+            "cni": getattr(membre, 'cni', ''),
+            "age": getattr(membre, 'age', ''),
+            "sexe": getattr(membre, 'sexe', ''),
+            "colline": getattr(membre, 'colline', ''),
+            "quartier": getattr(membre, 'quartier', ''),
+            "avenue": getattr(membre, 'avenue', ''),
+            "maison": getattr(membre, 'maison', ''),
+            "role": getattr(membre, 'role', 'MEMBRE'),
+            "groupe_id": groupe.id if groupe else '',
+            "groupe": {
+                "date_reunion_derniere": date_derniere,
+                "date_reunion_prochaine": str(date_prochaine_val),
+                "montant_hebdo": str(montant_hebdo_val),
+                "president": str(president_val),
+                "secretaire": str(secretaire_val),
+                "admin_sys": str(admin_sys_val),
+            }
+        }
+        return JsonResponse({"status": "success", "data": data})
+    except Membre.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Membre non trouvé"}, status=404)
 
 def export_members_pdf(request):
     role = str(request.session.get('role', '')).lower()
@@ -753,14 +851,19 @@ def partner_dashboard_view(request):
 def partner_members_list_view(request):
     user = request.user
     partenaire_obj = Partenaire.objects.filter(nom=user.username).first()
-    membres = Membre.objects.filter(groupe__partenaire=partenaire_obj)
+    membres_list = Membre.objects.filter(groupe__partenaire=partenaire_obj).order_by('-id')
     status_filter = request.GET.get('status')
     if status_filter:
-        membres = membres.filter(status_presence=status_filter)
+        membres_list = membres_list.filter(status_presence=status_filter)
+
+    paginator = Paginator(membres_list, 10)
+    page_number = request.GET.get('page')
+    membres = paginator.get_page(page_number)
 
     context = {
         'membres': membres,
         'is_partner': True,
+        'status_filter': status_filter,
     }
     return render(request, 'core/partner_members_list.html', context)
 
@@ -1054,28 +1157,59 @@ def financial_report_view(request):
     return render(request, 'core/financial_report.html', context)
 
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
 def get_brb_exchange_rates():
-    """Récupère les taux USD et EUR depuis le site officiel de la BRB"""
+    """Récupère les taux USD et EUR depuis le site officiel de la BRB avec système de cache"""
+
+    cached_rates = cache.get('brb_rates_cache')
+    if cached_rates:
+        return cached_rates
+
     rates = {'USD': 'N/A', 'EUR': 'N/A'}
+    usd_found = False
+    eur_found = False
+
     try:
-        url = "https://www.brb.bi/affichagetoustauxchange"
+        url = "https://www.brb.bi/Details%20Taux%20de%20Change"
         headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers, timeout=15, verify=False)
+
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             rows = soup.find_all('tr')
+
             for row in rows:
                 text = row.get_text()
-                if 'USD' in text:
+
+                if 'USD' in text and not usd_found:
                     cols = row.find_all('td')
-                    if len(cols) >= 2:
-                        rates['USD'] = cols[1].get_text(strip=True)
-                if 'EUR' in text:
+                    if len(cols) >= 3:
+                        rates['USD'] = cols[2].get_text(strip=True)
+                        usd_found = True
+
+                if 'EUR' in text and not eur_found:
                     cols = row.find_all('td')
-                    if len(cols) >= 2:
-                        rates['EUR'] = cols[1].get_text(strip=True)
+                    if len(cols) >= 3:
+                        rates['EUR'] = cols[2].get_text(strip=True)
+                        eur_found = True
+
+                if usd_found and eur_found:
+                    break
+
+            if rates['USD'] != 'N/A' and rates['EUR'] != 'N/A':
+                cache.set('brb_rates_cache', rates, 7200)
+
+    except requests.exceptions.Timeout:
+        print("Erreur BRB : Le site de la banque a mis trop de temps à répondre (Timeout de 15s atteint).")
     except Exception as e:
-        print("Erreur lors de la récupération des taux BRB:", e)
+        print(f"Erreur lors de la lecture des taux BRB : {e}")
+
     return rates
 
 
@@ -1473,7 +1607,7 @@ def update_loan_status(request, pret_id, action):
         pret.save()
         messages.warning(request, f"Le prêt de #{pret.id} a été rejeté.")
 
-    return redirect('group_validate_loans')
+    return redirect('core:group_validate_loans')
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -1497,26 +1631,32 @@ def admin_reset_pin(request):
         except Exception as e:
             messages.error(request, f"Erreur lors de la réinitialisation : {e}")
 
-    return redirect('manager_dashboard')
-
+    return redirect('core:manager_dashboard')
 
 def admin_toggle_status(request):
-    if request.method == "POST":
-        target_id = request.POST.get("target_id")
-        action_type = request.POST.get("action_type")
-
-        new_status = False if action_type == "desactiver" else True
+    if request.method == 'POST':
+        target_id = request.POST.get('target_id')
+        action_type = request.POST.get('action_type')
+        motif = request.POST.get('motif')
 
         try:
-            with connection.cursor() as cursor:
-                cursor.execute("UPDATE membres SET is_active = %s WHERE id = %s", [new_status, target_id])
+            membre = Membre.objects.get(id=target_id)
 
-            status_txt = "désactivé" if not new_status else "réactivé"
-            messages.success(request, f"✅ Membre #{target_id} {status_txt} avec succès.")
+            if action_type == 'desactiver':
+                membre.is_active = 0
+                messages.success(request, f"Le compte de {membre.nom} a été désactivé.")
+            elif action_type == 'reactiver':
+                membre.is_active = 1
+                messages.success(request, f"Le compte de {membre.nom} a été réactivé.")
+
+            membre.save()
+
+        except Membre.DoesNotExist:
+            messages.error(request, f"Le membre avec l'ID {target_id} est introuvable.")
         except Exception as e:
             messages.error(request, f"Erreur lors du changement de statut : {e}")
 
-    return redirect('manager_dashboard')
+    return redirect(request.META.get('HTTP_REFERER', 'core:manager_dashboard_view'))
 
 
 @require_POST
@@ -1524,7 +1664,7 @@ def creer_groupe_view(request):
     nom = request.POST.get('nom_groupe')
     if nom:
         Groupe.objects.create(nom=nom)
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 @require_POST
@@ -1532,7 +1672,7 @@ def archiver_groupe_view(request, groupe_id):
     groupe = get_object_or_404(Groupe, id=groupe_id)
     groupe.est_archive = True
     groupe.save()
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 @require_POST
@@ -1540,7 +1680,7 @@ def restaurer_groupe_view(request, groupe_id):
     groupe = get_object_or_404(Groupe, id=groupe_id)
     groupe.est_archive = False
     groupe.save()
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 def retirer_groupe_view(request, membre_id):
@@ -1548,7 +1688,7 @@ def retirer_groupe_view(request, membre_id):
         membre = get_object_or_404(Membre, id=membre_id)
         membre.groupe = None  # Dissocie le groupe du membre
         membre.save()
-    return redirect(request.META.get('HTTP_REFERER', 'manager_dashboard_view'))
+    return redirect(request.META.get('HTTP_REFERER', 'core:manager_dashboard_view'))
 
 
 @require_POST
@@ -1558,7 +1698,7 @@ def changer_groupe_membre_view(request, membre_id):
     if nouveau_groupe_id:
         membre.groupe_id = nouveau_groupe_id
         membre.save()
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 @require_POST
@@ -1567,7 +1707,7 @@ def retirer_groupe_view(request, membre_id):
         membre = get_object_or_404(Membre, id=membre_id)
         membre.groupe = None
         membre.save()
-    return redirect(request.META.get('HTTP_REFERER', 'manager_dashboard_view'))
+    return redirect(request.META.get('HTTP_REFERER', 'core:manager_dashboard_view'))
 
 
 @require_POST
@@ -1575,7 +1715,7 @@ def creer_groupe_view(request):
     nom_saisi = request.POST.get('nom_groupe')
     if nom_saisi:
         Groupe.objects.create(nom_groupe=nom_saisi)
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 @require_POST
@@ -1588,19 +1728,19 @@ def changer_groupe_view(request, membre_id):
         membre.groupe = nouveau_groupe
         membre.save()
 
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 @require_POST
 def assigner_partenaire_groupe_view(request, groupe_id):
-    groupe = get_object_or_404(Groupes, id=groupe_id)
+    groupe = get_object_or_404(Groupe, id=groupe_id)
     partenaire_id = request.POST.get('partenaire_id')
 
     if partenaire_id:
         groupe.partenaire_id = partenaire_id if partenaire_id != "" else None
         groupe.save()
 
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 def saisie_hebdomadaire_view(request):
@@ -1633,7 +1773,7 @@ def saisie_hebdomadaire_view(request):
         except Exception as e:
             messages.error(request, f"❌ Erreur lors de l'enregistrement : {e}")
 
-    return redirect(request.META.get('HTTP_REFERER', 'manager_dashboard_view'))
+    return redirect(request.META.get('HTTP_REFERER', 'core:manager_dashboard_view'))
 
 
 def get_context_caisse_sociale(selected_gid):
@@ -1823,10 +1963,6 @@ def export_members_excel(request):
 
 
 def link_callback(uri, rel):
-    """
-    Convertit les URLs web statiques en chemins de fichiers absolus locaux
-    pour que xhtml2pdf puisse intégrer les images.
-    """
     result = uri
     if uri.startswith(settings.STATIC_URL):
         path = finders.find(uri.replace(settings.STATIC_URL, ""))
@@ -1841,7 +1977,6 @@ def link_callback(uri, rel):
 
 
 def export_transactions_pdf(request):
-    """Génère un rapport PDF des transactions avec filtres actifs."""
     search_query = request.GET.get('q', '')
     selected_type = request.GET.get('type_op', '')
     transactions = TransactionHistory.objects.all().order_by('-date_transaction')
@@ -1887,7 +2022,7 @@ def admin_planifier_reunion_view(request):
         # groupe.save()
 
         messages.success(request, "La date de la prochaine réunion a été planifiée avec succès pour le groupe.")
-    return redirect('manager_dashboard')
+    return redirect('core:manager_dashboard')
 
 
 def home_view(request):
@@ -2093,3 +2228,72 @@ def global_reports_view(request):
         'partner_name': request.user.username,
     }
     return render(request, 'core/partner_reports.html', context)
+
+
+def saisie_hebdomadaire_view(request):
+    if request.method == 'POST':
+        print("=== DONNÉES REÇUES DU FORMULAIRE ===")
+        print(request.POST)
+
+        date_reunion_saisie = request.POST.get('date_reunion')
+        date_finale = timezone.now().date()
+
+        if date_reunion_saisie:
+            try:
+                date_finale = datetime.strptime(date_reunion_saisie, '%m/%d/%Y').date()
+            except ValueError:
+                try:
+                    date_finale = datetime.strptime(date_reunion_saisie, '%Y-%m-%d').date()
+                except ValueError:
+                    print(f"Format de date inconnu: {date_reunion_saisie}, utilisation de la date du jour.")
+
+        membre_ids = request.POST.getlist('membre_id') or request.POST.getlist('membre_id[]')
+        if not membre_ids:
+            membre_ids = [key.split('_')[1] for key in request.POST.keys() if key.startswith('epargne_')]
+
+        if not membre_ids:
+            print("ERREUR : Aucun membre trouvé dans le formulaire POST.")
+            messages.error(request, "Aucune donnée envoyée.")
+            return redirect(request.META.get('HTTP_REFERER', 'core:manager_dashboard'))
+
+        count_updated = 0
+        try:
+            with transaction.atomic():
+                for m_id in membre_ids:
+                    presence = request.POST.get(f'presence_{m_id}') or request.POST.get('presence[]', 'Présent (P)')
+                    epargne_val = request.POST.get(f'epargne_{m_id}') or request.POST.get(f'epargne[{m_id}]', 0)
+                    caisse_val = request.POST.get(f'caisse_{m_id}') or request.POST.get(f'caisse_sociale_{m_id}', 0)
+
+                    try:
+                        epargne = float(epargne_val) if epargne_val else 0.0
+                        caisse = float(caisse_val) if caisse_val else 0.0
+                    except ValueError:
+                        epargne, caisse = 0.0, 0.0
+
+                    try:
+                        membre = Membre.objects.get(id=m_id)
+                        membre.solde_epargne = (membre.solde_epargne or 0) + epargne
+                        membre.caisse_sociale = (membre.caisse_sociale or 0) + caisse
+                        membre.status_presence = presence
+                        membre.save()
+
+                        if epargne > 0 or caisse > 0 or presence != 'Absent (A)':
+                            HistoriqueEpargne.objects.create(
+                                membre=membre,
+                                montant_epargne=epargne,
+                                montant_social=caisse,
+                                date_reunion=date_finale,
+                                enregistre_par=request.user.username if request.user.is_authenticated else "Admin"
+                            )
+                        count_updated += 1
+                    except Membre.DoesNotExist:
+                        continue
+
+            messages.success(request, f"Saisie enregistrée avec succès pour {count_updated} membre(s).")
+            print(f"SUCCÈS : {count_updated} membres mis à jour à la date {date_finale}.")
+        except Exception as e:
+            print(f"ERREUR FATALE LORS DE LA SAUVEGARDE : {str(e)}")
+            messages.error(request, f"Erreur lors de la sauvegarde : {str(e)}")
+
+    return redirect(request.META.get('HTTP_REFERER', 'core:manager_dashboard'))
+

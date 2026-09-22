@@ -1,8 +1,12 @@
 from django.contrib import admin
 from .models import (
     Membres, Presences, Amendes, DecaissementSocial, DemandesSociales, Groupes, HistoriqueEpargne,
-    HistoriqueSocial, JournalPrets, Logs, TransactionHistory, Pret
+    HistoriqueSocial, JournalPrets, Logs, TransactionHistory, Pret, Partenaire
 )
+
+@admin.register(Partenaire)
+class PartenaireAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'code_partenaire', 'est_actif')
 
 @admin.register(Membres)
 class MembresAdmin(admin.ModelAdmin):

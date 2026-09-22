@@ -54,6 +54,7 @@ urlpatterns = [
     path('manager/presences/enregistrer/', views.enregistrer_presences_view, name='enregistrer_presences'),
     path('manager/transaction/<int:membre_id>/', views.add_transaction_view, name='add_member_transaction'),
     path('manager/approbation-pret/<int:pret_id>/', views.approbation_finale_directeur, name='approbation_finale_directeur'),
+    #path('manager/reset-pin/', views.admin_reset_pin, name='admin_reset_pin'),
 
     # --- Gestion des Membres & Groupes ---
     path('membre/<int:membre_id>/', views.member_detail_view, name='member_detail'),
@@ -93,9 +94,9 @@ urlpatterns = [
     path('services/qr-code/', views.member_qr_view, name='member_qr'),
     path('services/predictions-ia/', views.ai_predictions_view, name='ai_predictions'),
     path('services/security-pin/', views.security_pin_view, name='security_pin'),
-    path('admin/reset-pin/', views.admin_reset_pin, name='admin_reset_pin'),
-    path('admin/toggle-status/', views.admin_toggle_status, name='admin_toggle_status'),
-    path('admin/planifier-reunion/', views.admin_planifier_reunion_view, name='admin_planifier_reunion'),
+    path('manager/reset-pin/', views.admin_reset_pin, name='admin_reset_pin'),
+    path('managertoggle-status/', views.admin_toggle_status, name='admin_toggle_status'),
+    path('manager/planifier-reunion/', views.admin_planifier_reunion_view, name='admin_planifier_reunion'),
 
     # --- Exports ---
     path('export/members/pdf/', views.export_members_pdf, name='export_members_pdf'),
