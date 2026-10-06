@@ -12,29 +12,33 @@
         body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px; }
         .header h1 { margin: 0; font-size: 20px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #3498db; }
-        .stat-card h3 { margin: 0 0 10px 0; color: #7f8c8d; font-size: 14px; text-transform: uppercase; }
-        .stat-card p { font-size: 22px; font-weight: bold; color: #2c3e50; margin: 0; }
+        .stat-card h3 { margin: 0 0 10px 0; color: #7f8c8d; font-size: 13px; text-transform: uppercase; }
+        .stat-card p { font-size: 20px; font-weight: bold; color: #2c3e50; margin: 0; }
         .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        table { width: 100%; border-collapse: collapse; min-width: 100%; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
         th { background-color: #f8f9fa; color: #333; font-weight: bold; }
         tr:hover { background-color: #f1f4f6; }
         .btn-action { background-color: #2ecc71; color: white; padding: 6px 12px; border: none; border-radius: 4px; text-decoration: none; font-size: 12px; cursor: pointer; display: inline-block; margin-bottom: 4px; }
         .btn-logout { color: white; text-decoration: none; font-weight: bold; padding: 8px 15px; background: #e74c3c; border-radius: 4px; }
 
-        /* Styles des onglets */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        /* Styles des onglets principaux CORRIGÉS */
+        .tab-content { display: none !important; }
+        .tab-content.active { display: block !important; }
         .nav-tab { text-decoration: none; color: #2c3e50; font-weight: bold; font-size: 15px; padding: 8px 15px; border-radius: 6px; transition: all 0.2s; cursor: pointer; border: none; background: none; }
         .nav-tab.active-tab { background-color: #3498db; color: white; }
         .nav-tab:hover { background-color: #ebf5fb; color: #3498db; }
 
+        /* Styles des sous-onglets */
+        .sub-tab-content { display: none; }
+        .sub-tab-content.active-sub-content { display: block; }
+
         /* Masquer le bloc d'en-tête PDF sur l'écran */
         .print-only { display: none !important; }
 
-        /* Styles appliqués uniquement lors de l'impression PDF */
+        /* Styles d'impression */
         @media print {
             body * { visibility: hidden !important; }
             .print-section, .print-section * { visibility: visible !important; }
@@ -125,33 +129,9 @@
             </div>
         </div>
 
-        <!-- Grille de Statistiques Globale -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Membres</h3>
-                <p>{{ total_membres }}</p>
-            </div>
-            <div class="stat-card" style="border-left-color: #2ecc71;">
-                <h3>Total Épargne Globale</h3>
-                <p>{{ total_epargne }} BIF</p>
-            </div>
-            <div class="stat-card" style="border-left-color: #9b59b6;">
-                <h3>Caisse Sociale</h3>
-                <p>{{ total_caisse_sociale }} BIF</p>
-            </div>
-            <div class="stat-card" style="border-left-color: #e67e22;">
-                <h3>Crédits en Cours</h3>
-                <p>{{ total_credits }} BIF</p>
-            </div>
-            <div class="stat-card" style="border-left-color: #1abc9c;">
-                <h3>Groupes Actifs</h3>
-                <p>{{ total_groupes_actifs }}</p>
-            </div>
-        </div>
-
-        <!-- Graphique des Épargnes -->
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 30px;">
-            <h3 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Top Épargnes des Membres</h3>
+        <!-- Graphique d'Épargne -->
+        <div class="table-container" style="margin-bottom: 25px;">
+            <h3 style="color: #2c3e50; font-size: 16px; margin-top: 0; margin-bottom: 15px;">📊 Aperçu Général des Épargnes</h3>
             <div style="position: relative; height: 300px; width: 100%;">
                 <canvas id="savingsChart"></canvas>
             </div>
@@ -163,94 +143,56 @@
     <!-- ========================================== -->
     <div id="tab-membres" class="tab-content">
         <div class="table-container">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
-                <h2 style="margin:0; color:#2c3e50;">Gestion des Comptes Membres (Détails d'Inscription)</h2>
+            <h2 style="color: #2c3e50; margin-top: 0; font-size: 18px; font-weight: bold;">👥 Gestion des Membres</h2>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">Liste globale des membres enregistrés sur la plateforme.</p>
 
-                <!-- Ajout des boutons d'exportation avec le paramètre de recherche -->
-                <div style="display: flex; gap: 10px;">
-                    <a href="{% url 'core:export_members_excel' %}{% if search_query %}?q={{ search_query }}{% endif %}" style="background-color: #27ae60; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;">
-                        📊 Exporter en Excel
-                    </a>
-                    <a href="{% url 'core:export_members_pdf' %}{% if search_query %}?q={{ search_query }}{% endif %}" style="background-color: #e74c3c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;" target="_blank">
-                        📄 Exporter en PDF
-                    </a>
-                    <a href="/membres/nouveau" style="background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px;">
-                        + Inscrire un membre
-                    </a>
-                </div>
-            </div>
-
-            <!-- Formulaire de recherche -->
-            <form method="GET" action="{% url 'core:manager_dashboard' %}" style="margin: 20px 0; display: flex; gap: 10px;">
-                <input type="text" name="q" value="{{ search_query }}" placeholder="Rechercher par nom, prénom ou téléphone..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
-                <button type="submit" style="background-color: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">Rechercher</button>
+            <form method="GET" action="{% url 'core:manager_dashboard' %}" class="no-print" style="margin-bottom: 20px; display: flex; gap: 10px;">
+                <input type="hidden" name="tab" value="membres">
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Rechercher par Nom, Prénom ou Téléphone..." style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 300px; font-size: 13px;">
+                <button type="submit" style="background-color: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">Rechercher</button>
                 {% if search_query %}
-                    <a href="{% url 'core:manager_dashboard' %}" style="background-color: #7f8c8d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; display: flex; align-items: center;">Réinitialiser</a>
+                    <a href="?tab=membres" style="background-color: #7f8c8d; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: bold;">Réinitialiser</a>
                 {% endif %}
             </form>
 
-            <!-- Tableau des Membres -->
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nom & Prénom</th>
-                        <th>Sexe / Âge</th>
-                        <th>Téléphone / CNI</th>
-                        <th>Adresse (Colline, Quartier, Avenue, N° Maison)</th>
-                        <th>Finances (Épargne / Crédit)</th>
-                        <th>Dernière Connexion Web</th>
-                        <th>Dernière Connexion App</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for m in membres %}
-                    <tr>
-                        <td>{{ m.id }}</td>
-                        <td><strong>{{ m.nom }} {{ m.prenom }}</strong></td>
-                        <td>{{ m.sexe|default:"N/A" }} / {{ m.age|default:"N/A" }} ans</td>
-                        <td>{{ m.telephone }}<br><small style="color: #7f8c8d;">CNI: {{ m.cni|default:"N/A" }}</small></td>
-                        <td>{{ m.colline|default:"-" }}, {{ m.quartier|default:"-" }}<br><small style="color: #7f8c8d;">Av. {{ m.avenue|default:"-" }} (N° {{ m.numero_maison|default:"N/A" }})</small></td>
-                        <td>
-                            <span style="color: #27ae60; font-weight: bold;">Ép: {{ m.solde_epargne|default:"0" }} BIF</span><br>
-                            <span style="color: #e67e22; font-weight: bold;">Cr: {{ m.credit_en_cours|default:"0" }} BIF</span>
-                        </td>
-                        <td>{{ m.last_login|default:"Jamais" }}</td>
-                        <td>{{ m.last_login_app|default:"Jamais" }}</td>
-                        <td>
-                            <div style="display: flex; gap: 5px; flex-direction: column;">
-                                <a href="{% url 'core:add_transaction' m.id %}" class="btn-action">Transaction</a>
-                                <a href="{% url 'core:add_credit' m.id %}" class="btn-action" style="background-color: #3498db;">Crédit</a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 20px;">Aucun membre trouvé.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <!-- Pagination (Inchangée) -->
-            {% if membres.has_other_pages %}
-            <div style="display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 10px;">
-                {% if membres.has_previous %}
-                    <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">&laquo; Première</a>
-                    <a href="?page={{ membres.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">Précédente</a>
-                {% endif %}
-                <span style="padding: 8px 15px; background-color: #3498db; color: white; border-radius: 4px; font-weight: bold; font-size: 14px;">
-                    Page {{ membres.number }} sur {{ membres.paginator.num_pages }}
-                </span>
-                {% if membres.has_next %}
-                    <a href="?page={{ membres.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">Suivante</a>
-                    <a href="?page={{ membres.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" style="padding: 8px 12px; border: 1px solid #bdc3c7; border-radius: 4px; text-decoration: none; color: #2c3e50; font-size: 14px;">Dernière &raquo;</a>
-                {% endif %}
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom & Prénom</th>
+                            <th>Téléphone</th>
+                            <th>Groupe</th>
+                            <th>Rôle</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in tous_les_membres|default:membres_groupe %}
+                        <tr>
+                            <td><strong>#{{ m.id }}</strong></td>
+                            <td>{{ m.prenom }} {{ m.nom }}</td>
+                            <td>{{ m.telephone }}</td>
+                            <td>{{ m.groupe.nom_groupe|default:"Sans Groupe" }}</td>
+                            <td>{{ m.role|default:"Membre" }}</td>
+                            <td>
+                                {% if m.is_active != False %}
+                                    <span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">Actif</span>
+                                {% else %}
+                                    <span style="background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">Inactif</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #7f8c8d; font-style: italic;">Aucun membre trouvé.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        {% endif %}
+        </div>
     </div>
-</div>
 
     <!-- ========================================== -->
     <!-- 3. ONGLET GROUPES                          -->
@@ -259,39 +201,6 @@
         <div class="table-container">
             <h2 style="color: #2c3e50; margin-top: 0;">📋 Registres & Centre d'Audit du Groupe</h2>
             <p style="color: #7f8c8d; margin-bottom: 20px;">Consultez l'historique croisé des présences, de la caisse sociale et des versements d'épargne.</p>
-
-            <!-- Barre d'actions Groupe -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
-                <form method="POST" action="{% url 'core:creer_groupe' %}" style="display: flex; gap: 8px;">
-                    {% csrf_token %}
-                    <input type="text" name="nom_groupe" placeholder="Nom du nouveau groupe" required style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;">
-                    <button type="submit" style="background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-                        ➕ Nouveau Groupe
-                    </button>
-                </form>
-
-                <div style="display: flex; gap: 10px;">
-                    {% if groupe_selectionne %}
-                    <form method="POST" action="{% url 'core:archiver_groupe' groupe_selectionne.id %}" onsubmit="return confirm('Archiver ce groupe ? Ses membres repasseront en \'Sans Groupe\'.');">
-                        {% csrf_token %}
-                        <button type="submit" style="background-color: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-                            🗑️ Archiver ce Groupe
-                        </button>
-                    </form>
-                    {% endif %}
-
-                    <button type="button" onclick="document.getElementById('modal-archives').style.display='block'" style="background-color: #7f8c8d; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-                        📂 Groupes Archivés ({% if groupes_archives %}{{ groupes_archives|length }}{% else %}0{% endif %})
-                    </button>
-                </div>
-            </div>
-
-            <!-- Sélecteur de groupe -->
-            <form method="GET" action="{% url 'core:manager_dashboard' %}" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-                <label for="gid" style="font-weight: bold; font-size: 13px; color: #555;">Sélectionner un Groupe ID :</label>
-                <input type="number" name="gid" value="{{ selected_gid|default:1 }}" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
-                <button type="submit" style="background-color: #3498db; color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">Charger</button>
-            </form>
 
             <!-- Sous-onglets des Groupes -->
             <div style="display: flex; gap: 8px; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; flex-wrap: wrap;">
@@ -304,60 +213,79 @@
 
             <!-- Sous-onglet: Roles -->
             <div id="sub-tab-roles" class="sub-tab-content active-sub-content">
-                <h3 style="color: #2c3e50; font-size: 15px;">Attribution des Rôles (Président, Secrétaire, etc.)</h3>
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 15px;">
+                    Attribution des Rôles (Président, Secrétaire, etc.) pour {% if groupe_selectionne %}{{ groupe_selectionne.nom_groupe }}{% else %}ce groupe{% endif %}
+                </h3>
+
                 <form method="GET" action="{% url 'core:manager_dashboard' %}" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                    <input type="hidden" name="tab" value="groupes">
                     <input type="hidden" name="gid" value="{{ selected_gid }}">
                     <input type="text" name="role_q" value="{{ role_query }}" placeholder="Rechercher par ID, Nom ou Téléphone..." style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 300px;">
                     <button type="submit" style="background-color: #2980b9; color: white; border: none; padding: 7px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">Rechercher</button>
+                    {% if role_query %}
+                        <a href="{% url 'core:manager_dashboard' %}?tab=groupes&gid={{ selected_gid }}" style="background-color: #7f8c8d; color: white; padding: 7px 12px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: bold;">Réinitialiser</a>
+                    {% endif %}
                 </form>
+
                 {% if membres_pour_role %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nom & Prénom</th>
-                            <th>Téléphone</th>
-                            <th>Rôle Actuel</th>
-                            <th>Action / Attribution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in membres_pour_role %}
-                        <tr>
-                            <td>{{ m.id }}</td>
-                            <td><strong>{{ m.prenom }} {{ m.nom }}</strong></td>
-                            <td>{{ m.telephone }}</td>
-                            <td><span style="background: #eef2f3; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: #2c3e50;">{{ m.role|default:"Membre" }}</span></td>
-                            <td>
-                                <form method="POST" style="display: flex; gap: 8px; align-items: center;">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="membre_id" value="{{ m.id }}">
-                                    <select name="nouveau_role" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                <form method="POST" action="{% url 'core:manager_dashboard' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="gid" value="{{ selected_gid }}">
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                <th style="padding: 10px; text-align: left;">ID</th>
+                                <th style="padding: 10px; text-align: left;">Nom & Prénom</th>
+                                <th style="padding: 10px; text-align: left;">Téléphone</th>
+                                <th style="padding: 10px; text-align: left;">Rôle Actuel</th>
+                                <th style="padding: 10px; text-align: left;">Nouveau Rôle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in membres_pour_role %}
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px;">{{ m.id }}</td>
+                                <td style="padding: 10px;"><strong>{{ m.prenom }} {{ m.nom }}</strong></td>
+                                <td style="padding: 10px;">{{ m.telephone }}</td>
+                                <td style="padding: 10px;">
+                                    <span style="background: #eef2f3; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: #2c3e50;">
+                                        {{ m.role|default:"Membre" }}
+                                    </span>
+                                </td>
+                                <td style="padding: 10px;">
+                                    <input type="hidden" name="membre_ids" value="{{ m.id }}">
+                                    <select name="role_{{ m.id }}" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; width: 180px;">
                                         <option value="President" {% if m.role == 'President' %}selected{% endif %}>Président</option>
                                         <option value="Secretaire" {% if m.role == 'Secretaire' %}selected{% endif %}>Secrétaire</option>
-                                        <option value="Tresorier" {% if m.role == 'Tresorier' %}selected{% endif %}>Trésorier</option>
                                         <option value="Membre" {% if m.role == 'Membre' or not m.role %}selected{% endif %}>Membre</option>
                                     </select>
-                                    <button type="submit" name="update_role" style="background-color: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">Enregistrer</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="submit" name="update_all_roles" style="background-color: #27ae60; color: white; border: none; padding: 10px 22px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px;">
+                            💾 Enregistrer tous les rôles
+                        </button>
+                    </div>
+                </form>
                 {% else %}
-                <p style="color: #7f8c8d; font-style: italic;">Aucun membre trouvé.</p>
+                <p style="color: #7f8c8d; font-style: italic; background: #f8f9fa; padding: 12px; border-radius: 4px;">
+                    Aucun membre rattaché à ce groupe.
+                </p>
                 {% endif %}
             </div>
 
             <!-- Sous-onglet: Membres du groupe -->
-            <div id="sub-tab-membres" class="sub-tab-content" style="display: none;">
-                <!-- Section Membres du Groupe -->
-                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 12px;">Membres du Groupe</h3>
+            <div id="sub-tab-membres" class="sub-tab-content">
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 12px;">Membres du Groupe Sélectionné</h3>
                 {% if membres_groupe %}
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead>
-                        <tr style="border-bottom: 1px solid #ddd;">
+                        <tr style="border-bottom: 1px solid #ddd; background-color: #f8f9fa;">
                             <th style="padding: 12px 8px;">ID</th>
                             <th style="padding: 12px 8px;">Nom & Prénom</th>
                             <th style="padding: 12px 8px;">Groupe Actuel</th>
@@ -378,12 +306,10 @@
                                     <span style="background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">Sans Groupe</span>
                                 {% endif %}
                             </td>
-
                             <td style="padding: 12px 8px;">{{ m.telephone }}</td>
                             <td style="padding: 12px 8px;">{{ m.role|default:"Membre" }}</td>
                             <td style="padding: 12px 8px;">
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <!-- Formulaire 1 : Déplacer vers un autre groupe -->
                                     <form method="POST" action="{% url 'core:changer_groupe' m.id %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
                                         {% csrf_token %}
                                         <select name="nouveau_groupe_id" required style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
@@ -397,12 +323,9 @@
                                         </button>
                                     </form>
 
-                                    <!-- Formulaire 2 : Retirer du groupe -->
                                     <form method="POST" action="{% url 'core:retirer_groupe' m.id %}" style="margin: 0;">
                                         {% csrf_token %}
-                                        <button type="submit"
-                                                onclick="return confirm('Voulez-vous vraiment retirer ce membre du groupe ?');"
-                                                style="background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                                        <button type="submit" onclick="return confirm('Voulez-vous vraiment retirer ce membre du groupe ?');" style="background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
                                             Retirer
                                         </button>
                                     </form>
@@ -413,7 +336,9 @@
                     </tbody>
                 </table>
                 {% else %}
-                <p style="color: #7f8c8d; font-style: italic;">Aucun membre trouvé pour ce groupe.</p>
+                <p style="color: #7f8c8d; font-style: italic; background: #f8f9fa; padding: 12px; border-radius: 4px;">
+                    Aucun membre trouvé pour ce groupe.
+                </p>
                 {% endif %}
 
                 <!-- Section Liste des Groupes Actifs -->
@@ -433,8 +358,6 @@
                             <tr style="border-bottom: 1px solid #eee;">
                                 <td style="padding: 12px 8px;">{{ groupe.id }}</td>
                                 <td style="padding: 12px 8px;"><strong>{{ groupe.nom_groupe }}</strong></td>
-
-                                <!-- LISTE DÉROULANTE DES PARTENAIRES -->
                                 <td style="padding: 12px 8px;">
                                     <form method="POST" action="{% url 'core:assigner_partenaire_groupe' groupe.id %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
                                         {% csrf_token %}
@@ -447,7 +370,6 @@
                                         <button type="submit" style="background-color: #27ae60; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Assigner</button>
                                     </form>
                                 </td>
-
                                 <td style="padding: 12px 8px;">
                                     <form method="POST" action="{% url 'core:archiver_groupe' groupe.id %}" style="margin: 0;">
                                         {% csrf_token %}
@@ -467,33 +389,46 @@
                 </div>
             </div>
 
-            <!-- Sous-onglet: Présences -->
-            <div id="sub-tab-presences" class="sub-tab-content" style="display: none;">
+            <!-- Barre de Sélection & Archivage -->
+            <div style="margin-top: 30px;">
+                <h3 style="color: #2c3e50; font-size: 15px; margin-bottom: 12px;">📂 Groupes Archivés & Sélection du Groupe</h3>
+                <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <form method="GET" action="{% url 'core:manager_dashboard' %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
+                        <input type="hidden" name="tab" value="groupes">
+                        <label for="gid" style="font-weight: bold; font-size: 13px; color: #555;">Sélectionner un Groupe :</label>
+                        <select name="gid" id="gid" onchange="this.form.submit()" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background-color: white;">
+                            {% for g in tous_les_groupes %}
+                                <option value="{{ g.id }}" {% if g.id|stringformat:"s" == selected_gid|stringformat:"s" %}selected{% endif %}>
+                                    #{{ g.id }} - {{ g.nom_groupe }}
+                                </option>
+                            {% empty %}
+                                <option value="">Aucun groupe disponible</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" style="background-color: #3498db; color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                            Charger
+                        </button>
+                    </form>
 
-                <!-- Header & Légende -->
-                <h3 style="color: #2c3e50; font-size: 15px; display: flex; align-items: center; gap: 8px;">
-                    📅 Registre Mensuel des Présences (Calendrier des Réunions)
-                </h3>
-                <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 15px;">
-                    Suivi automatisé des appels effectués par le Président et le Secrétaire lors des réunions du groupe.
-                </p>
+                    {% if groupe_selectionne %}
+                    <form method="POST" action="{% url 'core:archiver_groupe' groupe_selectionne.id %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" style="background-color: #e74c3c; color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                            🗑 Archiver ce Groupe
+                        </button>
+                    </form>
+                    {% endif %}
 
-                <div style="display: flex; gap: 20px; align-items: center; background: #f8f9fa; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #e9ecef; font-size: 13px;">
-                    <strong>Légende :</strong>
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        <span style="background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 4px; font-weight: bold;">✅ Présent(e)</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        <span style="background: #f8d7da; color: #721c24; padding: 2px 8px; border-radius: 4px; font-weight: bold;">❌ Absent(e)</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        <span style="background: #e2e3e5; color: #383d41; padding: 2px 8px; border-radius: 4px; font-weight: bold;">➖ Non défini</span>
-                    </div>
+                    <button type="button" onclick="document.getElementById('modal-archives').style.display='block'" style="background-color: #7f8c8d; color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                        📂 Groupes Archivés ({% if groupes_archives %}{{ groupes_archives|length }}{% else %}0{% endif %})
+                    </button>
                 </div>
+            </div>
 
-                <!-- Tableau de l'historique des présences et statistiques -->
+            <!-- Sous-onglet: Présences -->
+            <div id="sub-tab-presences" class="sub-tab-content">
                 {% if pivot_presences %}
-                <div style="overflow-x: auto; background: white; border-radius: 6px; border: 1px solid #e9ecef;">
+                <div style="overflow-x: auto; background: white; border-radius: 6px; border: 1px solid #e9ecef; margin-bottom: 25px;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background-color: #f1f4f6; color: #2c3e50;">
@@ -527,84 +462,146 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Statistiques des présences -->
-                <div style="margin-top: 20px; background: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px 20px; display: flex; justify-content: space-around; align-items: center;">
-                    <div style="text-align: center;">
-                        <span style="display: block; font-size: 12px; color: #7f8c8d; text-transform: uppercase; font-weight: bold;">Total Présences</span>
-                        <span style="font-size: 20px; font-weight: bold; color: #27ae60;">{{ total_presences|default:0 }}</span>
-                    </div>
-                    <div style="height: 30px; width: 1px; background: #e9ecef;"></div>
-                    <div style="text-align: center;">
-                        <span style="display: block; font-size: 12px; color: #7f8c8d; text-transform: uppercase; font-weight: bold;">Total Absences</span>
-                        <span style="font-size: 20px; font-weight: bold; color: #c0392b;">{{ total_absences|default:0 }}</span>
-                    </div>
-                    <div style="height: 30px; width: 1px; background: #e9ecef;"></div>
-                    <div style="text-align: center;">
-                        <span style="display: block; font-size: 12px; color: #7f8c8d; text-transform: uppercase; font-weight: bold;">Taux de Présence Global</span>
-                        <span style="font-size: 22px; font-weight: bold; color: #2980b9;">{{ taux_presence_global|default:0 }} %</span>
-                    </div>
-                </div>
-                {% else %}
-                <p style="color: #7f8c8d; font-style: italic; background: #fff; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef;">
-                    Aucune donnée de présence disponible pour ce groupe.
-                </p>
                 {% endif %}
 
                 <!-- Section: Saisie de la Séance Hebdomadaire -->
-                <div style="margin-top: 25px; background: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px;">
-                    <h3 style="color: #2c3e50; font-size: 16px; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-                        ✍️ Saisie de la Séance Hebdomadaire
-                    </h3>
-                    <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 20px;">
-                        Enregistrement des présences, cotisations d'épargne, caisse sociale et amendes pour le groupe.
-                    </p>
+                <div style="background: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px;">
+                    <div style="margin-bottom: 20px; border-bottom: 1px solid #f1f1f1; padding-bottom: 15px;">
+                        <h3 style="color: #2c3e50; font-size: 18px; font-weight: bold; margin: 0 0 5px 0;">✍️ Saisie de la Séance Hebdomadaire</h3>
+                        <p style="color: #7f8c8d; font-size: 13px; margin: 0 0 15px 0;">Enregistrement des présences, cotisations d'épargne, caisse sociale et amendes.</p>
+
+                        <form action="{% if groupe_selectionne %}{% url 'core:modifier_taux_groupe' groupe_selectionne.id %}{% else %}#{% endif %}" method="POST" style="display: flex; align-items: center; flex-wrap: wrap; gap: 12px; background: #f8f9fa; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px;">
+                            {% csrf_token %}
+                            <label for="taux_interet_reunion" style="font-size: 13px; font-weight: bold; color: #2c3e50; margin: 0;">
+                                Le taux d'intérêt (%) :
+                            </label>
+                            <input type="number" id="taux_interet_reunion" step="0.01" name="taux_interet_reunion" value="{{ groupe_selectionne.taux_interet_reunion|default:'' }}" placeholder="ex: 8.00" required style="width: 90px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                            <label for="groupe_id_taux" style="font-size: 13px; color: #64748b; margin: 0;">Groupe concerné :</label>
+                            <select id="groupe_id_taux" name="groupe_id" required style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background-color: #ffffff; color: #1e293b;">
+                                {% if groupes %}
+                                    {% for g in groupes %}
+                                        <option value="{{ g.id }}" {% if groupe_selectionne and g.id == groupe_selectionne.id %}selected{% endif %}>
+                                            {{ g.nom_groupe }}
+                                        </option>
+                                    {% endfor %}
+                                {% elif groupe_selectionne %}
+                                    <option value="{{ groupe_selectionne.id }}" selected>{{ groupe_selectionne.nom_groupe }}</option>
+                                {% else %}
+                                    <option value="" disabled selected>Choisir un groupe</option>
+                                {% endif %}
+                            </select>
+                            <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer;">
+                                💾 Enregistrer
+                            </button>
+                        </form>
+                    </div>
 
                     <form method="POST" action="{% url 'core:saisie_hebdomadaire' %}">
                         {% csrf_token %}
-                        <input type="hidden" name="groupe_id" value="{{ selected_gid }}">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: #f8f9fa; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label for="date_reunion_input" style="font-size: 13px; font-weight: bold; color: #2c3e50; margin: 0;">
+                                        📅 Date de la réunion :
+                                    </label>
+                                    <input type="date" id="date_reunion_input" name="date_reunion" required style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background-color: #ffffff; color: #1e293b;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label for="groupe_id_reunion" style="font-size: 13px; font-weight: bold; color: #2c3e50; margin: 0;">
+                                        Groupe concerné :
+                                    </label>
+                                    <select id="groupe_id_reunion" name="groupe_id" required style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background-color: #ffffff; color: #1e293b;">
+                                        {% if groupes %}
+                                            {% for g in groupes %}
+                                                <option value="{{ g.id }}" {% if selected_gid and g.id|stringformat:"s" == selected_gid|stringformat:"s" or groupe_selectionne and g.id == groupe_selectionne.id %}selected{% endif %}>
+                                                    {{ g.nom_groupe }}
+                                                </option>
+                                            {% endfor %}
+                                        {% elif groupe_selectionne %}
+                                            <option value="{{ groupe_selectionne.id }}" selected>{{ groupe_selectionne.nom_groupe }}</option>
+                                        {% else %}
+                                            <option value="" disabled selected>Choisir un groupe</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer;">
+                                💾 Enregistrer
+                            </button>
+                        </div>
 
-                        <div style="margin-bottom: 20px; max-width: 250px;">
-                            <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #34495e;">
-                                📅 Date de la réunion :
-                            </label>
-                            <input type="date" id="date_reunion_input" name="date_reunion" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; background: #f8f9fa; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                            <div style="max-width: 600px;">
+                                <h4 style="color: #2c3e50; font-size: 15px; font-weight: bold; margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
+                                    📅 Registre Mensuel des Présences (Calendrier des Réunions)
+                                </h4>
+                                <p style="color: #7f8c8d; font-size: 12.5px; margin: 0;">
+                                    Suivi automatisé des appels effectués par le Président et le Secrétaire lors des réunions du groupe.
+                                </p>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label for="groupe_id_select" style="font-size: 13px; font-weight: bold; color: #2c3e50; margin: 0;">Groupe :</label>
+                                <select id="groupe_id_select" name="groupe_id_select" onchange="location.href='?groupe_id=' + this.value;" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background-color: #ffffff; color: #1e293b; font-weight: 500;">
+                                    {% if not groupe_selectionne and not selected_gid %}
+                                        <option value="" disabled selected>-- Choisir un groupe --</option>
+                                    {% endif %}
+                                    {% if groupes %}
+                                        {% for g in groupes %}
+                                            <option value="{{ g.id }}" {% if selected_gid and g.id|stringformat:"s" == selected_gid|stringformat:"s" or groupe_selectionne and g.id == groupe_selectionne.id %}selected{% endif %}>
+                                                {{ g.nom_groupe }}
+                                            </option>
+                                        {% endfor %}
+                                    {% elif groupe_selectionne %}
+                                        <option value="{{ groupe_selectionne.id }}" selected>{{ groupe_selectionne.nom_groupe }}</option>
+                                    {% else %}
+                                        <option value="" disabled selected>Aucun groupe disponible</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; flex-wrap: wrap;">
+                                <strong style="color: #2c3e50; margin-right: 4px;">Légende :</strong>
+                                <span style="background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 6px; font-weight: bold;">✅ Présent(e)</span>
+                                <span style="background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 6px; font-weight: bold;">❌ Absent(e)</span>
+                                <span style="background: #e2e3e5; color: #383d41; padding: 4px 10px; border-radius: 6px; font-weight: bold;">✉️ Excusé (E)</span>
+                            </div>
                         </div>
 
                         {% if membres_groupe %}
-                        <div style="overflow-x: auto;">
+                        <div style="overflow-x: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                 <thead>
                                     <tr style="background-color: #f8f9fa; color: #2c3e50; text-align: left;">
-                                        <th style="padding: 10px; border-bottom: 2px solid #dee2e6;">Membre</th>
-                                        <th style="padding: 10px; border-bottom: 2px solid #dee2e6;">Présence</th>
-                                        <th style="padding: 10px; border-bottom: 2px solid #dee2e6;">Épargne (BIF)</th>
-                                        <th style="padding: 10px; border-bottom: 2px solid #dee2e6;">Caisse Soc. (BIF)</th>
-                                        <th style="padding: 10px; border-bottom: 2px solid #dee2e6;">Amende (BIF)</th>
+                                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">Membre</th>
+                                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">Présence</th>
+                                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">Épargne (BIF)</th>
+                                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">Caisse Soc. (BIF)</th>
+                                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">Amende (BIF)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for m in membres_groupe %}
-                                    <tr style="border-bottom: 1px solid #f1f1f1;">
-                                        <td style="padding: 10px;">
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 10px 15px;">
                                             <strong>#{{ m.id }} - {{ m.prenom|default:"" }} {{ m.nom }}</strong>
                                             <input type="hidden" name="membre_ids" value="{{ m.id }}">
                                         </td>
-                                        <td style="padding: 8px;">
-                                            <select name="presence_{{ m.id }}" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+                                        <td style="padding: 8px 15px;">
+                                            <select name="presence_{{ m.id }}" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; background-color: #fff; font-size: 13px;">
                                                 <option value="P" selected>✅ Présent (P)</option>
                                                 <option value="A">❌ Absent (A)</option>
                                                 <option value="E">✉️ Excusé (E)</option>
                                             </select>
                                         </td>
-                                        <td style="padding: 8px;">
-                                            <input type="number" name="epargne_{{ m.id }}" value="5000" min="0" step="500" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+                                        <td style="padding: 8px 15px;">
+                                            <input type="number" name="epargne_{{ m.id }}" value="5000" min="0" step="500" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; font-size: 13px;">
                                         </td>
-                                        <td style="padding: 8px;">
-                                            <input type="number" name="sociale_{{ m.id }}" value="1000" min="0" step="100" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+                                        <td style="padding: 8px 15px;">
+                                            <input type="number" name="caisse_sociale_{{ m.id }}" value="1000" min="0" step="100" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; font-size: 13px;">
                                         </td>
-                                        <td style="padding: 8px;">
-                                            <input type="number" name="amende_{{ m.id }}" value="0" min="0" step="500" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; width: 100%;">
+                                        <td style="padding: 8px 15px;">
+                                            <input type="number" name="amende_{{ m.id }}" value="0" min="0" step="500" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; font-size: 13px;">
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -613,197 +610,326 @@
                         </div>
 
                         <div style="margin-top: 20px; text-align: right;">
-                            <button type="submit" style="background-color: #27ae60; color: white; border: none; padding: 10px 22px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-                                💾 Enregistrer la Séance
+                            <button type="submit" style="background-color: #28a745; color: white; border: none; padding: 10px 22px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                                💾 Enregistrer la séance
                             </button>
                         </div>
                         {% else %}
-                        <p style="color: #7f8c8d; font-style: italic; background: #f8f9fa; padding: 12px; border-radius: 4px;">
-                            Aucun membre actif trouvé dans ce groupe.
-                        </p>
+                        <p style="color: #6c757d; font-style: italic; margin-top: 15px;">Aucun membre trouvé dans ce groupe.</p>
                         {% endif %}
                     </form>
                 </div>
             </div>
 
-            <script>
-                // Initialise automatiquement le champ date avec la date d'aujourd'hui
-                document.addEventListener("DOMContentLoaded", function() {
-                    const dateInput = document.getElementById('date_reunion_input');
-                    if (dateInput && !dateInput.value) {
-                        const today = new Date().toISOString().split('T')[0];
-                        dateInput.value = today;
-                    }
-                });
-            </script>
-
             <!-- Sous-onglet: Caisse Sociale -->
-            <div id="sub-tab-sociale" class="sub-tab-content" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div id="sub-tab-sociale" class="sub-tab-content space-y-6">
+                <!-- En-tête de section -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
                     <div>
-                        <h3 style="color: #2c3e50; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px;">
-                            💰 Registre et Cumul de la Caisse Sociale (BIF)
-                        </h3>
-                        <p style="color: #7f8c8d; font-size: 13px; margin: 5px 0 0 0;">
-                            Suivi des versements par séance, des reports mensuels automatiques et des totaux accumulés.
-                        </p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">💰</span>
+                            <h3 class="text-xl font-bold text-slate-800">Registre et Cumul de la Caisse Sociale (BIF)</h3>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">Suivi des versements par séance, des reports mensuels automatiques et des totaux accumulés.</p>
                     </div>
 
-                    <!-- Boutons d'action Exportation -->
-                    <div style="display: flex; gap: 8px; margin-top: 18px; margin-left: auto;">
-                        <a href="{% url 'core:export_caisse_sociale_excel' %}?selected_gid={{ selected_gid }}&selected_member_id={{ selected_member_id }}&mois_filtre={{ mois_filtre_courant }}"
-                           style="background-color: #27ae60; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;">
-                            📊 Excel
+                    <div class="flex items-center gap-3">
+                        <a href="{% url 'core:export_caisse_sociale_excel' %}?selected_gid={{ selected_gid }}&q={{ request.GET.q }}" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-semibold rounded-xl transition shadow-sm">
+                            <span>📊</span> Excel
                         </a>
-                        <a href="{% url 'core:export_caisse_sociale_pdf' %}?selected_gid={{ selected_gid }}&selected_member_id={{ selected_member_id }}&mois_filtre={{ mois_filtre_courant }}"
-                           style="background-color: #c0392b; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;"
-                           target="_blank">
-                            📄 PDF
+                        <a href="{% url 'core:export_caisse_sociale_pdf' %}?selected_gid={{ selected_gid }}&q={{ request.GET.q }}" target="_blank" class="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-semibold rounded-xl transition shadow-sm">
+                            <span>📄</span> PDF
                         </a>
                     </div>
                 </div>
 
-                <!-- Cartes de synthèse globale du groupe -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #27ae60; border-radius: 6px; padding: 12px 15px;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #7f8c8d; font-weight: bold; display: block;">Total Caisse Sociale Groupe</span>
-                        <span style="font-size: 20px; font-weight: bold; color: #27ae60;">{{ grand_total_caisse_sociale|default:0|floatformat:0 }} BIF</span>
+                <!-- Barre de Filtres et Recherche -->
+                <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+                    <form method="get" action="." class="flex flex-wrap items-end gap-4">
+                        <input type="hidden" name="tab" value="caisse_sociale">
+                        {% if selected_gid %}
+                            <input type="hidden" name="selected_gid" value="{{ selected_gid }}">
+                        {% elif request.GET.gid %}
+                            <input type="hidden" name="gid" value="{{ request.GET.gid }}">
+                        {% endif %}
+
+                        <div class="flex-1 min-w-[280px]">
+                            <label for="search-membre" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Rechercher un membre</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
+                                <input type="text" id="search-membre" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Nom, prénom ou ID du membre..." class="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 text-sm font-medium rounded-xl transition shadow-sm">
+                                Filtrer
+                            </button>
+                            {% if request.GET.q %}
+                                <a href="?tab=caisse_sociale{% if selected_gid %}&selected_gid={{ selected_gid }}{% endif %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 text-sm font-medium rounded-xl transition">
+                                    Réinitialiser
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Cartes de synthèse -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Caisse Groupe</p>
+                        <p class="text-2xl font-black text-emerald-600 mt-2">{{ total_caisse_groupe|default:0|floatformat:0 }} BIF</p>
                     </div>
-                    <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #2980b9; border-radius: 6px; padding: 12px 15px;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #7f8c8d; font-weight: bold; display: block;">Cotisations Mois en Cours</span>
-                        <span style="font-size: 20px; font-weight: bold; color: #2980b9;">{{ total_cotisations_mois|default:0|floatformat:0 }} BIF</span>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Cotisations (Mois)</p>
+                        <p class="text-2xl font-black text-blue-600 mt-2">{{ total_cotisations_mois|default:0|floatformat:0 }} BIF</p>
                     </div>
-                    <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #e67e22; border-radius: 6px; padding: 12px 15px;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #7f8c8d; font-weight: bold; display: block;">Emprunts / Sorties Dépensées</span>
-                        <span style="font-size: 20px; font-weight: bold; color: #e67e22;">{{ total_emprunts_socials|default:0|floatformat:0 }} BIF</span>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Décaissé</p>
+                        <p class="text-2xl font-black text-amber-600 mt-2">{{ total_decaisse|default:0|floatformat:0 }} BIF</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Solde Disponible</p>
+                        <p class="text-2xl font-black text-indigo-600 mt-2">{{ solde_disponible|default:0|floatformat:0 }} BIF</p>
                     </div>
                 </div>
 
-                <!-- Tableau croisé dynamique des cotisations -->
-                {% if pivot_sociale %}
-                <div style="overflow-x: auto; background: white; border-radius: 6px; border: 1px solid #e9ecef;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                        <thead>
-                            <tr style="background-color: #f1f4f6; color: #2c3e50;">
-                                <th style="padding: 12px 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Membre</th>
-                                <th style="padding: 12px 10px; text-align: right; border-bottom: 2px solid #dee2e6; background-color: #ebf5fb; color: #2980b9;">
-                                    📌 Report Antérieur
-                                </th>
-                                {% for date in dates_reunions %}
-                                <th style="padding: 12px 10px; text-align: right; border-bottom: 2px solid #dee2e6; background-color: #e8f4f8;">
-                                    📅 {{ date }}
-                                </th>
-                                {% endfor %}
-                                <th style="padding: 12px 10px; text-align: right; border-bottom: 2px solid #dee2e6; background-color: #d4efdf; color: #1e8449; font-weight: bold;">
-                                    💰 Total Cumulé
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ligne in pivot_sociale %}
-                            <tr style="border-bottom: 1px solid #f1f1f1;">
-                                <td style="padding: 10px;">
-                                    <strong>#{{ ligne.membre_id|default:ligne.id }} - {{ ligne.nom_complet }}</strong>
-                                </td>
-                                <td style="text-align: right; padding: 10px; background-color: #fcfcfc; color: #7f8c8d;">
-                                    {{ ligne.report_anterieur|default:0|floatformat:0 }} BIF
-                                </td>
-                                {% for montant in ligne.montants %}
-                                <td style="text-align: right; padding: 10px;">
-                                    {% if montant > 0 %}
-                                        <span style="color: #27ae60; font-weight: 500;">+{{ montant|floatformat:0 }}</span>
+                <!-- Formulaire et Historique des décaissements -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <span>✨</span> Nouveau Décaissement Social
+                            </h4>
+                            <form method="POST" action="{% url 'core:manager_dashboard' %}?tab=caisse_sociale&selected_gid={{ groupe_selectionne.id }}" class="space-y-4">
+                                {% csrf_token %}
+                                <input type="hidden" name="selected_gid" value="{{ groupe_selectionne.id }}">
+                                <input type="hidden" name="gid" value="{{ groupe_selectionne.id }}">
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Membre Bénéficiaire</label>
+                                    {% if form.membre %}
+                                        {{ form.membre }}
                                     {% else %}
-                                        <span style="color: #bdc3c7;">0</span>
+                                        <select name="membre" class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <option value="">Sélectionner un membre...</option>
+                                            {% for m in membres_groupe %}
+                                                <option value="{{ m.id }}">{{ m.nom }} {{ m.prenom }}</option>
+                                            {% endfor %}
+                                        </select>
                                     {% endif %}
-                                </td>
-                                {% endfor %}
-                                <td style="text-align: right; padding: 10px; background-color: #f4fbf7; font-weight: bold; color: #27ae60;">
-                                    {{ ligne.total_cumul|default:0|floatformat:0 }} BIF
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot>
-                            <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #dee2e6;">
-                                <td style="padding: 12px 10px;">TOTAL GENERAL</td>
-                                <td style="text-align: right; padding: 12px 10px;">{{ total_report_anterieur|default:0|floatformat:0 }} BIF</td>
-                                {% for total_date in totaux_par_date %}
-                                <td style="text-align: right; padding: 12px 10px; color: #2980b9;">{{ total_date|floatformat:0 }} BIF</td>
-                                {% endfor %}
-                                <td style="text-align: right; padding: 12px 10px; color: #27ae60; font-size: 14px;">{{ grand_total_caisse_sociale|default:0|floatformat:0 }} BIF</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Montant Décaissé (BIF)</label>
+                                    {% if form.montant_decaisse %}
+                                        {{ form.montant_decaisse }}
+                                    {% else %}
+                                        <input type="number" name="montant_decaisse" placeholder="Ex: 50000" class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Motif du Décaissement</label>
+                                    {% if form.objet %}
+                                        {{ form.objet }}
+                                    {% else %}
+                                        <input type="text" name="objet" placeholder="Ex: Assistance médicale, deuil..." class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    {% endif %}
+                                </div>
+
+                                <button type="submit" name="submit_decaissement" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl transition shadow-sm mt-2">
+                                    Enregistrer le Décaissement
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h4 class="text-base font-bold text-slate-800">Historique des Décaissements</h4>
+                                <p class="text-xs text-gray-400">Affichage des 10 plus récents</p>
+                            </div>
+                            <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold">{{ decaissements|length }} enregistrement(s)</span>
+                        </div>
+
+                        <div class="max-h-[400px] overflow-y-auto custom-scrollbar flex-1">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase bg-gray-50">Membre</th>
+                                        <th class="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase bg-gray-50">Motif (Objet)</th>
+                                        <th class="px-5 py-3 text-right text-xs font-bold text-gray-400 uppercase bg-gray-50">Montant</th>
+                                        <th class="px-5 py-3 text-center text-xs font-bold text-gray-400 uppercase bg-gray-50">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                                    {% for d in decaissements|slice:":10" %}
+                                        <tr class="hover:bg-gray-50/80 transition">
+                                            <td class="px-5 py-3.5 font-medium text-slate-900">{{ d.membre.nom }} {{ d.membre.prenom }}</td>
+                                            <td class="px-5 py-3.5 text-gray-600">{{ d.objet|default:"Non renseigné" }}</td>
+                                            <td class="px-5 py-3.5 text-right font-bold text-amber-600">{{ d.montant_decaisse|floatformat:2 }} BIF</td>
+                                            <td class="px-5 py-3.5 text-center text-gray-500 text-xs">{{ d.date_decaissement|default:"N/A" }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="px-5 py-8 text-center text-sm text-gray-400 italic">Aucun décaissement social enregistré pour ce groupe.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                {% else %}
-                <p style="color: #7f8c8d; font-style: italic; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef;">
-                    Aucune donnée de caisse sociale disponible pour ce groupe.
-                </p>
-                {% endif %}
+
+                <!-- Tableau Pivot des Cotisations Caisse Sociale -->
+                <div class="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h4 class="text-base font-bold text-slate-800">Registre Détaillé et Séances</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                {% if groupe_selectionne %}
+                                    Groupe actif : <span class="font-semibold text-emerald-700">{{ groupe_selectionne.nom_groupe }}</span>
+                                {% else %}
+                                    Sélectionnez un groupe pour voir le registre
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <form method="get" action="" class="flex items-center gap-2">
+                            <input type="hidden" name="tab" value="caisse_sociale">
+                            <select name="selected_gid" onchange="this.form.submit()" class="text-sm bg-white border border-gray-300 rounded-xl px-3 py-2 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
+                                <option value="">-- Choisir un groupe --</option>
+                                {% for g in tous_les_groupes %}
+                                    <option value="{{ g.id }}" {% if groupe_selectionne and groupe_selectionne.id == g.id %}selected{% endif %}>
+                                        {{ g.nom_groupe }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </div>
+
+                    {% if pivot_sociale %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100/75 text-slate-700 font-semibold border-b border-gray-200">
+                                    <th class="p-3.5 text-left">Membre</th>
+                                    <th class="p-3.5 text-right bg-blue-50/50 text-blue-900">📌 Report Antérieur</th>
+                                    {% for date in dates_reunions %}
+                                        <th class="p-3.5 text-right bg-slate-50">📅 {{ date }}</th>
+                                    {% endfor %}
+                                    <th class="p-3.5 text-right bg-emerald-50 text-emerald-900 font-bold">💰 Total Cumulé</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for ligne in pivot_sociale %}
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="p-3.5 font-medium text-slate-900">#{{ ligne.membre_id }} - {{ ligne.nom_complet }}</td>
+                                        <td class="p-3.5 text-right text-gray-500 bg-blue-50/20">{{ ligne.report_anterieur|default:0|floatformat:0 }} BIF</td>
+                                        {% for montant in ligne.montants %}
+                                            <td class="p-3.5 text-right">
+                                                {% if montant > 0 %}<span class="text-emerald-600 font-semibold">+{{ montant|floatformat:0 }}</span>{% else %}<span class="text-gray-300">0</span>{% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="p-3.5 text-right font-bold text-emerald-700 bg-emerald-50/30">{{ ligne.total_cumul|default:0|floatformat:0 }} BIF</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-slate-50 font-bold text-slate-900 border-t-2 border-gray-200">
+                                    <td class="p-4">TOTAL GENERAL</td>
+                                    <td class="p-4 text-right text-blue-900">{{ total_report_anterieur|default:0|floatformat:0 }} BIF</td>
+                                    {% for total_date in totaux_caisse_sociale_par_date %}
+                                        <td class="p-4 text-right text-blue-700">{{ total_date|floatformat:0 }} BIF</td>
+                                    {% endfor %}
+                                    <td class="p-4 text-right text-emerald-700 text-base">{{ grand_total_caisse_sociale|default:0|floatformat:0 }} BIF</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-8 text-center text-gray-400 italic">
+                        Aucune donnée de caisse sociale disponible pour ce groupe. Veuillez sélectionner un groupe valide.
+                    </div>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Sous-onglet: Épargne & Cumuls -->
-            <div id="sub-tab-epargne" class="sub-tab-content" style="display: none;">
-                <h3 style="color: #2c3e50; font-size: 15px;">Registre d'Épargne et Soldes Cumulés (Versements, Caisse Sociale & Totaux)</h3>
-                {% if table_epargne %}
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 60px; text-align: center;">ID</th>
-                                <th>Noms</th>
-                                {% for date in dates_reunions %}
-                                <th style="text-align: right;">{{ date }}<br><small style="font-size: 10px; color: #7f8c8d;">(Versement / Cumul)</small></th>
+            <div id="sub-tab-epargne" class="sub-tab-content" style="margin-top: 20px;">
+                <div class="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Registre d'Épargne et Soldes Cumulés</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Suivi croisé des versements, de la caisse sociale et des totaux par membre.</p>
+                        </div>
+                    </div>
+
+                    {% if table_epargne %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100/75 text-slate-700 font-semibold border-b border-gray-200 text-xs uppercase">
+                                    <th class="p-3.5 text-center w-16">ID</th>
+                                    <th class="p-3.5 text-left">Noms</th>
+                                    {% for date in dates_reunions %}
+                                    <th class="p-3.5 text-right bg-slate-50">
+                                        📅 {{ date }}<br>
+                                        <span class="text-[10px] text-gray-400 font-normal">(Versement / Cumul)</span>
+                                    </th>
+                                    {% endfor %}
+                                    <th class="p-3.5 text-right bg-blue-50/50 text-blue-900 font-bold">Caisse Sociale</th>
+                                    <th class="p-3.5 text-right bg-emerald-50 text-emerald-900 font-bold">Solde Total Global</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for ligne in table_epargne %}
+                                <tr class="hover:bg-gray-50/80 transition">
+                                    <td class="p-3.5 text-center font-bold text-slate-600">#{{ ligne.id }}</td>
+                                    <td class="p-3.5 font-medium text-slate-900">{{ ligne.nom_complet }}</td>
+                                    {% for col in ligne.details %}
+                                    <td class="p-3.5 text-right whitespace-nowrap text-gray-600">{{ col }}</td>
+                                    {% endfor %}
+                                    <td class="p-3.5 text-right font-semibold text-blue-700 bg-blue-50/20">{{ ligne.caisse_sociale|default:0|floatformat:0 }} BIF</td>
+                                    <td class="p-3.5 text-right font-bold text-emerald-700 bg-emerald-50/30">{{ ligne.solde_total_avec_sociale|default:0|floatformat:0 }} BIF</td>
+                                </tr>
                                 {% endfor %}
-                                <th style="background-color: #eafaf1; color: #27ae60; text-align: right;">Caisse Sociale</th>
-                                <th style="background-color: #d4efdf; color: #196f3d; text-align: right; font-weight: bold;">Solde Total Global</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ligne in table_epargne %}
-                            <tr>
-                                <td style="text-align: center; font-weight: bold; color: #555;">{{ ligne.id }}</td>
-                                <td><strong>{{ ligne.nom_complet }}</strong></td>
-                                {% for col in ligne.details %}
-                                <td style="white-space: nowrap; text-align: right;">{{ col }}</td>
-                                {% endfor %}
-                                <td style="text-align: right; background-color: #f9fcfa; font-weight: 600; color: #2980b9;">{{ ligne.caisse_sociale|default:0 }} BIF</td>
-                                <td style="font-weight: bold; color: #27ae60; background-color: #f9fcfa; text-align: right;">{{ ligne.solde_total_avec_sociale }} BIF</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot>
-                            <tr style="background-color: #eaeded; font-weight: bold; border-top: 2px solid #bdc3c7;">
-                                <td colspan="2" style="text-align: right; padding: 10px;">TOTAUX GÉRAUX :</td>
-                                {% for total_col in totaux_par_colonne %}
-                                <td style="text-align: right; white-space: nowrap;">{{ total_col }} BIF</td>
-                                {% endfor %}
-                                <td style="text-align: right; color: #2980b9;">{{ total_general_caisse_sociale|default:0 }} BIF</td>
-                                <td style="text-align: right; color: #196f3d; background-color: #d4efdf;">{{ grand_total_general }} BIF</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-slate-50 font-bold text-slate-900 border-t-2 border-gray-200">
+                                    <td colspan="2" class="p-4 text-right">TOTAUX GÉNÉRAUX :</td>
+                                    {% for total_col in totaux_par_colonne %}
+                                    <td class="p-4 text-right whitespace-nowrap text-slate-800">{{ total_col|floatformat:0 }} BIF</td>
+                                    {% endfor %}
+                                    <td class="p-4 text-right text-blue-800">{{ total_general_caisse_sociale|default:0|floatformat:0 }} BIF</td>
+                                    <td class="p-4 text-right text-emerald-700 text-base bg-emerald-50/50">{{ grand_total_general|default:0|floatformat:0 }} BIF</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-8 text-center text-gray-400 italic">
+                        Aucune donnée d'épargne disponible pour ce groupe.
+                    </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p style="color: #7f8c8d; font-style: italic;">Aucune donnée d'épargne disponible.</p>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- MODAL : ARCHIVES ET RESTAURATION           -->
-    <!-- ========================================== -->
+    <!-- MODAL : GROUPES ARCHIVÉS -->
     <div id="modal-archives" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="background: white; width: 500px; margin: 100px auto; padding: 20px; border-radius: 8px; position: relative;">
+        <div style="background: white; width: 500px; max-width: 90%; margin: 100px auto; padding: 20px; border-radius: 8px; position: relative;">
             <span onclick="document.getElementById('modal-archives').style.display='none'" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
             <h3 style="margin-top: 0; color: #2c3e50;">Groupes Archivés</h3>
             {% if groupes_archives %}
-            <ul style="list-style: none; padding: 0;">
+            <ul style="list-style: none; padding: 0; margin: 0;">
                 {% for g_arch in groupes_archives %}
                 <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
-                    <span><strong>{{ g_arch.nom }}</strong> (Archivé)</span>
-                    <form method="POST" action="{% url 'core:restaurer_groupe' g_arch.id %}">
+                    <span><strong>{{ g_arch.nom_groupe|default:g_arch.nom }}</strong> (Archivé)</span>
+                    <form method="POST" action="{% url 'core:desarchiver_groupe' g_arch.id %}">
                         {% csrf_token %}
                         <button type="submit" style="background: #2ecc71; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">Restaurer</button>
                     </form>
@@ -811,7 +937,7 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <p style="color: #7f8c8d;">Aucun groupe actuellement archivé.</p>
+            <p style="color: #7f8c8d; font-style: italic;">Aucun groupe actuellement archivé.</p>
             {% endif %}
         </div>
     </div>
@@ -822,101 +948,333 @@
     <div id="tab-transactions" class="tab-content">
         <div class="print-section">
             <div class="table-container">
-                <div class="flex justify-between items-center mb-6 mt-2">
+                <div class="flex justify-between items-center mb-6">
                     <div>
                         <h2 style="margin:0; color:#2c3e50; font-size: 18px; font-weight: bold;">Rapport & Historique Financier</h2>
                         <p class="text-sm text-gray-500">Suivi détaillé des versements, retraits, pénalités et octrois de crédits.</p>
                     </div>
-                    <!-- BOUTON PDF MIS À JOUR -->
-                    <a href="{% url 'core:export_transactions_pdf' %}?q={{ search_query }}&type_op={{ selected_type }}"
-                       class="no-print bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded shadow flex items-center gap-2 text-decoration-none"
-                       target="_blank">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Exporter en PDF
+                    <a href="{% url 'core:export_transactions_pdf' %}?q={{ search_query }}&type_op={{ selected_type }}" class="no-print bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded shadow flex items-center gap-2 text-decoration-none" target="_blank">
+                        📄 Exporter en PDF
                     </a>
                 </div>
 
-                <!-- Grille de Synthèse Financière -->
-                <div class="grid grid-cols-4 gap-4 mb-6">
-                    <div class="bg-green-50 p-4 rounded border border-green-200">
-                        <p class="text-sm text-green-600 font-semibold">Total Dépôts</p>
-                        <p class="text-lg font-bold text-green-800">{{ total_depots|floatformat:0|default:0 }} BIF</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
+                        <p class="text-xs text-green-600 font-semibold uppercase tracking-wide">Total Dépôts</p>
+                        <p class="text-xl font-bold text-green-800 mt-1">{{ total_depots|floatformat:0|default:0 }} BIF</p>
                     </div>
-                    <div class="bg-red-50 p-4 rounded border border-red-200">
-                        <p class="text-sm text-red-600 font-semibold">Total Retraits</p>
-                        <p class="text-lg font-bold text-red-800">{{ total_retraits|floatformat:0|default:0 }} BIF</p>
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm">
+                        <p class="text-xs text-red-600 font-semibold uppercase tracking-wide">Total Retraits</p>
+                        <p class="text-xl font-bold text-red-800 mt-1">{{ total_retraits|floatformat:0|default:0 }} BIF</p>
                     </div>
-                    <div class="bg-yellow-50 p-4 rounded border border-yellow-200">
-                        <p class="text-sm text-yellow-600 font-semibold">Total Pénalités</p>
-                        <p class="text-lg font-bold text-yellow-800">{{ total_penalites|floatformat:0|default:0 }} BIF</p>
+                    <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-sm">
+                        <p class="text-xs text-yellow-600 font-semibold uppercase tracking-wide">Total Pénalités</p>
+                        <p class="text-xl font-bold text-yellow-800 mt-1">{{ total_penalites|floatformat:0|default:0 }} BIF</p>
                     </div>
-                    <div class="bg-blue-50 p-4 rounded border border-blue-200">
-                        <p class="text-sm text-blue-600 font-semibold">Crédits Octroyés</p>
-                        <p class="text-lg font-bold text-blue-800">{{ total_credits|floatformat:0|default:0 }} BIF</p>
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm">
+                        <p class="text-xs text-blue-600 font-semibold uppercase tracking-wide">Crédits Octroyés</p>
+                        <p class="text-xl font-bold text-blue-800 mt-1">{{ total_credits|floatformat:0|default:0 }} BIF</p>
                     </div>
                 </div>
 
-                <!-- Filtres des transactions -->
-                <form method="GET" action="{% url 'core:manager_dashboard' %}" class="no-print bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
+                <form method="GET" action="{% url 'core:manager_dashboard' %}" class="no-print bg-gray-50 p-4 rounded-2xl border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
                     <input type="hidden" name="tab" value="transactions">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Recherche (Membre / Groupe)</label>
-                        <input type="text" name="q" value="{{ search_query }}" placeholder="Nom, prénom..." class="border border-gray-300 rounded px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Recherche (Membre)</label>
+                        <input type="text" name="q" value="{{ search_query }}" placeholder="Nom, prénom, téléphone..." class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Type d'opération</label>
-                        <select name="type_op" class="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select name="type_op" class="border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
                             <option value="">-- Toutes les opérations --</option>
                             <option value="DEPOT" {% if selected_type == 'DEPOT' %}selected{% endif %}>Dépôt</option>
                             <option value="RETRAIT" {% if selected_type == 'RETRAIT' %}selected{% endif %}>Retrait</option>
                             <option value="PENALITE" {% if selected_type == 'PENALITE' %}selected{% endif %}>Pénalité</option>
+                            <option value="AMENDE" {% if selected_type == 'AMENDE' %}selected{% endif %}>Amende</option>
                             <option value="Octroi de Crédit" {% if selected_type == 'Octroi de Crédit' %}selected{% endif %}>Octroi de Crédit</option>
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition">Filtrer</button>
-                        <a href="?tab=transactions" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm transition flex items-center">Réinitialiser</a>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">Filtrer</button>
+                        <a href="?tab=transactions" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-xl text-sm transition flex items-center text-decoration-none shadow-sm">Réinitialiser</a>
                     </div>
                 </form>
 
-                <!-- Tableau des Transactions -->
+                <div class="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100/75 text-gray-700 text-xs uppercase border-b font-semibold">
+                                    <th class="p-3.5">ID</th>
+                                    <th class="p-3.5">Membre</th>
+                                    <th class="p-3.5">Type</th>
+                                    <th class="p-3.5 text-right">Montant</th>
+                                    <th class="p-3.5">Date</th>
+                                    <th class="p-3.5">Description</th>
+                                    <th class="p-3.5 text-center no-print">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for t in transactions %}
+                                <tr class="hover:bg-gray-50/80 text-sm transition">
+                                    <td class="p-3.5 font-bold text-slate-700">#{{ t.id }}</td>
+                                    <td class="p-3.5 font-medium text-slate-900">{{ t.membre.nom }} {{ t.membre.prenom }}</td>
+                                    <td class="p-3.5">
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-bold
+                                            {% if t.type_operation == 'DEPOT' %}bg-green-100 text-green-800
+                                            {% elif t.type_operation == 'RETRAIT' %}bg-red-100 text-red-800
+                                            {% elif t.type_operation == 'CREDIT' or t.type_operation == 'Octroi de Crédit' %}bg-blue-100 text-blue-800
+                                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                            {{ t.get_type_operation_display|default:t.type_operation }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3.5 text-right font-bold text-slate-900">{{ t.montant|floatformat:0 }} BIF</td>
+                                    <td class="p-3.5 text-gray-600 text-xs">{{ t.date_transaction|date:"d/m/Y H:i" }}</td>
+                                    <td class="p-3.5 text-gray-500 text-xs">{{ t.description|default:"-" }}</td>
+                                    <td class="p-3.5 text-center no-print">
+                                        <a href="{% url 'core:export_transaction_pdf' t.id %}" target="_blank" class="bg-slate-700 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg text-decoration-none shadow-sm transition">📄 Reçu</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="p-8 text-center text-gray-400 italic">Aucune transaction enregistrée pour ces critères.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if transactions.has_other_pages %}
+                <div class="flex justify-center items-center mt-6 gap-2 no-print">
+                    {% if transactions.has_previous %}
+                        <a href="?tab=transactions&page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_type %}&type_op={{ selected_type }}{% endif %}" class="px-3 py-1.5 border rounded-lg text-sm text-gray-700 hover:bg-gray-100">&laquo; Première</a>
+                        <a href="?tab=transactions&page={{ transactions.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_type %}&type_op={{ selected_type }}{% endif %}" class="px-3 py-1.5 border rounded-lg text-sm text-gray-700 hover:bg-gray-100">Précédente</a>
+                    {% endif %}
+                    <span class="px-4 py-1.5 bg-blue-600 text-white font-bold text-sm rounded-lg shadow-sm">
+                        Page {{ transactions.number }} sur {{ transactions.paginator.num_pages }}
+                    </span>
+                    {% if transactions.has_next %}
+                        <a href="?tab=transactions&page={{ transactions.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_type %}&type_op={{ selected_type }}{% endif %}" class="px-3 py-1.5 border rounded-lg text-sm text-gray-700 hover:bg-gray-100">Suivante</a>
+                        <a href="?tab=transactions&page={{ transactions.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_type %}&type_op={{ selected_type }}{% endif %}" class="px-3 py-1.5 border rounded-lg text-sm text-gray-700 hover:bg-gray-100">Dernière &raquo;</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 5. ONGLET PARAMÈTRES                       -->
+    <!-- ========================================== -->
+    <div id="tab-parametres" class="tab-content space-y-6">
+        <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <span>⚙️</span> Paramètres du Système & Sécurité
+            </h2>
+            <p class="text-sm text-gray-500 mb-6">Gérez les statuts des comptes membres et la réinitialisation des codes de sécurité.</p>
+
+            <!-- Affichage des messages Django si existants -->
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-xl text-sm font-medium {% if message.tags == 'error' %}bg-rose-50 text-rose-800 border border-rose-200{% else %}bg-emerald-50 text-emerald-800 border border-emerald-200{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Bloc 1 : Suspension / Changement de Statut -->
+                <div class="bg-gray-50/50 border border-stone-200 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <span>🚫</span> Suspension / Changement de Statut
+                        </h3>
+                        <form method="POST" action="{% url 'core:admin_toggle_status' %}" class="space-y-4">
+                            {% csrf_token %}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">ID du Membre</label>
+                                    <input type="number" name="target_id" min="1" required placeholder="Ex: 12" class="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Action</label>
+                                    <select name="action_type" required class="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                        <option value="desactiver">Désactiver / Archiver</option>
+                                        <option value="reactiver">Réactiver</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Motif de la décision</label>
+                                <textarea name="motif" rows="3" placeholder="Saisissez la raison de l'action..." class="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">
+                                Confirmer la modification de statut
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Bloc 2 : Réinitialisation du Code PIN -->
+                <div class="bg-gray-50/50 border border-stone-200 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <span>🔑</span> Réinitialisation du Code PIN Membre
+                        </h3>
+                        <form method="POST" action="{% url 'core:admin_reset_pin' %}" class="space-y-4">
+                            {% csrf_token %}
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Sélectionner le Membre</label>
+                                <select name="membre_id" required class="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                    <option value="">-- Choisir un membre --</option>
+                                    {% for m in tous_les_membres|default:membres %}
+                                        <option value="{{ m.id }}">#{{ m.id }} - {{ m.prenom|default:"" }} {{ m.nom }} ({{ m.telephone }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nouveau Code PIN</label>
+                                <input type="password" name="nouveau_pin" placeholder="Entrez le nouveau code PIN" required class="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800">
+                            </div>
+                            <div class="pt-2">
+                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">
+                                    Réinitialiser le PIN
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+
+                <!-- Bloc 3 : Gestion & Clôture des Cycles -->
+                <div class="bg-gray-50/50 border border-stone-200 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <span>🗂️</span> Gestion des Cycles & Clôture
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-4">Gérez les exercices financiers et préparez la transition vers un nouveau cycle de la coopérative.</p>
+                        <form method="POST" action="{% url 'core:cloturer_exercice' %}" onsubmit="return confirm('Attention : Cette action va clôturer l’exercice en cours. Êtes-vous sûr ?');">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-xl transition shadow-sm text-sm">
+                                🔒 Clôturer l'exercice et distribuer les intérêts
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Bloc 4 : Sauvegarde & Maintenance -->
+                <div class="bg-gray-50/50 border border-stone-200 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <span>🗄️</span> Maintenance & Sécurité
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-4">Exportez l'historique des actions ou basculez le système en mode maintenance.</p>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <a href="{% url 'core:exporter_logs_csv' %}" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-center font-semibold py-2.5 rounded-xl transition shadow-sm text-sm flex items-center justify-center gap-2">
+                                📥 Télécharger les Logs (CSV)
+                            </a>
+                            <form method="POST" action="/manager/maintenance/" class="flex-1">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full bg-rose-100 hover:bg-rose-200 text-rose-800 font-semibold py-2.5 rounded-xl transition text-sm">
+                                    ⚠️ Basculer Mode Maintenance
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bloc 5 : Journal d'Audit Récent (Tableau) -->
+            <div class="bg-white border border-stone-200 rounded-2xl p-5 mt-6 shadow-sm">
+                <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <span>📢</span> Journal d'Audit & Traçabilité Récente
+                </h3>
                 <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-left text-sm">
+                    <table class="w-full text-left border-collapse text-sm">
                         <thead>
-                            <tr class="bg-gray-100 text-gray-700">
-                                <th class="border border-gray-300 p-3">Date & Heure</th>
-                                <th class="border border-gray-300 p-3">Membre Concerné</th>
-                                <th class="border border-gray-300 p-3">Type d'opération</th>
-                                <th class="border border-gray-300 p-3">Montant (BIF)</th>
-                                <th class="border border-gray-300 p-3">Traité par</th>
-                                <th class="border border-gray-300 p-3">Statut</th>
+                            <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                <th class="p-3 font-semibold">Date / Heure</th>
+                                <th class="p-3 font-semibold">Utilisateur</th>
+                                <th class="p-3 font-semibold">Action Réalisée</th>
+                                <th class="p-3 font-semibold">Détails</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for log in journal_logs_recents %}
+                            <tr class="hover:bg-gray-50/50">
+                                <td class="p-3 text-gray-600 text-xs">{{ log.date_action|date:"d/m/Y H:i" }}</td>
+                                <td class="p-3 font-medium text-slate-800">{{ log.utilisateur.username|default:"Système" }}</td>
+                                <td class="p-3 text-slate-800 font-semibold">{{ log.action }}</td>
+                                <td class="p-3 text-gray-500 text-xs">{{ log.details|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-gray-400 italic">Aucun journal d'audit récent enregistré.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bloc : Gestion des Membres par Groupe avec Filtre -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800">Gestion des Membres par Groupe</h2>
+
+                    <!-- Formulaire de filtrage par groupe dans l'onglet Paramètres -->
+                    <form method="get" class="flex items-center space-x-3 mt-4 md:mt-0">
+                        <input type="hidden" name="tab" value="parametres">
+                        <select name="groupe" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+                            <option value="">Tous les groupes</option>
+                            {% for g in tous_les_groupes %}
+                                <option value="{{ g.id }}" {% if selected_groupe == g.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ g.nom_groupe }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if selected_groupe %}
+                            <a href="?tab=parametres" class="text-sm text-gray-500 hover:text-red-600 underline">Réinitialiser</a>
+                        {% endif %}
+                    </form>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b text-sm text-gray-500">
+                                <th class="py-3 px-4">Nom & Prénom</th>
+                                <th class="py-3 px-4">Groupe</th>
+                                <th class="py-3 px-4">Téléphone</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for tx in transactions %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-300 p-3 text-gray-600">{{ tx.date_transaction|date:"d/m/Y à H:i" }}</td>
-                                <td class="border border-gray-300 p-3 font-semibold text-gray-800">{{ tx.membre.nom }} {{ tx.membre.prenom }}</td>
-                                <td class="border border-gray-300 p-3">
-                                    <span class="px-2 py-1 rounded text-xs font-bold
-                                        {% if tx.type_operation == 'DEPOT' %}bg-green-100 text-green-800
-                                        {% elif tx.type_operation == 'RETRAIT' %}bg-red-100 text-red-800
-                                        {% elif tx.type_operation == 'PENALITE' %}bg-yellow-100 text-yellow-800
-                                        {% else %}bg-blue-100 text-blue-800{% endif %}">
-                                        {{ tx.type_operation }}
+                            {% for membre in membres %}
+                            <tr class="border-b hover:bg-gray-50 text-sm">
+                                <td class="py-3 px-4 font-semibold">{{ membre.nom }} {{ membre.prenom }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-medium">
+                                        {{ membre.groupe.nom_groupe|default:"Aucun groupe" }}
                                     </span>
                                 </td>
-                                <td class="border border-gray-300 p-3 font-mono font-bold">{{ tx.montant|floatformat:0 }}</td>
-                                <td class="border border-gray-300 p-3 text-gray-600">{{ tx.agent|default:"Système" }}</td>
-                                <td class="border border-gray-300 p-3">
-                                    <span class="text-green-600 font-semibold">● {{ tx.statut|default:"Validé" }}</span>
+                                <td class="py-3 px-4 text-gray-500">{{ membre.telephone|default:"-" }}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <a href="{% url 'core:member_detail' membre.id %}" class="text-blue-600 hover:underline">Détails</a>
+                                    <a href="#" class="text-amber-600 hover:underline">Modifier</a>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="border border-gray-300 p-6 text-center text-gray-500 italic">Aucune transaction enregistrée.</td>
+                                <td colspan="4" class="py-4 text-center text-gray-500">Aucun membre trouvé pour ce groupe.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -927,117 +1285,27 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- 5. ONGLET PARAMÈTRES                       -->
-    <!-- ========================================== -->
-    <div id="tab-parametres" class="tab-content">
-        <div class="table-container" style="max-width: 900px; margin: 0 auto;">
-            <h2 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px;">Paramètres & Administration des Comptes</h2>
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div style="padding: 12px; margin-bottom: 20px; border-radius: 4px; font-weight: bold; {% if message.tags == 'error' %}background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            <!-- Planification de la Prochaine Réunion par Groupe -->
-            <div style="background: #e8f4f8; border: 1px solid #b8daff; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                <h3 style="margin-top: 0; color: #1d6fa5; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-                    📢 Planification de la Prochaine Réunion (Annonce Groupe)
-                </h3>
-                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
-                    Déterminez la date et l'heure de la prochaine réunion pour un groupe spécifique. Cette information sera immédiatement visible par tous ses membres.
-                </p>
-                <form method="POST" action="{% url 'core:admin_planifier_reunion' %}">
-                    {% csrf_token %}
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #333;">Sélectionner le Groupe :</label>
-                            <select name="groupe_id" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; background: white;">
-                                <option value="" disabled selected>-- Choisir un groupe --</option>
-                                {% for g in groupes_disponibles %}
-                                    <option value="{{ g.id }}">
-                                        {% if g.nom %}{{ g.nom }}{% elif g.name %}{{ g.name }}{% else %}Groupe #{{ g.id }}{% endif %}
-                                        (ID: {{ g.id }})
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #333;">Date & Heure de la Réunion :</label>
-                            <input type="datetime-local" name="prochaine_reunion" required style="width: 100%; padding: 9px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; background: white;">
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #333;">Message / Note d'information pour les membres :</label>
-                        <textarea name="annonce_message" rows="2" placeholder="Ex: Veuillez vous munir de vos cotisations en retard..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"></textarea>
-                    </div>
-                    <button type="submit" style="background-color: #2980b9; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">Publier l'annonce de réunion</button>
-                </form>
-            </div>
-
-            <!-- Réinitialisation PIN -->
-            <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">🔑 Réinitialisation du code PIN / Mot de passe d'un membre</h3>
-                <form method="POST" action="{% url 'core:admin_reset_pin' %}">
-                    {% csrf_token %}
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555;">ID du Membre :</label>
-                            <input type="number" name="membre_id" min="1" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                        </div>
-                        <div style="flex: 2;">
-                            <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555;">Nouveau Code PIN :</label>
-                            <input type="password" name="nouveau_pin" minlength="4" placeholder="Ex: 1234" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                        </div>
-                    </div>
-                    <button type="submit" style="background-color: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">Réinitialiser le PIN</button>
-                </form>
-            </div>
-
-            <!-- Suspension / Réactivation -->
-            <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px;">
-                <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">🚫 Suspension / Changement de Statut d'un compte</h3>
-                <form method="POST" action="{% url 'core:admin_toggle_status' %}">
-                    {% csrf_token %}
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555;">ID du Membre :</label>
-                            <input type="number" name="target_id" min="1" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555;">Action :</label>
-                            <select name="action_type" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; background: white;">
-                                <option value="desactiver">Désactiver / Archiver</option>
-                                <option value="reactiver">Réactiver</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555;">Motif de la décision :</label>
-                        <textarea name="motif" rows="3" placeholder="Saisissez la raison..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"></textarea>
-                    </div>
-                    <button type="submit" style="background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">Confirmer l'action</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
     <!-- SCRIPTS JAVASCRIPT                         -->
     <!-- ========================================== -->
     <script>
-        // Gestion des Onglets Principaux
+        // Gestion des Onglets Principaux (CORRIGÉE)
         function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'none';
+            });
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active-tab'));
 
             const targetContent = document.getElementById('tab-' + tabId);
             const targetBtn = document.getElementById('btn-' + tabId);
 
-            if (targetContent) targetContent.classList.add('active');
-            if (targetBtn) targetBtn.classList.add('active-tab');
+            if (targetContent) {
+                targetContent.classList.add('active');
+                targetContent.style.display = 'block';
+            }
+            if (targetBtn) {
+                targetBtn.classList.add('active-tab');
+            }
 
             sessionStorage.setItem('activeTab', tabId);
         }
@@ -1058,21 +1326,42 @@
                 targetSubBtn.style.background = '#3498db';
                 targetSubBtn.style.color = 'white';
             }
+
+            sessionStorage.setItem('activeSubSub', subId);
         }
 
-        // Restauration de l'onglet actif au rechargement de la page
+        // Restauration intelligente de l'onglet actif au rechargement ou pagination
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
             const savedTab = sessionStorage.getItem('activeTab');
+            const savedSubTab = sessionStorage.getItem('activeSubSub');
 
             if (tabParam) {
-                switchTab(tabParam);
+                if (tabParam === 'caisse_sociale' || tabParam === 'groupes') {
+                    switchTab('groupes');
+                    if (tabParam === 'caisse_sociale') {
+                        switchSubTab('sociale');
+                    } else if (savedSubTab) {
+                        switchSubTab(savedSubTab);
+                    } else {
+                        switchSubTab('roles');
+                    }
+                } else {
+                    switchTab(tabParam);
+                }
             } else if (savedTab) {
                 switchTab(savedTab);
+                if (savedTab === 'groupes' && savedSubTab) {
+                    switchSubTab(savedSubTab);
+                }
             } else {
                 {% if search_query or request.GET.page %}
-                    switchTab('membres');
+                    {% if active_tab == 'transactions' %}
+                        switchTab('transactions');
+                    {% else %}
+                        switchTab('membres');
+                    {% endif %}
                 {% else %}
                     switchTab('accueil');
                 {% endif %}

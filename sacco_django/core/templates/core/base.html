@@ -2,19 +2,38 @@
 <!DOCTYPE html>
 <html lang="fr" class="scroll-smooth">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SACCO Connect</title>
-<script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SACCO Connect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Intégration de la carte du Burundi en grand, centrée et fixe en arrière-plan */
+        body {
+            background-image: url("{% static 'img/carte_burundi.webp' %}");
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-attachment: fixed;
+            background-size: 50% auto;
+        }
+
+        /* Rend TOUS les conteneurs et blocs blancs (membre, partenaire, admin) légèrement transparents */
+        main .container > div,
+        main .max-w-6xl,
+        main .bg-white,
+        .bg-white,
+        div[class*="bg-white"] {
+            background-color: rgba(255, 255, 255, 0.90) !important;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans antialiased flex flex-col">
+<body class="bg-gray-50/90 min-h-screen font-sans antialiased flex flex-col">
 
 <!-- BARRE DE NAVIGATION GLOBALE UNIQUE -->
 <header class="w-full bg-[#f4f4f0] border-b border-stone-200 sticky top-0 z-50">
     <div class="container mx-auto px-6 py-4 flex items-center justify-between">
 
         <!-- Logo et Nom -->
-        <a href="{% if user.is_authenticated or request.session.is_member_authenticated %}{% if is_partner or user.partenaire or user.groups.all.0.name == 'Partenaire' %}{% url 'core:partner_dashboard' %}{% else %}{% url 'core:dashboard' %}{% endif %}{% else %}{% url 'core:login' %}{% endif %}" class="flex items-center gap-3">
+        <a href="{% if user.is_authenticated or request.session.is_member_authenticated %}{% if is_partner or user.partenaire or user.groups.all.0.name == 'Partenaire' or request.session.role == 'partenaire' %}{% url 'core:partner_dashboard' %}{% else %}{% url 'core:dashboard' %}{% endif %}{% else %}{% url 'core:login' %}{% endif %}" class="flex items-center gap-3">
             <img src="{% static 'images/logo.png' %}" alt="SACCO Logo" class="h-10 w-auto">
             <span class="text-xl font-bold text-slate-900 tracking-wide">SACCO Connect</span>
         </a>
@@ -23,11 +42,13 @@
         <nav class="flex items-center space-x-6 text-sm">
             {% if user.is_authenticated or request.session.is_member_authenticated %}
 
-                {% if is_partner or user.partenaire or user.groups.all.0.name == 'Partenaire' %}
+                {% if is_partner or user.partenaire or user.groups.all.0.name == 'Partenaire' or request.session.role == 'partenaire' %}
                     <!-- LIENS PARTENAIRE -->
                     <a href="{% url 'core:partner_dashboard' %}" class="text-gray-700 hover:text-blue-600 font-medium">Accueil</a>
                     <a href="{% url 'core:partner_members' %}" class="text-gray-700 hover:text-blue-600 font-medium">Membres</a>
                     <a href="{% url 'core:partner_deposit' %}" class="text-gray-700 hover:text-blue-600 font-medium">Nouveau Dépôt</a>
+                    <a href="{% url 'core:prets_statistiques' %}" class="text-gray-700 hover:text-blue-600 font-medium">Statistiques Prêts</a>
+                    <a href="{% url 'core:presences_statistiques' %}" class="text-gray-700 hover:text-blue-600 font-medium">Statistiques de Présence</a>
                     <a href="{% url 'core:contact_public' %}" class="text-gray-700 hover:text-blue-600 font-medium">Contact</a>
                 {% else %}
                     <!-- LIENS MEMBRE CLASSIQUE -->

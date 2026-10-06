@@ -1,126 +1,195 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Rapport Financier - SaccoFINtech</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @media print {
-            .no-print { display: none !important; }
-            body { background-color: white; padding: 0; }
-            .max-w-6xl { max-width: 100% !important; box-shadow: none !important; padding: 0 !important; }
-        }
-    </style>
-</head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-md">
+{% extends 'base.html' %}
 
-        <!-- En-tête -->
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800">Historique & Rapport Financier</h1>
-                <p class="text-sm text-gray-500">Suivi détaillé des versements, retraits, pénalités et octrois de crédits.</p>
-            </div>
-            <button onclick="window.print()" class="no-print bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded shadow flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Exporter en PDF
-            </button>
+{% block title %}Rapport Financier - SACCO Fintech{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        body { background-color: white !important; padding: 0 !important; }
+        .container, .container-fluid { max-width: 100% !important; padding: 0 !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        .table { width: 100% !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">📊 Historique & Rapport Financier</h2>
+            <p class="text-muted mb-0">Suivi détaillé des flux de trésorerie, versements, retraits, pénalités et traçabilité des opérations.</p>
         </div>
+        <button onclick="window.print()" class="btn btn-danger no-print d-flex align-items-center gap-2 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Exporter en PDF / Imprimer
+        </button>
+    </div>
 
-        <!-- Cartes de synthèse -->
-        <div class="grid grid-cols-4 gap-4 mb-6">
-            <div class="bg-green-50 p-4 rounded border border-green-200">
-                <p class="text-sm text-green-600 font-semibold">Total Dépôts</p>
-                <p class="text-lg font-bold text-green-800">{{ total_depots|floatformat:0 }} BIF</p>
-            </div>
-            <div class="bg-red-50 p-4 rounded border border-red-200">
-                <p class="text-sm text-red-600 font-semibold">Total Retraits</p>
-                <p class="text-lg font-bold text-red-800">{{ total_retraits|floatformat:0 }} BIF</p>
-            </div>
-            <div class="bg-yellow-50 p-4 rounded border border-yellow-200">
-                <p class="text-sm text-yellow-600 font-semibold">Total Pénalités</p>
-                <p class="text-lg font-bold text-yellow-800">{{ total_penalites|floatformat:0 }} BIF</p>
-            </div>
-            <div class="bg-blue-50 p-4 rounded border border-blue-200">
-                <p class="text-sm text-blue-600 font-semibold">Crédits Octroyés</p>
-                <p class="text-lg font-bold text-blue-800">{{ total_credits|floatformat:0 }} BIF</p>
+    <!-- Cartes KPI (Statistiques) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md col-sm-6">
+            <div class="card border-0 shadow-sm bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-white-50">Total Dépôts</h6>
+                    <h4 class="card-title fw-bold mb-0">{{ total_depots|default:0|floatformat:0 }} BIF</h4>
+                </div>
             </div>
         </div>
+        <div class="col-md col-sm-6">
+            <div class="card border-0 shadow-sm bg-danger text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-white-50">Total Retraits</h6>
+                    <h4 class="card-title fw-bold mb-0">{{ total_retraits|default:0|floatformat:0 }} BIF</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md col-sm-6">
+            <div class="card border-0 shadow-sm bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-white-50">Solde Net</h6>
+                    <h4 class="card-title fw-bold mb-0">{{ solde_net|default:0|floatformat:0 }} BIF</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md col-sm-6">
+            <div class="card border-0 shadow-sm bg-warning text-dark h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-dark-50">Total Pénalités</h6>
+                    <h4 class="card-title fw-bold mb-0">{{ total_penalites|default:0|floatformat:0 }} BIF</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md col-sm-6">
+            <div class="card border-0 shadow-sm bg-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-white-50">Crédits Accordés</h6>
+                    <h4 class="card-title fw-bold mb-0">
+                        {% if total_credits %}{{ total_credits|floatformat:0 }}{% else %}{{ total_prets|default:0|floatformat:0 }}{% endif %} BIF
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- Barre de filtres de recherche -->
-        <form method="GET" class="no-print bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Recherche (Membre / Groupe)</label>
-                <input type="text" name="q" value="{{ search_query }}" placeholder="Nom, prénom..." class="border border-gray-300 rounded px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Type d'opération</label>
-                <select name="type_op" class="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">-- Toutes les opérations --</option>
-                    <option value="DEPOT" {% if selected_type == 'DEPOT' %}selected{% endif %}>Dépôt</option>
-                    <option value="RETRAIT" {% if selected_type == 'RETRAIT' %}selected{% endif %}>Retrait</option>
-                    <option value="PENALITE" {% if selected_type == 'PENALITE' %}selected{% endif %}>Pénalité</option>
-                    <option value="Octroi de Crédit" {% if selected_type == 'Octroi de Crédit' %}selected{% endif %}>Octroi de Crédit</option>
-                </select>
-            </div>
-            <div class="flex gap-2">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition">Filtrer</button>
-                <a href="?" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm transition flex items-center">Réinitialiser</a>
-            </div>
-        </form>
+    <!-- Barre de filtres unifiée -->
+    <div class="card shadow-sm mb-4 border-0 no-print">
+        <div class="card-body bg-light rounded">
+            <form method="GET" class="row g-3 align-items-end">
+                <!-- Recherche textuelle -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-secondary small mb-1">Recherche (Membre / Groupe)</label>
+                    <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Nom, prénom..." class="form-control">
+                </div>
 
-        <!-- Tableau des transactions & Traçabilité -->
-        <div class="overflow-x-auto">
-            <table class="w-full border-collapse border border-gray-200 text-left text-sm">
-                <thead>
-                    <tr class="bg-gray-50 text-gray-700">
-                        <th class="border border-gray-200 p-3">Date & Heure</th>
-                        <th class="border border-gray-200 p-3">Membre Concerné</th>
-                        <th class="border border-gray-200 p-3">Type d'opération</th>
-                        <th class="border border-gray-200 p-3">Montant (BIF)</th>
-                        <th class="border border-gray-200 p-3">Traité par (Opérateur / Rôle)</th>
-                        <th class="border border-gray-200 p-3">Statut</th>
+                <!-- Type d'opération -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-secondary small mb-1">Type d'opération</label>
+                    <select name="type_op" class="form-select">
+                        <option value="">-- Toutes les opérations --</option>
+                        <option value="DEPOT" {% if selected_type == 'DEPOT' %}selected{% endif %}>Dépôt</option>
+                        <option value="RETRAIT" {% if selected_type == 'RETRAIT' %}selected{% endif %}>Retrait</option>
+                        <option value="PENALITE" {% if selected_type == 'PENALITE' %}selected{% endif %}>Pénalité</option>
+                        <option value="Octroi de Crédit" {% if selected_type == 'Octroi de Crédit' or selected_type == 'CREDIT' %}selected{% endif %}>Octroi de Crédit</option>
+                    </select>
+                </div>
+
+                <!-- Intervalle de dates -->
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-secondary small mb-1">Date de début</label>
+                    <input type="date" name="start_date" value="{{ start_date|default:'' }}" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-secondary small mb-1">Date de fin</label>
+                    <input type="date" name="end_date" value="{{ end_date|default:'' }}" class="form-control">
+                </div>
+
+                <!-- Boutons d'action -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+                    <a href="{% url 'core:partner_reports' %}" class="btn btn-outline-secondary" title="Réinitialiser">↻</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tableau des transactions & Traçabilité -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">📜 Historique des transactions</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col"># ID</th>
+                        <th scope="col">Date & Heure</th>
+                        <th scope="col">Membre Concerné</th>
+                        <th scope="col">Type d'opération</th>
+                        <th scope="col">Montant (BIF)</th>
+                        <th scope="col">Traité par (Opérateur / Rôle)</th>
+                        <th scope="col">Statut</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for tx in transactions %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="border border-gray-200 p-3 text-gray-600">{{ tx.date_transaction|date:"d/m/Y à H:i" }}</td>
-                        <td class="border border-gray-200 p-3 font-semibold text-gray-800">{{ tx.membre.nom }} {{ tx.membre.prenom }}</td>
-                        <td class="border border-gray-200 p-3">
-                            <span class="px-2 py-1 rounded text-xs font-bold
-                                {% if tx.type_operation == 'DEPOT' %}bg-green-100 text-green-800
-                                {% elif tx.type_operation == 'RETRAIT' %}bg-red-100 text-red-800
-                                {% elif tx.type_operation == 'PENALITE' %}bg-yellow-100 text-yellow-800
-                                {% else %}bg-blue-100 text-blue-800{% endif %}">
-                                {{ tx.type_operation }}
-                            </span>
+                    {% for tx in transactions|default:recent_transactions %}
+                    <tr>
+                        <td><strong>#{{ tx.id }}</strong></td>
+                        <td class="text-muted small">
+                            {{ tx.date_transaction|default:tx.created_at|date:"d/m/Y à H:i" }}
                         </td>
-                        <td class="border border-gray-200 p-3 font-mono font-bold">{{ tx.montant|floatformat:0 }}</td>
-                        <!-- Traçabilité : Qui a fait l'opération -->
-                        <td class="border border-gray-200 p-3 text-gray-600">
+                        <td class="fw-semibold text-dark">
+                            {% if tx.membre %}
+                                {{ tx.membre.nom }} {{ tx.membre.prenom }}
+                            {% else %}
+                                <span class="text-muted italic">Non spécifié</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with op_type=tx.type_operation|default:tx.type_transaction %}
+                                {% if op_type == 'DEPOT' %}
+                                    <span class="badge bg-success-subtle text-success border border-success">Dépôt</span>
+                                {% elif op_type == 'RETRAIT' %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger">Retrait</span>
+                                {% elif op_type == 'PENALITE' %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning">Pénalité</span>
+                                {% else %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary">{{ op_type|default:"Crédit" }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="fw-bold font-monospace">
+                            {{ tx.montant|floatformat:0 }}
+                        </td>
+                        <!-- Traçabilité -->
+                        <td class="text-muted small">
                             {% if tx.effectue_par %}
                                 {{ tx.effectue_par.username|default:tx.effectue_par }}
                             {% elif tx.agent %}
                                 {{ tx.agent }}
                             {% else %}
-                                <span class="text-gray-400 italic">Système / Non spécifié</span>
+                                <span class="text-muted italic">Système / Non spécifié</span>
                             {% endif %}
                         </td>
-                        <td class="border border-gray-200 p-3">
-                            <span class="text-green-600 font-semibold">● {{ tx.statut|default:"Validé" }}</span>
+                        <td>
+                            <span class="badge bg-success">● {{ tx.statut|default:"Validé" }}</span>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="border border-gray-200 p-6 text-center text-gray-500 italic">Aucune transaction trouvée avec ces critères.</td>
+                        <td colspan="7" class="text-center py-4 text-muted italic">
+                            Aucune transaction trouvée avec ces critères.
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

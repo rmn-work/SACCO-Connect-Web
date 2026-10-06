@@ -1,0 +1,124 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Mon Profil - SACCO Connect{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+    <!-- En-tête de la page -->
+    <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">Mon Profil Membre</h1>
+            <p class="text-sm text-gray-500 mt-1">Gérez vos informations personnelles et suivez votre situation financière en un coup d'œil.</p>
+        </div>
+        <a href="{% url 'core:dashboard' %}" class="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition">
+            ← Retour au tableau de bord
+        </a>
+    </div>
+
+    <!-- Grille principale du profil -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Colonne de gauche : Carte d'identité et Infos -->
+        <div class="md:col-span-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center">
+            <div class="w-24 h-24 bg-blue-100 text-blue-600 font-bold text-3xl rounded-full flex items-center justify-center mb-4 shadow-inner">
+                {{ membre.prenom|slice:":1"|upper }}{{ membre.nom|slice:":1"|upper }}
+            </div>
+            <h2 class="text-xl font-bold text-gray-800">{{ membre.prenom }} {{ membre.nom }}</h2>
+            <span class="inline-block bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full mt-1 uppercase tracking-wider">
+                Rôle : {{ membre.get_role_display|default:"Membre" }}
+            </span>
+
+            <div class="w-full border-t border-gray-100 my-6"></div>
+
+            <div class="w-full space-y-3 text-left text-sm">
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">Sexe</span>
+                    <span class="font-semibold text-gray-800">{{ membre.sexe|default:"N/A" }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">Âge</span>
+                    <span class="font-semibold text-gray-800">{{ membre.age|default:"N/A" }} ans</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">Téléphone</span>
+                    <span class="font-semibold text-gray-800">{{ membre.telephone|default:"N/A" }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">Colline</span>
+                    <span class="font-semibold text-gray-800">{{ membre.colline|default:"N/A" }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">Quartier / Av.</span>
+                    <span class="font-semibold text-gray-800">{{ membre.quartier|default:"-" }} / {{ membre.avenue|default:"-" }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">N° Maison</span>
+                    <span class="font-semibold text-gray-800">{{ membre.maison|default:"N/A" }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">N° Pièce (CNI)</span>
+                    <span class="font-semibold text-gray-800">{{ membre.cni|default:"N/A" }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span class="font-medium text-gray-400">Groupe</span>
+                    <span class="font-semibold text-gray-800">{{ membre.groupe.nom_groupe|default:"Aucun" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne de droite : Situation financière & Activité -->
+        <div class="md:col-span-2 space-y-6">
+
+            <!-- Cartes des Soldes -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Solde Épargne -->
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-md p-6 text-white relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <p class="text-xs font-medium text-blue-100 uppercase tracking-wider">Solde Épargne Actuel</p>
+                    <h3 class="text-3xl font-extrabold mt-2">{{ membre.solde_epargne|default:0|floatformat:1 }} <span class="text-lg font-normal">BIF</span></h3>
+                    <div class="mt-4 flex items-center text-xs text-blue-200">
+                        <span>📈 Cumul des cotisations sécurisées</span>
+                    </div>
+                </div>
+
+                <!-- Caisse Sociale -->
+                <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-md p-6 text-white relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <p class="text-xs font-medium text-emerald-100 uppercase tracking-wider">Caisse Sociale</p>
+                    <h3 class="text-3xl font-extrabold mt-2">{{ membre.caisse_sociale|default:0|floatformat:1 }} <span class="text-lg font-normal">BIF</span></h3>
+                    <div class="mt-4 flex items-center text-xs text-emerald-200">
+                        <span>🤝 Participation solidaire</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paramètres et Sécurité / Actions Rapides -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Sécurité et Paramètres du Compte</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <a href="{% url 'core:loan_calculator' %}" class="flex items-center p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/50 transition group">
+                        <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold mr-3 group-hover:bg-blue-600 group-hover:text-white transition">
+                            🧮
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800">Simulateur de Crédit</h4>
+                            <p class="text-xs text-gray-500">Estimez vos futurs prêts</p>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'core:contact' %}" class="flex items-center p-4 rounded-xl border border-gray-100 hover:border-amber-200 hover:bg-amber-50/50 transition group">
+                        <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center font-bold mr-3 group-hover:bg-amber-600 group-hover:text-white transition">
+                            🎫
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800">Contact</h4>
+                            <p class="text-xs text-gray-500">Besoin d'aide ? Contactez-nous</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

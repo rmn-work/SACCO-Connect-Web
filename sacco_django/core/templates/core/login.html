@@ -211,7 +211,15 @@
 
         const errorContainer = document.getElementById('ajax-error-container');
         const errorMessage = document.getElementById('ajax-error-message');
+        const submitBtn = document.getElementById('submit-btn'); // Cible le bouton
+
         errorContainer.classList.add('hidden');
+
+        // --- NOUVEAU : Bloquer le bouton pendant la requête ---
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Connexion en cours...";
+        submitBtn.classList.add('opacity-75', 'cursor-not-allowed'); // Classes Tailwind pour l'aspect visuel
+        // ------------------------------------------------------
 
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         const url = this.action;
@@ -238,12 +246,24 @@
                 const data = await response.json().catch(() => ({}));
                 errorContainer.classList.remove('hidden');
                 errorMessage.innerText = data.error || data.message || "Identifiants invalides ou erreur serveur.";
+
+                // --- NOUVEAU : Réactiver le bouton en cas d'erreur ---
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Se connecter";
+                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                // -----------------------------------------------------
             }
         })
         .catch(error => {
             console.error('Erreur lors de la requête:', error);
             errorContainer.classList.remove('hidden');
             errorMessage.innerText = "Une erreur de connexion au serveur est survenue.";
+
+            // --- NOUVEAU : Réactiver le bouton en cas d'erreur de réseau ---
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Se connecter";
+            submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            // ---------------------------------------------------------------
         });
     });
 </script>

@@ -3,6 +3,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from . import views
 
+
 app_name = 'core'
 
 urlpatterns = [
@@ -10,37 +11,43 @@ urlpatterns = [
     path('', views.home_view, name='home'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('login/', views.login_view, name='login'),
+    #path('login/', api_login_view, name='api_login'),
+    #path('membres/<int:id>/profil/', api_profil_membre, name='api_profil_membre'),
     path('logout/', views.logout_view, name='logout'),
-    path('profil/', views.member_profile_view, name='profile'),  # Alias 'profile' utilisé dans base.html
+    path('profil/', views.member_profile_view, name='profile'),
     path('profil/member/', views.member_profile_view, name='member_profile'),
-    path('partenaires/', views.about_view, name='partners'),      # Alias 'partners' utilisé dans base.html
+    path('partenaires/', views.about_view, name='partners'),
 
     # --- Pages Informatiques & Services ---
     path('about/', views.about_view, name='about'),
     path('contact/', views.contact_view, name='contact'),
     path('privacy/', views.privacy_view, name='privacy'),
+    path('privacy-policy/', views.privacy_policy_view, name='privacy_policy'),
     path('terms/', views.terms_view, name='terms'),
     path('accessibility/', views.accessibility_view, name='accessibility'),
     path('services/', views.services_view, name='services'),
 
     # --- Espace Partenaire ---
+    path('partenaire/login/', views.partner_login_view),
     path('partner/login/', views.partner_login_view, name='partner_login'),
     path('partner/', views.partner_dashboard_view, name='partner_dashboard'),
     path('partner/members/', views.partner_members_list_view, name='partner_members'),
     path('partner/members/add/', views.partner_register_member_view, name='partner_register_member'),
     path('partner/members/<int:member_id>/', views.partner_member_detail_view, name='partner_member_detail'),
     path('partner/reports/', views.financial_report_view, name='partner_reports'),
-    path('partner/reports/export/', views.export_transactions_csv, name='export_transactions_csv'),
-    path('partner/settings/', views.partner_settings_view, name='partner_settings'),
+    #path('partner/reports/export/', views.export_transactions_pdf, name='export_transactions_csv'),
+    #path('partner/settings/', views.partner_settings_view, name='partner_settings'),
     path('partner/security/password/', auth_views.PasswordChangeView.as_view(
         template_name='core/partner_password_change.html',
         success_url='/partner/settings/?success=password_changed'
     ), name='partner_password_change'),
-    path('partner/team/', views.partner_team_view, name='partner_team'),
-    path('partner/team/add/', views.partner_add_collaborateur_view, name='partner_add_collaborateur'),
+    #path('partner/team/', views.partner_team_view, name='partner_team'),
+    #path('partner/team/add/', views.partner_add_collaborateur_view, name='partner_add_collaborateur'),
     path('partner/deposit/', views.partner_deposit_view, name='partner_deposit'),
+    path('partner/prets-statistiques/', views.prets_statistiques_view, name='prets_statistiques'),
+    path('presences/statistiques/', views.presences_statistiques_view, name='presences_statistiques'),
     path('partner/dashboard/', views.partner_dashboard_view),
-    path('partner/reports/', views.global_reports_view, name='partner_reports'),
+    path('partenaire/remboursement/<int:membre_id>/', views.enregistrer_remboursement_view, name='enregistrer_remboursement'),
 
     # --- Espace Manager / Administration ---
     path('manager/', views.manager_dashboard_view, name='manager_dashboard'),
@@ -48,22 +55,24 @@ urlpatterns = [
     path('manager/loans/<int:pret_id>/<str:action>/', views.update_loan_status_view, name='update_loan_status'),
     path('manager/export/excel/', views.export_caisse_sociale_excel, name='export_caisse_sociale_excel'),
     path('manager/export/pdf/', views.export_caisse_sociale_pdf, name='export_caisse_sociale_pdf'),
-    path('manager/nouveau-membre/', views.add_member_view, name='add_member'),
-    path('manager/partenaire/ajouter/', views.ajouter_partenaire_view, name='ajouter_partenaire'),
+    path('manager/nouveau-membre/', views.ajouter_membre_view, name='add_member'),
+    #path('manager/partenaire/ajouter/', views.ajouter_partenaire_view, name='ajouter_partenaire'),
     path('manager/caisse-sociale/enregistrer/', views.enregistrer_caisse_sociale_view, name='enregistrer_caisse_sociale'),
     path('manager/presences/enregistrer/', views.enregistrer_presences_view, name='enregistrer_presences'),
     path('manager/transaction/<int:membre_id>/', views.add_transaction_view, name='add_member_transaction'),
     path('manager/approbation-pret/<int:pret_id>/', views.approbation_finale_directeur, name='approbation_finale_directeur'),
-    #path('manager/reset-pin/', views.admin_reset_pin, name='admin_reset_pin'),
+    path('manager/reset-pin/', views.admin_reset_pin, name='admin_reset_pin'),
+    path('manager/groupe/<int:groupe_id>/modifier-taux/', views.modifier_taux_groupe_view, name='modifier_taux_groupe'),
 
     # --- Gestion des Membres & Groupes ---
-    path('membre/<int:membre_id>/', views.member_detail_view, name='member_detail'),
+    path('membre/<int:membre_id>/', views.member_profile_view, name='member_detail'),
     path('membres/rechercher/', views.search_member_view, name='search_member'),
     path('membre/<int:membre_id>/appliquer-penalite/', views.apply_penalty_view, name='apply_penalty'),
-    path('membres/<int:membre_id>/changer-groupe/', views.changer_groupe_membre_view, name='changer_groupe_membre'),
+    path('membres/<int:membre_id>/changer-groupe/', views.changer_groupe_view, name='changer_groupe_membre'),
     path('membres/<int:membre_id>/retirer-groupe/', views.retirer_groupe_view, name='retirer_groupe'),
     path('membres/<int:membre_id>/changer_groupe/', views.changer_groupe_view, name='changer_groupe'),
     path('groupes/creer/', views.creer_groupe_view, name='creer_groupe'),
+    path('groupe/registres/', views.groupe_registres_view, name='groupe_registres'),
     path('groupes/<int:groupe_id>/archiver/', views.archiver_groupe_view, name='archiver_groupe'),
     path('groupes/<int:groupe_id>/restaurer/', views.restaurer_groupe_view, name='restaurer_groupe'),
     path('groupes/<int:groupe_id>/assigner-partenaire/', views.assigner_partenaire_groupe_view, name='assigner_partenaire_groupe'),
@@ -72,17 +81,21 @@ urlpatterns = [
     path('transaction/ajouter/<int:membre_id>/', views.add_transaction_view, name='add_transaction'),
     path('transactions/filtrer/', views.filtered_transactions_view, name='filtered_transactions'),
     path('transaction/<int:transaction_id>/', views.transaction_detail_view, name='transaction_detail'),
-    path('transaction/<int:transaction_id>/pdf/', views.export_transaction_pdf, name='export_transaction_pdf'),
+    #path('transaction/<int:transaction_id>/pdf/', views.export_transactions_pdf, name='export_transaction_pdf'),
     path('transaction/<int:transaction_id>/edit/', views.edit_transaction_view, name='edit_transaction'),
     path('transaction/<int:transaction_id>/delete/', views.delete_transaction_view, name='delete_transaction'),
+    path('transaction/<int:transaction_id>/pdf/', views.recu_transaction_pdf_view, name='export_transaction_pdf'),
+    # path('transaction/<int:pk>/recu/pdf/', views.recu_transaction_pdf_view, name='recu_transaction_pdf'),
+    path('transaction/<int:transaction_id>/pdf/', views.recu_transaction_pdf_view, name='export_transaction_pdf'),
     path('rapport/financier/', views.financial_report_view, name='financial_report'),
     path('saisie-hebdomadaire/', views.saisie_hebdomadaire_view, name='saisie_hebdomadaire'),
 
     # --- Crédits & Prêts ---
     path('demande-pret/', views.request_loan_view, name='request_loan'),
-    path('demande-pret/nouvelle/', views.request_loan_view, name='loan_request'),  # Alias 'loan_request' utilisé dans base.html
+    path('demande-pret/nouvelle/', views.request_loan_view, name='loan_request'),
     path('historique-prets/', views.list_loans_view, name='loan_history'),
     path('pret/<int:pret_id>/', views.loan_detail_view, name='loan_detail'),
+    path('pret/<int:pret_id>/update/<str:action>/', views.update_loan_status_view, name='update_loan_status'),
     path('calculateur-credit/', views.loan_calculator_view, name='loan_calculator'),
     path('credits-en-attente/', views.list_pending_loans_view, name='pending_loans'),
     path('credit/ajouter/<int:membre_id>/', views.grant_credit_view, name='add_credit'),
@@ -90,15 +103,13 @@ urlpatterns = [
     path('agent/valider-pret/<int:pret_id>/', views.valider_par_agent, name='valider_par_agent'),
 
     # --- Services Spécifiques & Sécurité ---
-    path('employe/creer/', views.create_employee_view, name='create_employee'),
+    #path('employe/creer/', views.create_employee_view, name='create_employee'),
     path('services/qr-code/', views.member_qr_view, name='member_qr'),
-    path('services/predictions-ia/', views.ai_predictions_view, name='ai_predictions'),
     path('services/security-pin/', views.security_pin_view, name='security_pin'),
-    path('manager/reset-pin/', views.admin_reset_pin, name='admin_reset_pin'),
-    path('managertoggle-status/', views.admin_toggle_status, name='admin_toggle_status'),
+    path('manager/toggle-status/', views.admin_toggle_status, name='admin_toggle_status'),
     path('manager/planifier-reunion/', views.admin_planifier_reunion_view, name='admin_planifier_reunion'),
 
-    # --- Exports ---
+# --- Exports ---
     path('export/members/pdf/', views.export_members_pdf, name='export_members_pdf'),
     path('export/members/csv/', views.export_members_csv, name='export_members_csv'),
     path('export/members/excel/', views.export_members_excel, name='export_members_excel'),
@@ -107,8 +118,14 @@ urlpatterns = [
     path('export/loans/pdf/', views.export_loans_pdf, name='export_loans_pdf'),
     path('export/transactions/pdf/', views.export_transactions_pdf, name='export_transactions_pdf'),
 
-    path('contact/', views.contact_view, name='contact'),
     path('nous-contacter/', views.contact_public_view, name='contact_public'),
     path('contact/ticket/<int:ticket_id>/', views.ticket_detail_view, name='ticket_detail'),
 
+    #path('account-deletion/', views.account_deletion_view, name='account_deletion'),
+    path('api/ai-assistant/', views.ai_assistant_api, name='ai_assistant_api'),
+
+    # --- Actions de Clôture & Maintenance (Préfixées par /manager/) ---
+    path('manager/cloturer-exercice/', views.cloturer_exercice, name='cloturer_exercice'),
+    path('manager/export-logs/', views.exporter_logs_csv, name='exporter_logs_csv'),
+    path('manager/maintenance/', views.basculer_mode_maintenance, name='basculer_mode_maintenance'),
 ]

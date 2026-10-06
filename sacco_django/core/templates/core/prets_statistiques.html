@@ -1,0 +1,184 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+
+    <!-- En-tête avec filtre par groupe -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Analyse des Prêts (3 Derniers Mois)</h1>
+            <p class="text-gray-500 text-sm">Suivi des montants accordés et analyse de la croissance mensuelle.</p>
+        </div>
+
+        <!-- Formulaire de filtre par groupe -->
+        <form method="get" class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-stone-200">
+            <label for="groupe" class="text-sm font-medium text-gray-700 pl-2">Filtrer par Groupe :</label>
+            <select name="groupe" id="groupe" onchange="this.form.submit()" class="bg-gray-50 border border-gray-300 text-gray-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2">
+                <option value="">-- Tous les groupes --</option>
+                {% for g in groupes %}
+                    <option value="{{ g.id }}" {% if selected_groupe == g.id %}selected{% endif %}>
+                        {{ g.nom_groupe }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Cartes KPI -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+        <!-- Total Octroyé -->
+        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Volume Total (3 Mois)</span>
+            <div class="mt-2 text-2xl font-bold text-gray-900">{{ total_cumule|floatformat:0 }} BIF</div>
+        </div>
+
+        <!-- Nombre de prêts -->
+        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Nombre Total de Prêts</span>
+            <div class="mt-2 text-2xl font-bold text-gray-900">{{ total_nombre }}</div>
+        </div>
+
+        <!-- Taux d'évolution global -->
+        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Évolution Globale</span>
+            <div class="mt-2 flex items-center">
+                {% if evolution_globale is not None %}
+                    {% if evolution_globale >= 0 %}
+                        <span class="text-2xl font-bold text-green-600">+{{ evolution_globale }}%</span>
+                        <span class="ml-2 bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">Croissance</span>
+                    {% else %}
+                        <span class="text-2xl font-bold text-red-600">{{ evolution_globale }}%</span>
+                        <span class="ml-2 bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">Décroissance</span>
+                    {% endif %}
+                {% else %}
+                    <span class="text-gray-400 text-lg">Données insuffisantes</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique + Tableau recapitulatif -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+
+        <!-- Graphique d'évolution (2 colonnes) -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Évolution Mensuelle des Prêts</h2>
+            <div class="h-64">
+                <canvas id="pretsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tableau par Mois (1 colonne) -->
+        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Détails Mensuels</h2>
+            <div class="divide-y divide-gray-100">
+                {% for item in donnees_mois %}
+                <div class="py-3 flex items-center justify-between">
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ item.mois }}</p>
+                        <p class="text-xs text-gray-400">{{ item.nombre_prets }} prêt(s)</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-gray-900">{{ item.total_montant|floatformat:0 }} BIF</p>
+                        {% if item.croissance is not None %}
+                            {% if item.croissance >= 0 %}
+                                <span class="text-xs font-medium text-green-600">▲ +{{ item.croissance }}%</span>
+                            {% else %}
+                                <span class="text-xs font-medium text-red-600">▼ {{ item.croissance }}%</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-xs text-gray-400">Mois de référence</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 py-4">Aucun prêt enregistré ces 3 derniers mois.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des derniers prêts -->
+    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Derniers Prêts Accordés</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3">Membre</th>
+                        <th class="px-4 py-3">Montant</th>
+                        <th class="px-4 py-3">Date</th>
+                        <th class="px-4 py-3">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for pret in derniers_prets %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">
+                            {{ pret.membre.prenom }} {{ pret.membre.nom }}
+                        </td>
+                        <td class="px-4 py-3 font-semibold text-gray-800">
+                            {{ pret.montant|floatformat:0 }} BIF
+                        </td>
+                        <td class="px-4 py-3 text-gray-500">
+                            {{ pret.date_demande|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                                {{ pret.get_statut_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-4 text-center text-gray-400">Aucun prêt récent pour ce groupe.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Integration -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const labels = {{ labels_json|safe }};
+    const dataMontants = {{ montants_json|safe }};
+
+    const ctx = document.getElementById('pretsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Montant des prêts (BIF)',
+                data: dataMontants,
+                borderColor: '#2563EB',
+                backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#2563EB',
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#F3F4F6' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

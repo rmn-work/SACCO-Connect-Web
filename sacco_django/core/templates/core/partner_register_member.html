@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto my-10 px-4 sm:px-6">
@@ -31,61 +32,104 @@
                     <h4 class="text-lg font-bold">Informations Personnelles</h4>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Nom</label>
-                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
                             {{ form.nom }}
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Prénom</label>
-                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
                             {{ form.prenom }}
                         </div>
                     </div>
-                    <div class="md:col-span-2">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Sexe</label>
+                        <div class="[&_select]:w-full [&_select]:px-4 [&_select]:py-2.5 [&_select]:rounded-lg [&_select]:border [&_select]:border-gray-300 [&_select]:focus:ring-2 [&_select]:focus:ring-blue-500 [&_select]:bg-white [&_select]:outline-none">
+                            {{ form.sexe }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Âge</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
+                            {{ form.age }}
+                        </div>
+                    </div>
+                    <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Numéro CNI</label>
-                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
                             {{ form.cni }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Code PIN Provisoire</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
+                            {{ form.pin }}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 2: Coordonnées & Localisation -->
+            <!-- Section 2: Coordonnées -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <h4 class="text-lg font-bold">Coordonnées</h4>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Numéro de téléphone</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
+                            {{ form.telephone }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Adresse Détaillée -->
             <div class="space-y-4">
                 <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <h4 class="text-lg font-bold">Coordonnées & Localisation</h4>
+                    <h4 class="text-lg font-bold">Adresse Détaillée</h4>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Téléphone</label>
-                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
-                            {{ form.telephone }}
-                        </div>
-                    </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Colline</label>
-                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
                             {{ form.colline }}
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Quartier</label>
-                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
                             {{ form.quartier }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Avenue</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
+                            {{ form.avenue }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Numéro de maison</label>
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
+                            {{ form.maison }}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 3: Informations SACCO -->
+            <!-- Section 4: Informations SACCO -->
             <div class="space-y-4">
                 <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,13 +141,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Groupe</label>
-                        <div class="[&>select]:w-full [&>select]:px-4 [&>select]:py-2.5 [&>select]:rounded-lg [&>select]:border [&>select]:border-gray-300 [&>select]:focus:ring-2 [&>select]:focus:ring-blue-500 [&>select]:bg-white [&>select]:outline-none">
+                        <div class="[&_select]:w-full [&_select]:px-4 [&_select]:py-2.5 [&_select]:rounded-lg [&_select]:border [&_select]:border-gray-300 [&_select]:focus:ring-2 [&_select]:focus:ring-blue-500 [&_select]:bg-white [&_select]:outline-none">
                             {{ form.groupe }}
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Solde épargne initial (BIF)</label>
-                        <div class="[&>input]:w-full [&>input]:px-4 [&>input]:py-2.5 [&>input]:rounded-lg [&>input]:border [&>input]:border-gray-300 [&>input]:focus:ring-2 [&>input]:focus:ring-blue-500 [&>input]:outline-none">
+                        <div class="[&_input]:w-full [&_input]:px-4 [&_input]:py-2.5 [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:outline-none">
                             {{ form.solde_epargne }}
                         </div>
                     </div>
@@ -112,7 +156,7 @@
 
             <!-- Actions -->
             <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
-                <a href="{% url 'core:partner_members' %}" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition duration-150">
+                <a href="javascript:history.back()" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition duration-150">
                     Annuler
                 </a>
                 <button type="submit" class="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md hover:shadow-lg transition duration-150 flex items-center gap-2">

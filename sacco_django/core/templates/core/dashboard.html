@@ -42,16 +42,26 @@
         </div>
     </div>
 
-    <!-- En-tête de bienvenue -->
+    <!-- En-tête de bienvenue & Groupe -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Tableau de bord - Mon Compte</h1>
-        <p class="text-sm text-gray-500 mt-2">
-            Bienvenue, <span class="font-semibold text-blue-600">{{ membre.prenom|default:"SACCO" }} {{ membre.nom|default:"App" }}</span>
-            {% if membre.role %}| Rôle : <span class="uppercase font-medium text-blue-600">{{ membre.get_role_display|default:membre.role }}</span>{% endif %}
-        </p>
-        <p class="text-sm text-gray-500 mt-1">
-            Téléphone : {{ membre.telephone|default:"N/A" }} | Colline : {{ membre.colline|default:"N/A" }}
-        </p>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Tableau de bord - Mon Compte</h1>
+                <p class="text-sm text-gray-500 mt-2">
+                    Bienvenue, <span class="font-semibold text-blue-600">{{ membre.prenom|default:"SACCO" }} {{ membre.nom|default:"App" }}</span>
+                    {% if membre.role %}| Rôle : <span class="uppercase font-medium text-blue-600">{{ membre.get_role_display|default:membre.role }}</span>{% endif %}
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    Téléphone : {{ membre.telephone|default:"N/A" }} | Colline : {{ membre.colline|default:"N/A" }}
+                </p>
+            </div>
+            {% if membre.groupe %}
+            <div class="bg-blue-50 border border-blue-100 px-4 py-2 rounded-xl text-right">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Membre du groupe</span>
+                <span class="text-sm font-bold text-blue-700">{{ membre.groupe.nom_groupe }}</span>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- SECTION SUPPLÉMENTAIRE : Réservée au Président ou Secrétaire -->
@@ -85,66 +95,133 @@
     </div>
     {% endif %}
 
-    <!-- Section: Situation Financière (Petits cadres individuels) -->
+    <!-- Section: Situation Financière (Vue Détaillée Cumulée) -->
     <div id="situation-financiere" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Situation Financière</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Solde Épargne</span>
-                <p class="text-xl font-bold text-gray-800 mt-1">{{ membre.solde_epargne|default:"0" }} BIF</p>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <!-- Solde Épargne -->
+            <div class="md:col-span-4 bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Solde Épargne</span>
+                    <p class="text-xl font-bold text-gray-800 mt-1">{{ solde_epargne|floatformat:2 }} BIF</p>
+                </div>
             </div>
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Caisse Sociale</span>
-                <p class="text-xl font-bold text-gray-800 mt-1">{{ membre.caisse_sociale|default:"0" }} BIF</p>
+
+            <!-- Caisse Sociale - Vue Détaillée Cumulée -->
+            <div class="md:col-span-8 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Caisse Sociale (Détails & Cumul)</span>
+                <div class="grid grid-cols-3 text-center divide-x divide-gray-200">
+                    <div class="px-2">
+                        <span class="text-xs text-gray-500 block">Total Cotisations</span>
+                        <span class="text-sm md:text-base text-success font-bold text-emerald-600">{{ total_cotisations_caisse|floatformat:2 }} BIF</span>
+                    </div>
+                    <div class="px-2">
+                        <span class="text-xs text-gray-500 block">Total Décaissements</span>
+                        <span class="text-sm md:text-base font-bold text-rose-600">- {{ total_decaissements|floatformat:2 }} BIF</span>
+                    </div>
+                    <div class="px-2">
+                        <span class="text-xs text-gray-500 block">Reste Net (Solde)</span>
+                        <span class="text-sm md:text-base font-bold text-blue-600">{{ caisse_sociale|floatformat:2 }} BIF</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Section: Gestion des Crédits (Petits cadres individuels) -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Gestion des Crédits</h2>
+    <!-- Section: Gestion des Crédits & Prêts Actifs -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Résumé des crédits -->
+        <div class="md:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Indicateurs Crédits</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="border border-orange-200 rounded-xl p-4 bg-orange-50">
-                <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit en cours</span>
-                <p class="text-xl font-bold text-orange-700 mt-1">{{ membre.credit_en_cours|default:"0" }} BIF</p>
-            </div>
-            <div class="border border-orange-200 rounded-xl p-4 bg-orange-50">
-                <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit remboursé</span>
-                <p class="text-xl font-bold text-orange-700 mt-1">{{ membre.credit_rembourse|default:"0" }} BIF</p>
-            </div>
-            <div class="border border-orange-200 rounded-xl p-4 bg-orange-50">
-                <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit Restant</span>
-                <p class="text-xl font-bold text-orange-700 mt-1">{{ membre.credit_restant|default:"0" }} BIF</p>
+                <!-- Indicateurs Crédits dynamiques -->
+                <div class="space-y-4">
+                    <div class="border border-orange-200 rounded-xl p-3 bg-orange-50">
+                        <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit en cours</span>
+                        <p class="text-lg font-bold text-orange-700 mt-1">{{ credit_en_cours|floatformat:2 }} BIF</p>
+                    </div>
+                    <div class="border border-orange-200 rounded-xl p-3 bg-orange-50">
+                        <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit remboursé</span>
+                        <p class="text-lg font-bold text-orange-700 mt-1">{{ credit_rembourse|floatformat:2 }} BIF</p>
+                    </div>
+                    <div class="border border-orange-200 rounded-xl p-3 bg-orange-50">
+                        <span class="text-xs font-semibold text-orange-600 uppercase tracking-wider">Crédit Restant</span>
+                        <p class="text-lg font-bold text-orange-700 mt-1">{{ credit_restant|floatformat:2 }} BIF</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Section: Simulateur de Remboursement -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Simulateur de Remboursement</h2>
-        <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
-            <form method="POST" class="flex flex-col sm:flex-row gap-4 items-end">
-                {% csrf_token %}
-                <div class="flex-1 w-full">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Durée (en mois) :</label>
-                    <input type="number" name="mois" value="6" min="1" max="36" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                </div>
-                <button type="submit" name="simulate" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition w-full sm:w-auto shadow-sm">
-                    Simuler
-                </button>
-            </form>
+        <!-- Liste des Prêts Actifs & Confirmation de Réception -->
+        <div class="md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Prêts Actifs</h2>
 
-            {% if simulation_result %}
-                <div class="mt-4 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                    <p class="text-sm text-gray-800">
-                        Pour votre crédit restant, sur <strong class="text-blue-700">{{ simulation_result.mois }} mois</strong> :<br>
-                        <span class="inline-block mt-1">• Mensualité estimée : <strong>{{ simulation_result.mensualite }} BIF</strong></span><br>
-                        <span class="inline-block mt-1">• Total estimé à rembourser : <strong>{{ simulation_result.total }} BIF</strong></span>
-                    </p>
-                </div>
+            {% if prets_actifs %}
+            <div class="space-y-4">
+                {% for pret in prets_actifs %}
+                    {% if not pret.est_archive %}
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-800">Prêt #{{ pret.id }}</span>
+                                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full
+                                    {% if pret.statut == 'APPROUVE' %}bg-amber-100 text-amber-800
+                                    {% elif pret.statut == 'ATTRIBUE' %}bg-emerald-100 text-emerald-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ pret.get_statut_display }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">Montant : <strong>{{ pret.montant|floatformat:2 }} BIF</strong></p>
+                            <p class="text-xs text-gray-500 mt-0.5">Demande effectuée le : {{ pret.date_demande|date:"d/m/Y" }}</p>
+                        </div>
+
+                        <!-- Bouton pour que le membre confirme la réception si le prêt est approuvé/viré -->
+                        {% if pret.statut == 'APPROUVE' %}
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="confirmer_reception_pret_id" value="{{ pret.id }}">
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-lg shadow transition">
+                                Confirmer la réception des fonds
+                            </button>
+                        </form>
+                        {% elif pret.statut == 'ATTRIBUE' %}
+                        <span class="text-xs text-emerald-700 font-medium bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                            ✓ Fonds reçus et confirmés
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="border border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-500 text-sm bg-gray-50">
+                Aucun prêt actif ou en cours pour le moment.
+            </div>
             {% endif %}
+        </div>
+    </div>
+
+    <!-- ================= RUBRIQUE : HISTORIQUE DE REMBOURSEMENT DE DETTE ================= -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">
+            Historique de Remboursement de Dette
+        </h3>
+        <div class="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+            {% for remb in historique_remboursements %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 text-sm">
+                <div>
+                    <span class="font-semibold text-gray-900">Remboursement de prêt</span>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ remb.date_transaction|date:"d M Y" }}</p>
+                </div>
+                <span class="font-bold text-green-600">+ {{ remb.montant|floatformat:2 }} BIF</span>
+            </div>
+            {% empty %}
+            <div class="text-center py-6 text-gray-400 text-sm">
+                Aucun remboursement de dette enregistré pour le moment.
+            </div>
+            {% endfor %}
         </div>
     </div>
 
@@ -156,69 +233,39 @@
         </div>
     </div>
 
-    <!-- Section: Historique des Transactions -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Historique des Transactions</h2>
-
-        {% if transactions %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
-                        <th class="py-3 px-4 rounded-tl-lg">Date</th>
-                        <th class="py-3 px-4">Type</th>
-                        <th class="py-3 px-4 rounded-tr-lg">Montant</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 text-sm">
-                    {% for t in transactions %}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="py-3 px-4 text-gray-600">{{ t.date }}</td>
-                        <td class="py-3 px-4 font-medium text-gray-800">{{ t.type_transaction }}</td>
-                        <td class="py-3 px-4 font-bold text-gray-900">{{ t.montant }} BIF</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="border border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-500 text-sm bg-gray-50">
-            Aucune transaction récente enregistrée.
-        </div>
-        {% endif %}
-    </div>
-
     <!-- Section: Historique des Présences -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100">Historique des Présences</h2>
 
         {% if presences %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
-                        <th class="py-3 px-4 rounded-tl-lg">ID Réunion / Groupe</th>
-                        <th class="py-3 px-4 rounded-tr-lg">Statut</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 text-sm">
-                    {% for p in presences %}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="py-3 px-4 text-gray-600">Groupe ID : {{ p.groupe_id }}</td>
-                        <td class="py-3 px-4">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                {{ p.status_presence|default:"Enregistré" }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+                            <th class="py-3 px-4 rounded-tl-lg">Date de Réunion</th>
+                            <th class="py-3 px-4 rounded-tr-lg">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+                        {% for p in presences %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="py-3 px-4 text-gray-800 font-medium">{{ p.date_reunion }}</td>
+                            <td class="py-3 px-4">
+                                {% if p.status == 'Present' or p.status == 'Présent' %}
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Présent</span>
+                                {% elif p.status == 'Absent' %}
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Absent</span>
+                                {% else %}
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">{{ p.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-        <div class="border border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-500 text-sm bg-gray-50">
-            Aucun historique de présence trouvé pour le moment.
-        </div>
+            <p class="text-gray-500 text-center py-4">Aucun historique de présence trouvé pour le moment.</p>
         {% endif %}
     </div>
 
@@ -255,44 +302,36 @@
 <!-- Script Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const ctx = document.getElementById('transactionChart');
-        if (ctx) {
-            const labels = JSON.parse('{{ chart_labels|safe|default:"[]" }}');
-            const data = JSON.parse('{{ chart_data|safe|default:"[]" }}');
-            
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Montant total par opération (BIF)',
-                        data: data,
-                        backgroundColor: [
-                            'rgba(34, 197, 94, 0.6)',   // Vert (Dépôt)
-                            'rgba(239, 68, 68, 0.6)',    // Rouge (Retrait)
-                            'rgba(234, 179, 8, 0.6)',    // Jaune (Pénalité)
-                            'rgba(59, 130, 246, 0.6)'    // Bleu (Crédit)
-                        ],
-                        borderColor: [
-                            'rgb(34, 197, 94)',
-                            'rgb(239, 68, 68)',
-                            'rgb(234, 179, 8)',
-                            'rgb(59, 130, 246)'
-                        ],
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true }
+document.addEventListener("DOMContentLoaded", function () {
+    const ctx = document.getElementById('transactionChart');
+    if (ctx) {
+        const labels = {{ chart_labels_json|safe }};
+        const dataValues = {{ chart_data_json|safe }};
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels.length > 0 ? labels : ['Aucune donnée'],
+                datasets: [{
+                    label: 'Montant total par opération (BIF)',
+                    data: dataValues.length > 0 ? dataValues : [0],
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
-            });
-        }
-    });
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

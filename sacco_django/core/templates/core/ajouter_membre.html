@@ -1,0 +1,149 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto my-10 px-4 sm:px-6">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+
+        <!-- En-tête -->
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 px-8 py-6 text-white flex items-center justify-between">
+            <div>
+                <h3 class="text-2xl font-bold tracking-tight">Enregistrer un nouveau membre</h3>
+                <p class="text-blue-100 text-sm mt-1">Remplissez les informations ci-dessous pour ajouter un membre au réseau SACCO.</p>
+            </div>
+            <div class="hidden sm:block bg-white/10 p-3 rounded-xl backdrop-blur-sm">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Test temporaire -->
+        <div class="bg-yellow-100 p-4 mb-4">
+            {{ form.as_p }}
+        </div>
+
+        <!-- Formulaire -->
+        <form method="POST" class="p-8 space-y-8">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg">
+                    <p class="font-bold">Veuillez corriger les erreurs ci-dessous :</p>
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Section 1: Informations Personnelles -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <h4 class="text-lg font-bold">👤 Informations Personnelles</h4>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nom</label>
+                        {{ form.nom }}
+                        {% if form.nom.errors %}<span class="text-xs text-red-500">{{ form.nom.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Prénom</label>
+                        {{ form.prenom }}
+                        {% if form.prenom.errors %}<span class="text-xs text-red-500">{{ form.prenom.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Sexe</label>
+                        {{ form.sexe }}
+                        {% if form.sexe.errors %}<span class="text-xs text-red-500">{{ form.sexe.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Âge</label>
+                        {{ form.age }}
+                        {% if form.age.errors %}<span class="text-xs text-red-500">{{ form.age.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Numéro CNI</label>
+                        {{ form.cni }}
+                        {% if form.cni.errors %}<span class="text-xs text-red-500">{{ form.cni.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Code PIN Provisoire</label>
+                        {{ form.pin }}
+                        {% if form.pin.errors %}<span class="text-xs text-red-500">{{ form.pin.errors.0 }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Coordonnées -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <h4 class="text-lg font-bold">📞 Coordonnées</h4>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Numéro de téléphone</label>
+                    {{ form.telephone }}
+                    {% if form.telephone.errors %}<span class="text-xs text-red-500">{{ form.telephone.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <!-- Section 3: Adresse Détaillée -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <h4 class="text-lg font-bold">📍 Adresse Détaillée</h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Colline</label>
+                        {{ form.colline }}
+                        {% if form.colline.errors %}<span class="text-xs text-red-500">{{ form.colline.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Quartier</label>
+                        {{ form.quartier }}
+                        {% if form.quartier.errors %}<span class="text-xs text-red-500">{{ form.quartier.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Avenue</label>
+                        {{ form.avenue }}
+                        {% if form.avenue.errors %}<span class="text-xs text-red-500">{{ form.avenue.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Numéro de maison</label>
+                        {{ form.maison }}
+                        {% if form.maison.errors %}<span class="text-xs text-red-500">{{ form.maison.errors.0 }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Informations SACCO -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-blue-700 border-b border-gray-200 pb-2">
+                    <h4 class="text-lg font-bold">🏛️ Informations SACCO</h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Groupe</label>
+                        {{ form.groupe }}
+                        {% if form.groupe.errors %}<span class="text-xs text-red-500">{{ form.groupe.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Solde épargne initial (BIF)</label>
+                        {{ form.solde_epargne }}
+                        {% if form.solde_epargne.errors %}<span class="text-xs text-red-500">{{ form.solde_epargne.errors.0 }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
+                <a href="{% url 'core:manager_dashboard' %}" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition duration-150">
+                    Annuler
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md transition duration-150">
+                    Enregistrer le membre
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

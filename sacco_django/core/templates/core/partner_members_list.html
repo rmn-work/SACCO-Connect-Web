@@ -31,6 +31,9 @@
                             <th class="px-6 py-4">Téléphone</th>
                             <th class="px-6 py-4">Groupe</th>
                             <th class="px-6 py-4">Solde Épargne</th>
+                            <th class="px-6 py-4">Caisse Sociale</th>
+                            <th class="px-6 py-4">Amende</th>
+                            <th class="px-6 py-4">Dépôts</th>
                             <th class="px-6 py-4 text-right">Action</th>
                         </tr>
                     </thead>
@@ -49,7 +52,16 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 font-bold text-gray-900">
-                                {{ m.solde_epargne }} <span class="text-xs font-normal text-gray-500">BIF</span>
+                                {{ m.solde_epargne|default:0 }} <span class="text-xs font-normal text-gray-500">BIF</span>
+                            </td>
+                            <td class="px-6 py-4 font-semibold text-gray-800">
+                                {{ m.total_caisse_sociale|default:0 }} <span class="text-xs font-normal text-gray-500">BIF</span>
+                            </td>
+                            <td class="px-6 py-4 font-semibold text-gray-800">
+                                {{ m.total_amendes|default:0 }} <span class="text-xs font-normal text-gray-500">BIF</span>
+                            </td>
+                            <td class="px-6 py-4 font-semibold text-gray-800">
+                                {{ m.total_depots|default:0 }} <span class="text-xs font-normal text-gray-500">BIF</span>
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <a href="{% url 'core:partner_member_detail' m.id %}" class="inline-flex items-center text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
@@ -59,7 +71,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                 Aucun membre affilié trouvé pour le moment.
                             </td>
                         </tr>

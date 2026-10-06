@@ -5,65 +5,359 @@
 <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- En-tête et Actions Rapides -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Tableau de bord Partenaire</h1>
-                <p class="text-gray-600">Bienvenue, {{ partner_name }}</p>
+        <!-- En-tête et Informations du Partenaire (Style Membre) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Tableau de bord Partenaire</h1>
+                    <p class="text-sm text-gray-600 mt-1">Bienvenue, <span class="font-semibold text-gray-800">{{ partner_name|default:request.user.username }}</span></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
+                        ESPACE PARTENAIRE
+                    </span>
+                </div>
             </div>
 
-            <div class="flex gap-3">
-                <a href="{% url 'core:partner_register_member' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-                    + Inscrire un membre
-                </a>
-                <a href="{% url 'core:partner_deposit' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">
-                    Enregistrer un dépôt
-                </a>
+            <!-- Bloc Heure en temps réel (Burundi) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Heure Locale (Burundi)</span>
+                        <div id="burundi-clock" class="text-lg font-bold text-gray-800">Chargement...</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-gray-500 font-medium" id="burundi-date">--/--/----</span>
+                </div>
+            </div>
+
+            <!-- Carte Taux BRB (Bandeau d'information) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mt-4 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Taux BRB (Officiel)</p>
+                        <p class="text-sm font-bold text-gray-800 mt-0.5">
+                            USD: <span class="text-green-600">{{ brb_rates.USD|default:brb_rates.usd|default:"N/A" }}</span>
+                            <span class="mx-2 text-gray-300">|</span>
+                            EUR: <span class="text-green-600">{{ brb_rates.EUR|default:brb_rates.eur|default:"N/A" }}</span>
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <a href="https://www.brb.bi/affichagetoustauxchange" target="_blank" title="Voir sur le site de la BRB" class="text-xs text-blue-600 font-medium hover:underline">Source BRB ↗</a>
+                </div>
+            </div>
+
+            <!-- Formulaire de modification du taux d'intérêt intégré proprement dans l'en-tête -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mt-4 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <form action="{% if groupe_selectionne %}{% url 'core:modifier_taux_groupe' groupe_selectionne.id %}{% else %}#{% endif %}" method="POST" class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gray-50/80 border border-gray-200 p-4 rounded-xl">
+                    {% csrf_token %}
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+                        <label for="taux_interet_reunion" class="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Taux d'intérêt (%) :
+                        </label>
+                        <input type="number" id="taux_interet_reunion" step="0.01" name="taux_interet_reunion" value="{{ groupe_selectionne.taux_interet_reunion|default:'' }}" placeholder="ex: 8.00" required class="w-28 px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+                        <label for="groupe_id_taux" class="text-xs font-bold text-gray-700 uppercase tracking-wider">Groupe :</label>
+                        <select id="groupe_id_taux" name="groupe_id" required class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800">
+                            {% if groupes %}
+                                {% for g in groupes %}
+                                    <option value="{{ g.id }}" {% if groupe_selectionne and g.id == groupe_selectionne.id %}selected{% endif %}>
+                                        {{ g.nom_groupe }}
+                                    </option>
+                                {% endfor %}
+                            {% elif groupe_selectionne %}
+                                <option value="{{ groupe_selectionne.id }}" selected>{{ groupe_selectionne.nom_groupe }}</option>
+                            {% else %}
+                                <option value="" disabled selected>Choisir un groupe</option>
+                            {% endif %}
+                        </select>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                            💾 Enregistrer
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- 4 Cartes KPI -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500 font-medium mb-1">Fonds Gérés</p>
-                <h3 class="text-2xl font-bold text-gray-900">{{ fonds_geres }} BIF</h3>
+        <!-- 3 Cartes KPI Modernes -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Fonds Gérés</p>
+                <h3 class="text-2xl font-extrabold text-gray-900">{{ fonds_geres|default:0|floatformat:0 }} BIF</h3>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500 font-medium mb-1">Membres Actifs</p>
-                <h3 class="text-2xl font-bold text-gray-900">{{ total_membres }}</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Membres Actifs</p>
+                <h3 class="text-2xl font-extrabold text-gray-900">{{ total_membres|default:0 }}</h3>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500 font-medium mb-1">Commissions (Mois)</p>
-                <h3 class="text-2xl font-bold text-green-600">{{ commissions_mois }} BIF</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Transactions du jour</p>
+                <h3 class="text-2xl font-extrabold text-gray-900">{{ transactions_recentes|length }}</h3>
+            </div>
+        </div>
+
+        <!-- ================= SECTION : CREDIT SCORING IA ================= -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-8">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-gray-100 gap-2">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-indigo-100 text-indigo-700 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Évaluation du Risque de Crédit</h3>
+                        <p class="text-xs text-gray-500">Analyse automatisée des demandes de prêts en attente</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 text-xs font-bold rounded-full bg-indigo-50 text-indigo-700">
+                    Mode d'affichage compact
+                </span>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <p class="text-sm text-gray-500 font-medium mb-1">Transactions du jour</p>
-                <h3 class="text-2xl font-bold text-gray-900">{{ transactions_recentes|length }}</h3>
+            <div class="max-h-[420px] overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+                {% for scoring_ia in dossiers_scoring_ia %}
+                    <div class="bg-gray-50/80 border border-gray-200 rounded-xl p-4 transition hover:shadow-md">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 mb-3 border-b border-gray-200">
+                            <div>
+                                <span class="text-xs text-blue-600 font-semibold uppercase tracking-wider block">Demandeur</span>
+                                <span class="text-base font-bold text-gray-900">{{ scoring_ia.nom|default:"Membre inconnu" }}</span>
+                                <span class="text-xs text-gray-500 ml-2">(Tél : {{ scoring_ia.telephone|default:"N/A" }})</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-right">
+                                    <span class="text-xs text-gray-500 block">Montant demandé</span>
+                                    <span class="text-sm font-bold text-blue-900">
+                                        {% if scoring_ia.montant_demande %}{{ scoring_ia.montant_demande|floatformat:0 }} BIF{% else %}0 BIF{% endif %}
+                                    </span>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-extrabold rounded-full bg-indigo-100 text-indigo-800">
+                                    Score : {{ scoring_ia.score|default:0 }}/100
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-4">
+                            <div class="bg-white p-2.5 rounded-lg border border-gray-100">
+                                <span class="text-gray-400 block">Épargne analysée</span>
+                                <span class="font-bold text-gray-800">{{ scoring_ia.solde_epargne|default:0|floatformat:0 }} BIF</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-gray-100">
+                                <span class="text-gray-400 block">Régularité</span>
+                                <span class="font-bold text-gray-800">{{ scoring_ia.nb_depots|default:0 }} transactions</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-gray-100">
+                                <span class="text-gray-400 block">Avis IA</span>
+                                <span class="font-bold text-{{ scoring_ia.couleur|default:'gray' }}-600 uppercase">
+                                    {{ scoring_ia.avis|default:"En attente" }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {% if scoring_ia.pret_id %}
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
+                            <a href="{% url 'core:update_loan_status' scoring_ia.pret_id 'approuver' %}" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                                Approuver
+                            </a>
+                            <a href="{% url 'core:update_loan_status' scoring_ia.pret_id 'attribuer' %}" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                                Attribuer (Virer)
+                            </a>
+                            <a href="{% url 'core:update_loan_status' scoring_ia.pret_id 'rejeter' %}" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition" onclick="return confirm('Voulez-vous vraiment rejeter et archiver ce prêt ?');">
+                                Rejeter
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <div class="p-8 text-center text-gray-500 text-sm">
+                        Aucune demande de prêt en attente pour le moment.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ================= SECTION : RÉPERTOIRE DES CRÉDITS DÉJÀ VERSÉS ================= -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-8">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Répertoire des Crédits Déjà Versés</h3>
+                        <p class="text-xs text-gray-500">Historique des prêts dont les fonds ont été attribués et virés</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-h-[300px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                {% for pret_verse in credits_verses %}
+                    <div class="bg-emerald-50/40 border border-emerald-100 rounded-xl p-4 flex items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-emerald-700 uppercase">Prêt #{{ pret_verse.id }} - Versé</span>
+                            <p class="text-sm font-bold text-gray-900 mt-0.5">
+                                {% if pret_verse.membre %}{{ pret_verse.membre.prenom }} {{ pret_verse.membre.nom }}{% else %}Membre{% endif %}
+                            </p>
+                            <p class="text-xs text-gray-500">Date de virement : {{ pret_verse.date_traitement|default:pret_verse.date_demande|date:"d M Y" }}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-base font-bold text-emerald-600">{{ pret_verse.montant|floatformat:0 }} BIF</span>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="p-6 text-center text-gray-500 text-sm">
+                        Aucun crédit versé répertorié pour le moment.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ================= SECTION : SUIVI DES CRÉDITS ET REMBOURSEMENTS ================= -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-8">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-gray-100 gap-2">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-blue-100 text-blue-700 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Suivi des Remboursements de Crédits</h3>
+                        <p class="text-xs text-gray-500">Visualisation et enregistrement des remboursements par membre</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase bg-gray-50">Membre</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-400 uppercase bg-gray-50">Crédit en Cours</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-400 uppercase bg-gray-50">Crédit Remboursé</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-400 uppercase bg-gray-50">Crédit Restant</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-400 uppercase bg-gray-50">Action Remboursement</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                        {% for m in membres_qs %}
+                            {% with credits=m.calculer_credits %}
+                                {% if credits.en_cours > 0 %}
+                                <tr class="hover:bg-gray-50/80 transition">
+                                    <td class="px-4 py-3.5 font-bold text-slate-900">
+                                        {{ m.nom }} {{ m.prenom }}
+                                        <span class="block text-xs font-normal text-gray-400">Tél : {{ m.telephone|default:"N/A" }}</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right font-bold text-blue-900">{{ credits.en_cours|floatformat:0 }} BIF</td>
+                                    <td class="px-4 py-3.5 text-right font-bold text-emerald-600">{{ credits.rembourse|floatformat:0 }} BIF</td>
+                                    <td class="px-4 py-3.5 text-right font-bold text-rose-600">{{ credits.restant|floatformat:0 }} BIF</td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <form method="POST" action="{% url 'core:enregistrer_remboursement' m.id %}" class="inline-flex items-center gap-1.5 justify-center">
+                                            {% csrf_token %}
+                                            <input type="number" name="montant_remboursement" placeholder="Montant..." step="any" required
+                                                   class="w-28 px-2.5 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                            <button type="submit" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                                                Valider
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endwith %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-400 italic">
+                                    Aucun membre n'a de crédit en cours pour le moment.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= SECTION : DÉTECTION D'ANOMALIES & FRAUDES (IA) ================= -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-8">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-gray-100 gap-2">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-red-100 text-red-700 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Détection d'Anomalies & Sécurité</h3>
+                        <p class="text-xs text-gray-500">Surveillance automatique des mouvements financiers suspects</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 text-xs font-bold rounded-full bg-red-50 text-red-700">
+                    {{ alertes_anomalies|length }} alerte(s) détectée(s)
+                </span>
+            </div>
+
+            <div class="max-h-[300px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                {% for alerte in alertes_anomalies %}
+                    <div class="bg-red-50/50 border border-red-100 rounded-xl p-3.5 flex items-start justify-between gap-4">
+                        <div class="flex items-start space-x-3">
+                            <span class="mt-0.5 px-2 py-0.5 text-[10px] font-extrabold rounded bg-red-100 text-red-800 uppercase">
+                                {{ alerte.type }}
+                            </span>
+                            <div>
+                                <p class="text-sm font-bold text-gray-900">{{ alerte.membre }}</p>
+                                <p class="text-xs text-gray-600 mt-0.5">{{ alerte.description }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="text-[11px] text-gray-400 block">{{ alerte.date|date:"d M Y" }}</span>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="p-6 text-center text-gray-500 text-sm">
+                        🛡️ Aucune anomalie ou transaction suspecte détectée. Les comptes sont sains.
+                    </div>
+                {% endfor %}
             </div>
         </div>
 
         <!-- Graphique et Transactions Récentes -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                 <h3 class="text-lg font-bold text-gray-800 mb-4">Évolution des transactions (6 mois)</h3>
                 <canvas id="activityChart" height="100"></canvas>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                 <h3 class="text-lg font-bold text-gray-800 mb-4">Transactions Récentes</h3>
                 <div class="space-y-4">
                     {% for tx in transactions_recentes %}
-                    <div class="flex justify-between items-center pb-3 border-b border-gray-50 last:border-0">
+                    <div class="flex justify-between items-start pb-3 border-b border-gray-50 last:border-0">
                         <div>
-                            <p class="text-sm font-semibold text-gray-800">{{ tx.membre.nom }}</p>
-                            <p class="text-xs text-gray-500">{{ tx.date_transaction|date:"d M Y, H:i" }}</p>
+                            <p class="text-sm font-semibold text-gray-800">
+                                {% if tx.membre %}{{ tx.membre.prenom }} {{ tx.membre.nom }}{% else %}Membre inconnu{% endif %}
+                            </p>
+                            <p class="text-xs text-blue-600 font-medium mt-0.5">
+                                {{ tx.description|default:tx.motif|default:"Dépôt régulier" }}
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">{{ tx.date_transaction|date:"d M Y" }}</p>
                         </div>
-                        <div class="text-right">
-                            <span class="text-sm font-bold {% if tx.type == 'depot' %}text-green-600{% else %}text-red-600{% endif %}">
-                                {% if tx.type == 'depot' %}+{% else %}-{% endif %}{{ tx.montant }} BIF
+                        <div class="text-right shrink-0">
+                            <span class="text-sm font-bold {% if tx.type_operation == 'DEPOT' or tx.type == 'depot' %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if tx.type_operation == 'DEPOT' or tx.type == 'depot' %}+{% else %}-{% endif %}{{ tx.montant }} BIF
                             </span>
                         </div>
                     </div>
@@ -77,6 +371,28 @@
     </div>
 </div>
 
+<script>
+    function updateBurundiTime() {
+        const optionsTime = { timeZone: 'Africa/Bujumbura', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+        const optionsDate = { timeZone: 'Africa/Bujumbura', day: '2-digit', month: '2-digit', year: 'numeric' };
+
+        const now = new Date();
+
+        // Mise à jour de l'heure
+        const timeString = new Intl.DateTimeFormat('fr-FR', optionsTime).format(now);
+        document.getElementById('burundi-clock').textContent = timeString;
+
+        // Mise à jour de la date
+        const dateString = new Intl.DateTimeFormat('fr-FR', optionsDate).format(now);
+        document.getElementById('burundi-date').textContent = dateString;
+    }
+
+    // Lancer immédiatement puis actualiser chaque seconde
+    updateBurundiTime();
+    setInterval(updateBurundiTime, 1000);
+</script>
+
+
 <!-- Script Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -84,10 +400,10 @@
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: {{ labels_graphique|safe }},
+            labels: {{ labels_graphique|default:"[]"|safe }},
             datasets: [{
                 label: 'Volume de transactions',
-                data: {{ donnees_graphique|safe }},
+                data: {{ donnees_graphique|default:"[]"|safe }},
                 borderColor: '#2563eb',
                 backgroundColor: 'rgba(37, 99, 235, 0.1)',
                 tension: 0.4,

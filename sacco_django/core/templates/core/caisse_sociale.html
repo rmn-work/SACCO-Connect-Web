@@ -1,0 +1,120 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-8">
+
+    <!-- En-tête et Sélection du Groupe -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Gestion de la Caisse Sociale</h1>
+            <p class="text-sm text-gray-500 mt-1">Décaissements d'entraide sans intérêt et suivi des motifs</p>
+        </div>
+
+        <form method="get" class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-stone-200">
+            <label for="groupe" class="text-sm font-medium text-gray-700 pl-2">Groupe :</label>
+            <select name="groupe" id="groupe" onchange="this.form.submit()" class="bg-gray-50 border border-gray-300 text-gray-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2">
+                {% for g in groupes %}
+                    <option value="{{ g.id }}" {% if selected_groupe and selected_groupe.id == g.id %}selected{% endif %}>
+                        {{ g.nom_groupe }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    {% if selected_groupe %}
+    <!-- Cartes Résumées du Groupe -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Cotisé (Groupe)</p>
+            <p class="text-2xl font-bold text-blue-600 mt-2">{{ selected_groupe.total_caisse_sociale_groupe|floatformat:2 }} BIF</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Décaissé (Sans Intérêt)</p>
+            <p class="text-2xl font-bold text-amber-600 mt-2">{{ selected_groupe.total_decaissements_groupe|floatformat:2 }} BIF</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Solde Restant Disponible</p>
+            <p class="text-2xl font-bold text-emerald-600 mt-2">{{ selected_groupe.solde_caisse_sociale_groupe|floatformat:2 }} BIF</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Formulaire de Décaissement (1/3) -->
+        <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm h-fit">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">Nouveau Décaissement Social</h2>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Membre Bénéficiaire</label>
+                    {{ form.membre }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Montant Décaissé (BIF)</label>
+                    {{ form.montant_decaisse }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motif / Objet du Décaissement</label>
+                    {{ form.objet }}
+                </div>
+
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                    ℹ️ Les décaissements de la Caisse Sociale sont accordés à titre d'assistance <strong>sans aucun taux d'intérêt</strong>.
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg shadow-sm transition">
+                    Enregistrer le Décaissement
+                </button>
+            </form>
+        </div>
+
+        <!-- Historique des Décaissements et Motifs (2/3) -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800">Historique des Décaissements</h2>
+                <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">{{ decaissements|length }} enregistrement(s)</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Membre</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motif (Objet)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for d in decaissements %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                {{ d.membre.nom }} {{ d.membre.prenom }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                {{ d.objet|default:"Non renseigné" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-amber-600">
+                                {{ d.montant_decaisse|floatformat:2 }} BIF
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                {{ d.date_decaissement }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                                Aucun décaissement social enregistré pour ce groupe.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

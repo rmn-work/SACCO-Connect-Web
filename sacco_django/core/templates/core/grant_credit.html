@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Octroi de Crédit - SACCO Fintech{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-md-9">
+
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="fas fa-hand-holding-usd me-2"></i> Octroyer un Crédit
+                    </h4>
+                </div>
+
+                <div class="card-body p-4 bg-light">
+                    <!-- Informations du membre ciblé -->
+                    <div class="alert alert-info d-flex align-items-center shadow-sm border-0 mb-4">
+                        <i class="fas fa-user-circle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Bénéficiaire : {{ membre.prenom }} {{ membre.nom }}</h6>
+                            <small>ID Système : {{ membre.id }} | Téléphone : {{ membre.telephone }}</small>
+                        </div>
+                    </div>
+
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+                                <strong>{% if message.tags == 'success' %}Succès!{% else %}Erreur!{% endif %}</strong> {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" action="{% url 'core:grant_credit' membre.id %}">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <!-- Montant -->
+                            <div class="col-md-12 mb-4">
+                                <label for="montant" class="form-label fw-bold text-secondary">Montant du crédit (BIF)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white fw-bold">BIF</span>
+                                    <input type="number" step="1000" min="1000" class="form-control form-control-lg font-monospace fw-bold text-primary border-start-0"
+                                           id="montant" name="montant" placeholder="Ex: 100000" required>
+                                </div>
+                            </div>
+
+                            <!-- Taux d'intérêt -->
+                            <div class="col-md-6 mb-4">
+                                <label for="taux_interet" class="form-label fw-bold text-secondary">Taux d'intérêt (%)</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" class="form-control"
+                                           id="taux_interet" name="taux_interet" value="5" required>
+                                    <span class="input-group-text bg-white">%</span>
+                                </div>
+                            </div>
+
+                            <!-- Durée -->
+                            <div class="col-md-6 mb-4">
+                                <label for="duree_mois" class="form-label fw-bold text-secondary">Durée (Mois)</label>
+                                <div class="input-group">
+                                    <input type="number" step="1" min="1" class="form-control"
+                                           id="duree_mois" name="duree_mois" value="1" required>
+                                    <span class="input-group-text bg-white">Mois</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Motif -->
+                        <div class="mb-4">
+                            <label for="motif" class="form-label fw-bold text-secondary">Motif du prêt</label>
+                            <select class="form-select border-gray-300" id="motif" name="motif">
+                                <option value="Crédit ordinaire">Crédit ordinaire (Projet, Commerce)</option>
+                                <option value="Crédit agricole">Crédit agricole / Élevage</option>
+                                <option value="Crédit urgence">Crédit d'urgence (Santé, Scolarité)</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
+                                Valider l'octroi du crédit
+                            </button>
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

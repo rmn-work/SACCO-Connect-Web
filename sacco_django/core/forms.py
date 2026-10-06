@@ -1,21 +1,29 @@
 from django import forms
-from .models import TransactionHistory, Pret, Membres as Membre, Partenaire, CollaborateurPartenaire
+from .models import TransactionHistory, Pret, Membres as Membre, Partenaire, CollaborateurPartenaire, DecaissementSocial
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 
 
 class PartnerMemberOnboardingForm(forms.ModelForm):
     class Meta:
         model = Membre
-        fields = ['nom', 'prenom', 'telephone', 'cni', 'colline', 'quartier', 'groupe', 'solde_epargne']
+        fields = [
+            'nom', 'prenom', 'sexe', 'age', 'cni', 'pin',
+            'telephone', 'colline', 'quartier', 'avenue',
+            'maison', 'groupe', 'solde_epargne'
+        ]
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom'}),
             'prenom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Prénom'}),
-            'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Téléphone'}),
+            'sexe': forms.Select(attrs={'class': 'form-control'}, choices=[('M', 'Masculin'), ('F', 'Féminin')]),
+            'age': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Âge'}),
             'cni': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Numéro CNI'}),
+            'pin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Code PIN Provisoire'}),
+            'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Téléphone'}),
             'colline': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Colline'}),
             'quartier': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Quartier'}),
+            'avenue': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Avenue'}),
+            'maison': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Numéro de maison'}),
             'groupe': forms.Select(attrs={'class': 'form-control'}),
             'solde_epargne': forms.NumberInput(attrs={'class': 'form-control'}),
         }
@@ -163,6 +171,7 @@ class CollaborateurCreationForm(forms.ModelForm):
             collaborateur.save()
         return collaborateur
 
+
 class PartnerDepositForm(forms.ModelForm):
     class Meta:
         model = TransactionHistory
@@ -178,3 +187,40 @@ class PartnerDepositForm(forms.ModelForm):
         if montant is not None and montant <= 0:
             raise forms.ValidationError("Le montant du dépôt doit être supérieur à zéro.")
         return montant
+
+
+class VotreFormulaireMembre(forms.ModelForm):
+    class Meta:
+        model = Membre
+        fields = ['nom', 'prenom', 'sexe', 'age', 'cni', 'pin', 'telephone', 'colline', 'quartier', 'avenue', 'maison', 'groupe', 'solde_epargne']
+
+
+class DecaissementSocialForm(forms.ModelForm):
+    class Meta:
+        model = DecaissementSocial
+        fields = ['membre', 'montant_decaisse', 'objet']
+        labels = {
+            'membre': 'Membre bénéficiaire',
+            'montant_decaisse': 'Montant accordé (BIF)',
+            'objet': 'Motif du décaissement',
+        }
+        widgets = {
+            'membre': forms.Select(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-white outline-none'
+            }),
+            'montant_decaisse': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none',
+                'placeholder': 'Ex: 50000',
+                'step': '0.01'
+            }),
+            'objet': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none',
+                'placeholder': 'Précisez le motif (ex: Assistance maladie, Événement familial...)',
+                'rows': 3
+            }),
+        }
+
+    def __init__(self, *args, groupe=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if groupe:
+            self.fields['membre'].queryset = Membre.objects.filter(groupe=groupe)

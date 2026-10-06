@@ -1,59 +1,98 @@
-{% extends 'core/base.html' %}
-
-{% block content %}
-<div class="container mt-4">
-    <h2>Paramètres du Compte Partenaire</h2>
-    <hr>
-
-    <div class="row">
-        <!-- Formulaire Profil Organisation -->
-        <div class="col-md-8 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Informations de l'Organisation</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST">
-                        {% csrf_token %}
-                        {{ form.non_field_errors }}
-
-                        <div class="mb-3">
-                            {{ form.nom.label_tag }} {{ form.nom }}
-                        </div>
-                        <div class="mb-3">
-                            {{ form.email.label_tag }} {{ form.email }}
-                        </div>
-                        <div class="mb-3">
-                            {{ form.telephone.label_tag }} {{ form.telephone }}
-                        </div>
-                        <div class="mb-3">
-                            {{ form.adresse.label_tag }} {{ form.adresse }}
-                        </div>
-
-                        <button type="submit" class="btn btn-success">Enregistrer les modifications</button>
-                    </form>
-                </div>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Paramètres du Compte - SaccoFINtech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8 min-h-screen">
+    <div class="max-w-5xl mx-auto">
+        
+        <!-- En-tête -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">⚙️ Paramètres du compte</h1>
+                <p class="text-gray-500 mt-1">Gérez vos informations personnelles et votre sécurité.</p>
             </div>
+            <!-- Remplacez l'URL par votre route de dashboard partenaire -->
+            <a href="javascript:history.back()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded shadow transition">
+                Retour au tableau de bord
+            </a>
         </div>
 
-        <!-- Section Sécurité et Accès -->
-        <div class="col-md-4">
-            <div class="card shadow">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">Sécurité & Accès</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">Gérez la sécurité de votre compte et mettez à jour votre mot de passe régulièrement.</p>
-                    <a href="{% url 'partner_password_change' %}" class="btn btn-warning w-100 mb-3">Modifier le mot de passe</a>
-
-                    <hr>
-                    <h6>Gestion des rôles (Collaborateurs)</h6>
-                    <p class="small text-muted">Ajoutez et gérez vos opérateurs de saisie ou administrateurs secondaires.</p>
-                    <!-- Bouton corrigé qui redirige vers la liste des collaborateurs -->
-                    <a href="{% url 'partner_team' %}" class="btn btn-outline-primary w-100">Gérer l'équipe</a>
-                </div>
+        <!-- Affichage des messages Flash (Succès / Erreurs) -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded shadow-sm border 
+                        {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800
+                        {% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800
+                        {% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- SECTION 1 : Informations du profil -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800 border-b pb-3 mb-5">Informations Personnelles</h2>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_profile">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Prénom</label>
+                        <input type="text" name="first_name" value="{{ user.first_name }}" class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nom</label>
+                        <input type="text" name="last_name" value="{{ user.last_name }}" class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Adresse Email</label>
+                        <input type="email" name="email" value="{{ user.email }}" class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded shadow transition">
+                        Enregistrer les modifications
+                    </button>
+                </form>
+            </div>
+
+            <!-- SECTION 2 : Sécurité & Mot de passe -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800 border-b pb-3 mb-5">Sécurité & Mot de passe</h2>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_password">
+                    
+                    {% for field in password_form %}
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">{{ field.label }}</label>
+                            
+                            <!-- Rendu manuel des champs de mot de passe pour appliquer le style Tailwind -->
+                            <input type="password" name="{{ field.name }}" class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition" required>
+                            
+                            {% if field.help_text %}
+                                <p class="text-xs text-gray-500 mt-1">{{ field.help_text|safe }}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <button type="submit" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2.5 rounded shadow mt-2 transition">
+                        Mettre à jour le mot de passe
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
-</div>
-{% endblock %}
+</body>
+</html>

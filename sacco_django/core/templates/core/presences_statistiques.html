@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Statistiques de Présence des Membres</h1>
+            {% if partenaire %}
+                <p class="text-sm text-gray-500 mt-1">Partenaire : <span class="font-semibold text-blue-600">{{ partenaire.nom }}</span></p>
+            {% endif %}
+        </div>
+
+        <!-- Formulaire de filtre par groupe -->
+        <form method="get" class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-stone-200">
+            <label for="groupe" class="text-sm font-medium text-gray-700 pl-2">Filtrer par Groupe :</label>
+            <select name="groupe" id="groupe" onchange="this.form.submit()" class="bg-gray-50 border border-gray-300 text-gray-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2">
+                <option value="">-- Tous les groupes --</option>
+                {% for g in groupes %}
+                    <option value="{{ g.id }}" {% if selected_groupe == g.id %}selected{% endif %}>
+                        {{ g.nom_groupe }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg overflow-hidden border border-stone-200">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Membre</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Groupe</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-green-600 uppercase tracking-wider">Présences</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-red-600 uppercase tracking-wider">Absences</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-amber-600 uppercase tracking-wider">Excusés</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for membre in membres %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                        {{ membre.nom }} {{ membre.prenom }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {{ membre.groupe.nom_groupe|default:"-" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-green-600">
+                        {{ membre.total_presences }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-red-600">
+                        {{ membre.total_absences }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-amber-600">
+                        {{ membre.total_excuses }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                        Aucun membre trouvé pour ce groupe.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
