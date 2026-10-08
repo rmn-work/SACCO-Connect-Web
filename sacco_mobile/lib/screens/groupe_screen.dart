@@ -55,7 +55,6 @@ class _GroupeScreenState extends State<GroupeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- Header du groupe ---
                   Card(
                     color: primaryColor.withValues(alpha: 0.05),
                     elevation: 0,

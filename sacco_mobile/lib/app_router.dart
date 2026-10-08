@@ -9,14 +9,15 @@ final GoRouter appRouter = GoRouter(
   refreshListenable: authNotifier,
   redirect: (BuildContext context, GoRouterState state) {
     final bool loggedIn = authNotifier.isAuthenticated;
-    final String location = state.matchedLocation;
-    print("DEBUG REDIRECT: Authenticated = $loggedIn, Location = $location");
+    final bool isLoggingIn = state.matchedLocation == '/login';
 
-    if (!loggedIn && location != '/login') {
+    print("DEBUG REDIRECT: Authenticated = $loggedIn, Location = ${state.matchedLocation}");
+
+    if (!loggedIn && !isLoggingIn) {
       return '/login';
     }
 
-    if (loggedIn && location == '/login') {
+    if (loggedIn && isLoggingIn) {
       return '/dashboard';
     }
 
@@ -32,7 +33,7 @@ final GoRouter appRouter = GoRouter(
       path: '/dashboard',
       name: 'dashboard',
       builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>?;
+        final extra = state.extra as Map?;
         final int membreId = extra?['membre_id'] ?? extra?['id'] ?? 1;
         final String role = extra?['role'] ?? 'membre';
 

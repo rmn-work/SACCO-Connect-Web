@@ -80,11 +80,9 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
           setState(() => _isLoading = false);
           if (success) {
             _afficherMessage("loan_success_msg".tr(), Colors.green);
-
             _montantController.clear();
             _motifController.clear();
-
-            Navigator.pop(context, true);
+            Navigator.pop(context, true); // Renvoie true pour actualiser l'écran précédent
           } else {
             _afficherMessage("loan_fail_msg".tr(), Colors.red);
           }
@@ -188,7 +186,6 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                       onChanged: (newValue) => setState(() => _typeCredit = newValue!),
                     ),
                     const SizedBox(height: 20),
-
                     if (_typeCredit == 'Standard') ...[
                       TextFormField(
                         key: ValueKey(_tauxInteret),
@@ -204,7 +201,6 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                       ),
                       const SizedBox(height: 20),
                     ],
-
                     TextFormField(
                       controller: _montantController,
                       keyboardType: TextInputType.number,
@@ -217,7 +213,6 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                       validator: (value) => (value == null || value.isEmpty || double.tryParse(value) == null) ? 'valid_amount_error'.tr() : null,
                     ),
                     const SizedBox(height: 20),
-
                     TextFormField(
                       controller: _motifController,
                       decoration: InputDecoration(
@@ -228,10 +223,8 @@ class _DemandeCreditScreenState extends State<DemandeCreditScreen> {
                       validator: (value) => (value == null || value.isEmpty) ? 'reason_error'.tr() : null,
                     ),
                     const SizedBox(height: 24),
-
                     _buildSimulationCard(),
                     const SizedBox(height: 32),
-
                     SizedBox(
                       width: double.infinity,
                       height: 50,

@@ -54,7 +54,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     }
   }
 
-  // --- MÉTHODE POUR SÉLECTIONNER ET UPLOADER LE REÇU ---
   Future<void> _associerRecu() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -68,7 +67,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
 
         setState(() => _isUploading = true);
 
-        // Appel à la méthode d'upload dans ApiService
         bool success = await ApiService.uploadRecu(
           membreId: widget.membreId,
           filePath: filePath,

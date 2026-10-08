@@ -91,7 +91,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
       );
     }
 
-    // --- CORRECTION : Extraction robuste multi-niveaux ---
+    // --- EXTRACTION ROBUSTE MULTI-NIVEAUX ---
     final Map<String, dynamic> rootData = _profilData!.containsKey('data')
         ? _profilData!['data']
         : _profilData!;
@@ -134,10 +134,18 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final role = getVal(['role', 'is_superuser'], fallback: 'MEMBRE').toUpperCase();
     final lastLogin = getVal(['last_login', 'derniere_connexion'], fallback: 'first_session'.tr());
 
-    final groupe = rootData['groupe'] ?? rootData['group'] ?? {};
+    // --- CORRECTION : Extraction et conversion sécurisée du groupe ---
+    final rawGroupe = rootData['groupe'] ?? rootData['group'];
+    final Map<String, dynamic> groupe = rawGroupe is Map
+        ? Map<String, dynamic>.from(rawGroupe)
+        : {};
+
+    // Logs de débogage pour vérifier la réception des dates
+    debugPrint("Données du groupe reçues : $groupe");
+    debugPrint("Date dernière réunion : ${groupe['date_reunion_derniere']}");
+    debugPrint("Date prochaine réunion : ${groupe['date_reunion_prochaine']}");
 
     // --- GÉNÉRATION DU TOKEN QR DYNAMIQUE ---
-    // Change toutes les 30 secondes pour éviter la réutilisation de captures d'écran
     final int timeWindow = DateTime.now().millisecondsSinceEpoch ~/ 30000;
     final String dynamicQrData = "SACCO_MEMBER_${userIdStr}_T$timeWindow";
 
@@ -307,14 +315,24 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("last_meeting".tr(), style: const TextStyle(color: Colors.grey)),
-                          Text(groupe['date_reunion_derniere']?.toString() ?? 'not_defined'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            groupe['date_reunion_derniere'] != null && groupe['date_reunion_derniere'].toString() != 'null' && groupe['date_reunion_derniere'].toString().trim().isNotEmpty
+                                ? groupe['date_reunion_derniere'].toString()
+                                : 'not_defined'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("next_meeting".tr(), style: const TextStyle(color: Colors.grey)),
-                          Text(groupe['date_reunion_prochaine']?.toString() ?? 'to_determine'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                          Text(
+                            groupe['date_reunion_prochaine'] != null && groupe['date_reunion_prochaine'].toString() != 'null' && groupe['date_reunion_prochaine'].toString().trim().isNotEmpty
+                                ? groupe['date_reunion_prochaine'].toString()
+                                : 'to_determine'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
                         ],
                       ),
                     ],
@@ -337,7 +355,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
               child: Column(
                 children: [
                   QrImageView(
-                    data: dynamicQrData, // Utilisation du token dynamique rafraîchi
+                    data: dynamicQrData,
                     version: QrVersions.auto,
                     size: 180.0,
                     gapless: false,

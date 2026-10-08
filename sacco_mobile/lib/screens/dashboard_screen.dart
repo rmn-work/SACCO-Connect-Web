@@ -54,7 +54,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     }
 
-    _chargerDonnees();
+    // Force la synchronisation complète dès l'ouverture de l'écran principal
+    await _rafraichirDonnees();
   }
 
   Future<void> _chargerDonnees() async {
@@ -81,6 +82,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
       debugPrint("Erreur de chargement du dashboard: $e");
+    }
+  }
+
+  // Méthode de rafraîchissement complet (Pull-to-Refresh & Ouverture) avec synchro forcée
+  Future<void> _rafraichirDonnees() async {
+    try {
+      // Synchronisation avec le serveur distant
+      await ApiService.refreshAllData(_effectiveMembreId);
+      final data = await ApiService.getDashboardData(_effectiveMembreId);
+      if (mounted) {
+        setState(() {
+          _dashboardData = data;
+          _hasError = false;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Erreur lors du rafraîchissement global: $e");
+      // En cas de problème réseau, on retente un chargement standard
+      await _chargerDonnees();
     }
   }
 
@@ -172,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _chargerDonnees,
+                onPressed: _rafraichirDonnees,
                 icon: const Icon(Icons.refresh),
                 label: Text('retry'.tr()),
                 style: ElevatedButton.styleFrom(
@@ -201,7 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         RefreshIndicator(
-          onRefresh: _chargerDonnees,
+          onRefresh: _rafraichirDonnees,
           color: primaryColor,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -227,7 +248,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 4),
                       Text(
                         '${'role_label'.tr()} : ${roleKey.tr().toUpperCase()}',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor), // 🟢 'const' retiré ici
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -408,7 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMenuCard(IconData icon, String title, String subtitle, Color color, Widget destination) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0.5,
+      elevation: 0.05,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: Color(0xFFF5F5F5), width: 1),

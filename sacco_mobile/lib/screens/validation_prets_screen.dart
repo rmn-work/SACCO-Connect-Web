@@ -109,7 +109,6 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            // Remplacement de FBU par BIF pour garder l'uniformité avec les autres écrans
                             Text('${demande['montant']} BIF', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
                             const SizedBox(height: 8),
                             Container(

@@ -28,13 +28,15 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
     setState(() => _isLoading = true);
     try {
       final data = await ApiService.getCreditsEnRetard();
-      setState(() {
-        _creditsEnRetard = List<Map<String, dynamic>>.from(data);
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _creditsEnRetard = List<Map<String, dynamic>>.from(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('load_error'.tr())),
         );
@@ -72,7 +74,7 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
 
   void _ouvrirDialoguePenalite(Map<String, dynamic> credit) {
     final tauxController = TextEditingController(text: "5");
-    final moisController = TextEditingController(text: credit['mois_retard'].toString());
+    final moisController = TextEditingController(text: (credit['mois_retard'] ?? 1).toString());
     final nomMembre = credit['nom'] ?? 'member'.tr();
 
     showDialog(
@@ -127,31 +129,33 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
       ),
       body: _isLoading
         ? Center(child: CircularProgressIndicator(color: primaryColor))
-        : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _creditsEnRetard.length,
-            itemBuilder: (context, index) {
-              final credit = _creditsEnRetard[index];
-              double resteAPayer = (credit['reste_a_payer'] ?? 0.0).toDouble();
+        : _creditsEnRetard.isEmpty
+            ? Center(child: Text('no_data'.tr(), style: const TextStyle(color: Colors.grey)))
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _creditsEnRetard.length,
+                itemBuilder: (context, index) {
+                  final credit = _creditsEnRetard[index];
+                  double resteAPayer = (credit['reste_a_payer'] ?? 0.0).toDouble();
 
-              return Card(
-                elevation: 0.5,
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                  title: Text(credit['nom'] ?? 'unknown'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(
-                    '${'remaining'.tr()}: ${_formaterMontant(resteAPayer)} FBU',
-                  ),
-                  trailing: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
-                    onPressed: () => _ouvrirDialoguePenalite(credit),
-                    child: Text('sanction'.tr(), style: const TextStyle(color: Colors.white)),
-                  ),
-                ),
-              );
-            },
-          ),
+                  return Card(
+                    elevation: 0.5,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                      title: Text(credit['nom'] ?? 'unknown'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                        '${'remaining'.tr()}: ${_formaterMontant(resteAPayer)} FBU',
+                      ),
+                      trailing: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
+                        onPressed: () => _ouvrirDialoguePenalite(credit),
+                        child: Text('sanction'.tr(), style: const TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                  );
+                },
+              ),
     );
   }
 }

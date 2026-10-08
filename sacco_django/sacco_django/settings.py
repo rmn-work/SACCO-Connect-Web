@@ -20,11 +20,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'core.apps.CoreConfig',
     'widget_tweaks',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -65,9 +67,12 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'PFQr5L3DkLRp2z7PwZy66KNI4fXtco37'),
         'HOST': os.environ.get('DB_HOST', 'dpg-d8entmcp3tds738pa8mg-a.oregon-postgres.render.com'),
         'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
+        'CONN_MAX_AGE': 60,
     }
 }
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -103,6 +108,7 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_SAVE_EVERY_REQUEST = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

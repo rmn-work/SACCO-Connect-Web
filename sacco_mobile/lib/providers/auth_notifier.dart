@@ -30,8 +30,10 @@ class AuthNotifier extends ChangeNotifier {
 
   Future<void> checkAuthStatus() async {
     final token = await _storage.read(key: 'auth_token');
-    if (token != null) {
-      _token = token;
+    final userId = await _storage.read(key: 'user_id');
+
+    if (token != null || userId != null) {
+      _token = token ?? 'session_active_$userId';
       _isAuthenticated = true;
       notifyListeners();
     }
@@ -50,40 +52,54 @@ class AuthNotifier extends ChangeNotifier {
 
       final response = await ApiService.login(telephone, pin);
 
-      if (response != null && response.containsKey('access_token')) {
-        final token = response['access_token'];
-        _token = token;
+      if (response != null) {
+        // CAS 1 : Authentification basée sur Token JWT
+        if (response.containsKey('access_token') || response.containsKey('token')) {
+          final token = response['access_token'] ?? response['token'];
+          _token = token;
 
-        final payload = _parseJwt(token);
-        final String userId = payload['sub']?.toString() ?? '0';
-        final String userRole = payload['role']?.toString() ?? 'membre';
+          final payload = _parseJwt(token);
+          final String userId = payload['sub']?.toString() ?? response['membre_id']?.toString() ?? '0';
+          final String userRole = payload['role']?.toString() ?? response['role']?.toString() ?? 'membre';
 
-        try {
           await _storage.write(key: 'auth_token', value: token);
           await _storage.write(key: 'user_id', value: userId);
           await _storage.write(key: 'user_role', value: userRole);
-        } catch (e) {
-          debugPrint("Erreur d'écriture sécurisée (Keychain) : $e");
-        }
 
-        _isAuthenticated = true;
-        _isLoading = false;
-        notifyListeners();
+          _isAuthenticated = true;
+        }
+        // CAS 2 : Authentification basée sur la Session Django (success: true / membre_id)
+        else if (response['success'] == true || response.containsKey('membre_id') || response.containsKey('user_id')) {
+          final String userId = (response['membre_id'] ?? response['user_id'] ?? '0').toString();
+          final String userRole = (response['role'] ?? 'membre').toString();
+          final String sessionToken = 'session_active_$userId';
+
+          _token = sessionToken;
+
+          // FIX CRUCIAL : Écriture d'un identifiant dans auth_token pour débloquer AuthenticatedClient
+          await _storage.write(key: 'auth_token', value: sessionToken);
+          await _storage.write(key: 'user_id', value: userId);
+          await _storage.write(key: 'user_role', value: userRole);
+
+          _isAuthenticated = true;
+        } else {
+          _isAuthenticated = false;
+        }
       } else {
         _isAuthenticated = false;
-        _isLoading = false;
-        notifyListeners();
       }
     } catch (e) {
       debugPrint("Erreur globale login : $e");
       _isAuthenticated = false;
+    } finally {
       _isLoading = false;
-      notifyListeners();
+      notifyListeners(); // Notifie GoRouter du changement d'état
     }
   }
 
   Future<void> logout() async {
     try {
+      // Nettoie toutes les clés : 'auth_token', 'user_id', 'user_role' ET 'django_cookies'
       await _storage.deleteAll();
     } catch (e) {
       debugPrint("Erreur lors de la suppression du Keychain au logout: $e");

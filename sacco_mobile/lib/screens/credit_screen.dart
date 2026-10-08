@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:intl/intl.dart'; // 🟢 Importation pour formater les nombres
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import 'demande_credit_screen.dart';
 
 class CreditScreen extends StatefulWidget {
   final int membreId;
 
-  const CreditScreen({Key? key, required this.membreId}) : super(key: key);
+  const CreditScreen({super.key, required this.membreId});
 
   @override
   State<CreditScreen> createState() => _CreditScreenState();
@@ -15,7 +15,7 @@ class CreditScreen extends StatefulWidget {
 
 class _CreditScreenState extends State<CreditScreen> {
   bool _isLoading = true;
-  bool _hasError = false; // 🟢 État pour la gestion des erreurs réseau
+  bool _hasError = false;
   Map<String, dynamic>? _donneesCredit;
   final Color primaryColor = const Color(0xFF1A529B);
 
@@ -26,7 +26,6 @@ class _CreditScreenState extends State<CreditScreen> {
   }
 
   Future<void> _chargerDetailsCredit() async {
-    // Réinitialisation de l'état avant l'appel
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -43,21 +42,19 @@ class _CreditScreenState extends State<CreditScreen> {
         });
       }
     } catch (e) {
-      // 🟢 En cas d'erreur, on arrête le chargement et on affiche l'erreur
       if (mounted) {
         setState(() {
           _isLoading = false;
           _hasError = true;
         });
       }
-      print("Erreur crédit: $e");
+      debugPrint("Erreur crédit: $e");
     }
   }
 
-  // 🟢 Méthode pour formater joliment les montants selon la langue (ex: 500 000 au lieu de 500000.0)
   String _formaterMontant(double montant) {
     final format = NumberFormat('#,##0', context.locale.languageCode);
-    return format.format(montant).replaceAll(',', ' '); // Force l'espace comme séparateur
+    return format.format(montant).replaceAll(',', ' ');
   }
 
   @override
@@ -76,7 +73,6 @@ class _CreditScreenState extends State<CreditScreen> {
     );
   }
 
-  // 🟢 Extraction du corps de la page pour mieux gérer les 3 états : Chargement, Erreur, Succès
   Widget _buildBody(double encours, double restant, double pretSocial) {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator(color: primaryColor));
@@ -112,14 +108,12 @@ class _CreditScreenState extends State<CreditScreen> {
       );
     }
 
-    // Si tout va bien, on affiche les données
     return RefreshIndicator(
       onRefresh: _chargerDetailsCredit,
       color: primaryColor,
       child: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // 🟢 Injection du montant formaté dans la clé de traduction
           _buildStatCard(
             'ongoing_credit'.tr(),
             'ongoing_credit_value'.tr(namedArgs: {'montant': _formaterMontant(encours)}),
@@ -141,7 +135,6 @@ class _CreditScreenState extends State<CreditScreen> {
             Icons.handshake
           ),
           const SizedBox(height: 30),
-
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -153,13 +146,16 @@ class _CreditScreenState extends State<CreditScreen> {
               ),
               icon: const Icon(Icons.add_circle_outline),
               label: Text('new_credit_request'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => DemandeCreditScreen(membreId: widget.membreId),
                   ),
                 );
+                if (result == true) {
+                  _chargerDetailsCredit(); // Actualise si une demande a été soumise
+                }
               },
             ),
           ),
@@ -173,7 +169,7 @@ class _CreditScreenState extends State<CreditScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
+        leading: CircleAvatar(backgroundColor: color.withValues(alpha: 0.1), child: Icon(icon, color: color)),
         title: Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
         trailing: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),

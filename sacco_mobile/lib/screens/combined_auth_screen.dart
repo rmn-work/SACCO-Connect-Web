@@ -93,7 +93,7 @@ class _CombinedAuthScreenState extends State<CombinedAuthScreen> {
     try {
       final responseData = await ApiService.login(phone, pin);
 
-      if (responseData != null) {
+      if (responseData != null && responseData['success'] == true) {
         final token = responseData['access_token'] ?? responseData['token'] ?? '';
         dynamic membreId = responseData['membre_id'] ?? responseData['id'];
         String role = responseData['role'] ?? 'membre';
@@ -133,6 +133,10 @@ class _CombinedAuthScreenState extends State<CombinedAuthScreen> {
         context.go('/dashboard', extra: {
           'membre_id': int.parse(membreId.toString()),
           'role': role,
+        });
+      } else if (responseData != null && responseData['error_type'] == 'timeout') {
+        setState(() {
+          _errorMessage = responseData['message'] ?? "Le serveur met du temps à répondre. Veuillez réessayer.";
         });
       } else {
         setState(() {
