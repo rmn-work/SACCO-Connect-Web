@@ -39,10 +39,20 @@ class _GroupeScreenState extends State<GroupeScreen> {
     }
   }
 
+  String _formatterStatutPresence(String statut) {
+    String upper = statut.toUpperCase();
+    if (upper == 'A') return 'Actif / Présent';
+    if (upper == 'I') return 'Inactif';
+    if (upper == 'P') return 'Présent';
+    if (upper == 'E') return 'Excusé';
+    return statut;
+  }
+
   @override
   Widget build(BuildContext context) {
-    int groupeId = _donneesUser?['groupe_id'] ?? 0;
-    String presence = _donneesUser?['status_presence'] ?? 'N/A';
+    int groupeId = _donneesUser?['groupe_id'] ?? 1;
+    String rawPresence = _donneesUser?['status_presence'] ?? 'N/A';
+    String presence = _formatterStatutPresence(rawPresence);
 
     return Scaffold(
       appBar: AppBar(
@@ -55,52 +65,59 @@ class _GroupeScreenState extends State<GroupeScreen> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: primaryColor))
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    color: primaryColor.withValues(alpha: 0.05),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: primaryColor.withValues(alpha: 0.2)),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.gite, size: 40, color: primaryColor),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${'solidarity_group'.tr()} #$groupeId',
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          : RefreshIndicator(
+              onRefresh: _chargerInfosGroupe,
+              color: primaryColor,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      color: primaryColor.withValues(alpha: 0.05),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: primaryColor.withValues(alpha: 0.2)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.gite, size: 40, color: primaryColor),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${'solidarity_group'.tr()} #$groupeId',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${'presence_status'.tr()} : $presence',
+                                    style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${'presence_status'.tr()} : $presence',
-                                style: TextStyle(color: Colors.grey[700]),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'group_rules'.tr(),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildRuleTile('rule_1'.tr()),
-                  _buildRuleTile('rule_2'.tr()),
-                  _buildRuleTile('rule_3'.tr()),
-                ],
+                    const SizedBox(height: 24),
+                    Text(
+                      'group_rules'.tr(),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildRuleTile('rule_1'.tr()),
+                    _buildRuleTile('rule_2'.tr()),
+                    _buildRuleTile('rule_3'.tr()),
+                  ],
+                ),
               ),
             ),
     );
