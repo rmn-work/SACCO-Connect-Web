@@ -57,7 +57,6 @@ def api_dashboard_view(request, membreId):
         membre = Membre.objects.get(id=membreId)
         is_active = getattr(membre, 'is_active', 1) == 1
 
-        # Récupération des données via les propriétés intelligentes du modèle Membres
         credits_dict = membre.calculer_credits
 
         data = {
@@ -65,21 +64,18 @@ def api_dashboard_view(request, membreId):
             'solde_epargne': float(membre.solde_epargne or 0.0),
             'statut': 'Actif' if is_active else 'Inactif',
             'groupe_id': membre.groupe_id if membre.groupe_id else 1,
+            'nom_groupe': getattr(membre.groupe, 'nom', 'Solidarité') if hasattr(membre, 'groupe') and membre.groupe else 'Solidarité',
 
-            # Caisse Sociale
             'caisse_sociale_cotisations': float(membre.total_cotisation_sociale),
             'caisse_sociale_decaissements': float(membre.total_decaissements_social),
             'caisse_sociale_nette': float(membre.solde_caisse_sociale),
 
-            # Indicateurs de Crédits
             'credit_en_cours': float(credits_dict['en_cours']),
             'credit_rembourse': float(credits_dict['rembourse']),
             'credit_restant': float(credits_dict['restant']),
         }
-        print(f"📦 [DJANGO API] Données prêtes à être envoyées : {data}")
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
-        print(f"❌ [DJANGO API] Membre ID {membreId} introuvable.")
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
 
 
@@ -157,10 +153,8 @@ def api_demande_credit(request, membreId):
             return JsonResponse({'success': True, 'message': 'Demande de crédit enregistrée', 'pret_id': pret.id},
                                 status=201)
         except Membre.DoesNotExist:
-            print(f"❌ Erreur : Membre ID {membreId} introuvable.")
             return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
         except Exception as e:
-            print(f"❌ Erreur validation formulaire / JSON (Crédit) : {e}")
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
 
@@ -187,10 +181,8 @@ def api_demande_sociale(request, membreId):
             return JsonResponse({'success': True, 'message': 'Demande sociale enregistrée', 'pret_id': pret.id},
                                 status=201)
         except Membre.DoesNotExist:
-            print(f"❌ Erreur : Membre ID {membreId} introuvable.")
             return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
         except Exception as e:
-            print(f"❌ Erreur validation formulaire / JSON (Social) : {e}")
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
 
@@ -400,6 +392,7 @@ def api_portefeuille_view(request, membreId):
             'status_presence': membre.status_presence or 'N/A',
             'statut': 'Actif' if is_active else 'Inactif',
             'groupe_id': membre.groupe_id if membre.groupe_id else 1,
+            'nom_groupe': getattr(membre.groupe, 'nom', 'Solidarité') if hasattr(membre, 'groupe') and membre.groupe else 'Solidarité',
             'caisse_sociale': float(membre.solde_caisse_sociale),
             'total_cotisations_sociales': float(membre.total_cotisation_sociale),
             'total_decaissements_sociaux': float(membre.total_decaissements_social),

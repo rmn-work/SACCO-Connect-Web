@@ -51,6 +51,9 @@ class _GroupeScreenState extends State<GroupeScreen> {
   @override
   Widget build(BuildContext context) {
     int groupeId = _donneesUser?['groupe_id'] ?? 1;
+    // Récupération sécurisée du nom du groupe depuis le backend (avec clés alternatives)
+    String nomGroupe = _donneesUser?['nom_groupe'] ?? _donneesUser?['groupe_nom'] ?? 'Nom du groupe';
+
     String rawPresence = _donneesUser?['status_presence'] ?? 'N/A';
     String presence = _formatterStatutPresence(rawPresence);
 
@@ -92,8 +95,8 @@ class _GroupeScreenState extends State<GroupeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${'solidarity_group'.tr()} #$groupeId',
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                    '${'solidarity_group'.tr()} #$groupeId - $nomGroupe',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
