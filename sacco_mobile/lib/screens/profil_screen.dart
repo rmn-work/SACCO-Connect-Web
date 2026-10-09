@@ -116,19 +116,17 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final telephone = getVal(['telephone', 'phone']);
     final userIdStr = getVal(['id', 'membre_id'], fallback: widget.membreId.toString());
 
-    // --- SYNCHRONISATION GROUPE & CALENDRIER ---
+    // --- SYNCHRONISATION GROUPE & CALENDRIER (Recherche exhaustive à tous les niveaux du JSON) ---
     final rawGroupe = rootData['groupe'] ?? rootData['group'];
     final Map<String, dynamic> groupe = rawGroupe is Map
         ? Map<String, dynamic>.from(rawGroupe)
         : {};
 
-    final groupeId = groupe['id']?.toString() ?? getVal(['groupe_id', 'group_id'], fallback: '1');
-    final nomGroupe = groupe['nom'] ?? rootData['nom_groupe'] ?? 'Solidarité';
+    final groupeId = groupe['id']?.toString() ?? rootData['groupe_id']?.toString() ?? rootData['group_id']?.toString() ?? '1';
+    final nomGroupe = groupe['nom'] ?? rootData['nom_groupe'] ?? rootData['group_nom'] ?? 'Solidarité';
 
-    // Noms de variables uniformisés en camelCase
-    final derniereReunion = groupe['date_reunion_derniere'] ?? rootData['date_reunion_derniere'] ?? 'Non définie';
-    final prochaineReunion = groupe['date_reunion_prochaine'] ?? rootData['date_reunion_prochaine'] ?? 'À déterminer';
-    final montantHebdo = groupe['montant_hebdo'] ?? rootData['montant_hebdo'] ?? '5 000';
+    final derniereReunion = groupe['date_reunion_derniere'] ?? rootData['date_reunion_derniere'] ?? groupe['derniere_reunion'] ?? rootData['derniere_reunion'] ?? 'Non définie';
+    final prochaineReunion = groupe['date_reunion_prochaine'] ?? rootData['date_reunion_prochaine'] ?? groupe['prochaine_reunion'] ?? rootData['prochaine_reunion'] ?? 'À déterminer';
 
     final cni = getVal(['cni']);
     final age = getVal(['age']);
@@ -331,11 +329,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         ],
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    "${'fixed_contribution'.tr()} : $montantHebdo BIF",
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
                   ),
                 ],
               ),
