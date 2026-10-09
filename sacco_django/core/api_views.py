@@ -83,22 +83,16 @@ def api_dashboard_view(request, membreId):
 def api_profil_membre(request, membreId):
     try:
         membre = Membre.objects.get(id=membreId)
-
-        # Récupération sécurisée du groupe lié au membre
         groupe = getattr(membre, 'groupe', None)
 
-        # Diagnostic précis pour vos logs
-        print(
-            f"🔍 [DIAGNOSTIC PROFIL] Membre ID: {membre.id} | groupe_id brut: {getattr(membre, 'groupe_id', 'N/A')} | Objet groupe: {groupe}")
+        # Diagnostic complet pour voir les attributs du groupe dans la console
+        if groupe:
+            print(f"🔍 [ADMIN DIAGNOSTIC] Groupe trouvé: {groupe}")
+            print(f"🔍 [ADMIN DIAGNOSTIC] Attributs disponibles: {dir(groupe)}")
+        else:
+            print(f"❌ [ADMIN DIAGNOSTIC] Aucun groupe rattaché au membre ID {membreId}")
 
-        # 1. Extraction dynamique de l'ID du groupe
-        assigned_groupe_id = 1
-        if groupe and hasattr(groupe, 'id') and groupe.id:
-            assigned_groupe_id = groupe.id
-        elif hasattr(membre, 'groupe_id') and membre.groupe_id:
-            assigned_groupe_id = membre.groupe_id
-
-        # 2. Extraction dynamique du nom réel du groupe (sans valeur fixe par défaut trompeuse)
+        # 1. Nom réel du groupe
         nom_groupe = 'Non assigné'
         if groupe:
             for attr in ['nom', 'name', 'libelle', 'titre', 'designation', 'intitule']:
@@ -106,24 +100,36 @@ def api_profil_membre(request, membreId):
                 if val and str(val).strip():
                     nom_groupe = str(val).strip()
                     break
+            if nom_groupe == 'Non assigné':
+                nom_groupe = str(groupe)
 
-        # 3. Extraction dynamique des dates de réunion
+        # 2. Récupération dynamique de la dernière réunion (depuis le groupe ou le membre)
         derniere_reunion = 'Non définie'
-        if groupe:
-            for attr in ['date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion', 'derniere_reunion_date']:
-                val = getattr(groupe, attr, None)
-                if val and str(val).strip():
-                    derniere_reunion = str(val).strip()
+        for source in [groupe, membre]:
+            if source:
+                for attr in ['date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion', 'precedente_reunion',
+                             'derniere_reunion_date']:
+                    val = getattr(source, attr, None)
+                    if val and str(val).strip():
+                        derniere_reunion = str(val).strip()
+                        break
+                if derniere_reunion != 'Non définie':
                     break
 
+        # 3. Récupération dynamique de la prochaine réunion (depuis le groupe ou le membre)
         prochaine_reunion = 'À déterminer'
-        if groupe:
-            for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion',
-                         'prochaine_reunion_date']:
-                val = getattr(groupe, attr, None)
-                if val and str(val).strip():
-                    prochaine_reunion = str(val).strip()
+        for source in [groupe, membre]:
+            if source:
+                for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion',
+                             'prochaine_reunion_date']:
+                    val = getattr(source, attr, None)
+                    if val and str(val).strip():
+                        prochaine_reunion = str(val).strip()
+                        break
+                if prochaine_reunion != 'À déterminer':
                     break
+
+        assigned_groupe_id = groupe.id if groupe else (getattr(membre, 'groupe_id', None) or 1)
 
         data = {
             'id': membre.id,
@@ -154,13 +160,12 @@ def api_profil_membre(request, membreId):
                 'admin_sys': getattr(groupe, 'admin_sys', 'N/D') if groupe else 'N/D',
             }
         }
-        print(f"📦 [PROFIL JSON] Données finales envoyées : {data}")
+        print(f"📦 [PROFIL API ENVOYÉ] {data}")
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
-        print(f"❌ [PROFIL] Membre ID {membreId} introuvable.")
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
     except Exception as e:
-        print(f"❌ [PROFIL] Erreur : {e}")
+        print(f"❌ [PROFIL ERREUR] {e}")
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
