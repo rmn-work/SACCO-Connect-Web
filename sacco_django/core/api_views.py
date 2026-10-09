@@ -204,6 +204,7 @@ def api_mes_demandes_prets(request, membreId):
             'montant': float(p.montant),
             'statut': getattr(p, 'statut', 'EN_ATTENTE'),
             'motif': getattr(p, 'motif', ''),
+            'date_demande': p.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(p, 'created_at') and p.created_at else '',
         } for p in prets]
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:

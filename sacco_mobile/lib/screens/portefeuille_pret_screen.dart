@@ -14,6 +14,7 @@ class PortefeuillePretScreen extends StatefulWidget {
 
 class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   bool _isLoading = true;
+  bool _voirToutesLesDemandes = false; // Variable d'état pour filtrer ou afficher toutes les demandes
   Map<String, dynamic>? _accountData;
   List<dynamic> _mesDemandes = [];
   List<dynamic> _historiqueEpargne = [];
@@ -312,33 +313,51 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
             const SizedBox(height: 12),
             _mesDemandes.isEmpty
                 ? Text("no_ongoing_loan_request".tr(), style: const TextStyle(color: Colors.grey))
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _mesDemandes.length,
-                    itemBuilder: (context, index) {
-                      final d = _mesDemandes[index];
-                      // Récupération sécurisée et formatée de la date brute
-                      final rawDate = d['date_demande'] ?? d['created_at'] ?? d['date'] ?? '';
-                      String formattedDate = rawDate;
-                      if (rawDate.toString().isNotEmpty) {
-                        try {
-                          final parsedDate = DateTime.parse(rawDate);
-                          formattedDate = "${parsedDate.day.toString().padLeft(2, '0')}/${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}";
-                        } catch (_) {
-                          formattedDate = rawDate.toString();
-                        }
-                      }
+                : Column(
+                    children: [
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _voirToutesLesDemandes
+                            ? _mesDemandes.length
+                            : (_mesDemandes.length > 5 ? 5 : _mesDemandes.length),
+                        itemBuilder: (context, index) {
+                          final d = _mesDemandes[index];
 
-                      return Card(
-                        child: ListTile(
-                          title: Text("${d['montant'] ?? d['montant_demande'] ?? 0} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text("${"requested_on".tr()} $formattedDate\nMotif : ${d['motif'] ?? 'N/A'}"),
-                          isThreeLine: true,
-                          trailing: _buildStatusBadge(d['status'] ?? d['statut'] ?? ''),
+                          // Gestion robuste de la date pour ne plus l'avoir vide
+                          final rawDate = d['date_demande'] ?? d['created_at'] ?? d['date'] ?? '';
+                          String formattedDate = rawDate;
+                          if (rawDate.toString().isNotEmpty) {
+                            try {
+                              final parsedDate = DateTime.parse(rawDate);
+                              formattedDate = "${parsedDate.day.toString().padLeft(2, '0')}/${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}";
+                            } catch (_) {
+                              formattedDate = rawDate.toString();
+                            }
+                          }
+
+                          return Card(
+                            child: ListTile(
+                              title: Text("${d['montant'] ?? d['montant_demande'] ?? 0} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text("${"requested_on".tr()} $formattedDate\nMotif : ${d['motif'] ?? 'N/A'}"),
+                              isThreeLine: true,
+                              trailing: _buildStatusBadge(d['status'] ?? d['statut'] ?? ''),
+                            ),
+                          );
+                        },
+                      ),
+                      if (_mesDemandes.length > 5) ...[
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _voirToutesLesDemandes = !_voirToutesLesDemandes;
+                            });
+                          },
+                          child: Text(_voirToutesLesDemandes ? "Voir moins" : "Voir toutes les anciennes demandes (${_mesDemandes.length})"),
                         ),
-                      );
-                    },
+                      ],
+                    ],
                   ),
           ],
         ),
