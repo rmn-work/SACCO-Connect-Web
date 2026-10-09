@@ -226,7 +226,9 @@ class Membres(models.Model):
 
     @property
     def solde_caisse_sociale(self):
-        return max(0.0, self.total_cotisation_sociale - self.total_decaissements_social)
+        cotisation = Decimal(str(self.total_cotisation_sociale or 0))
+        decaissement = Decimal(str(self.total_decaissements_social or 0))
+        return float(max(Decimal('0'), cotisation - decaissement))
 
     @property
     def calculer_credits(self):
