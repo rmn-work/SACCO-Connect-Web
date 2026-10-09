@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
 
 class PortefeuillePretScreen extends StatefulWidget {
@@ -15,7 +14,6 @@ class PortefeuillePretScreen extends StatefulWidget {
 
 class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   bool _isLoading = true;
-  bool _isUploading = false;
   Map<String, dynamic>? _accountData;
   List<dynamic> _mesDemandes = [];
   List<dynamic> _historiqueEpargne = [];
@@ -27,7 +25,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   final _montantCreditController = TextEditingController();
   final _motifCreditController = TextEditingController();
 
-  final Color primaryColor = const Color(0xFF1A529B); // Harmonisé
+  final Color primaryColor = const Color(0xFF1A529B);
 
   @override
   void initState() {
@@ -52,46 +50,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _associerRecu() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      );
-
-      if (result != null && result.files.single.path != null) {
-        String filePath = result.files.single.path!;
-        String fileName = result.files.single.name;
-
-        setState(() => _isUploading = true);
-
-        bool success = await ApiService.uploadRecu(
-          membreId: widget.membreId,
-          filePath: filePath,
-          fileName: fileName,
-        );
-
-        if (mounted) {
-          setState(() => _isUploading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(success ? "Reçu uploadé avec succès !" : "Échec de l'upload du reçu"),
-              backgroundColor: success ? Colors.green : Colors.red,
-            ),
-          );
-          if (success) _chargerDonnees();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Erreur lors de la sélection du fichier"), backgroundColor: Colors.red),
-        );
       }
     }
   }
@@ -194,70 +152,12 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   }
 
   Widget _buildMonPortefeuilleTab(Map<String, dynamic> user, BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Grille supérieure (status_presence et cotisation fixe) retirée ici
-
-          Text("solidarity_social_loans".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE1F5FE),
-              borderRadius: BorderRadius.circular(10),
-              border: const Border(left: BorderSide(color: Color(0xFF03A9F4), width: 5)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("my_social_fund".tr(), style: const TextStyle(color: Color(0xFF01579B), fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("${user['caisse_sociale'] ?? 0} BIF", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                Text("community_mutual_aid_fund".tr(), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F8E9),
-              borderRadius: BorderRadius.circular(10),
-              border: const Border(
-                left: BorderSide(color: Color(0xFF8BC34A), width: 5),
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: ListTile(
-                title: Text("social_loan_request".tr()),
-                subtitle: Text("urgent_boost_need".tr()),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF8BC34A)),
-                onTap: () {
-                  _afficherFormulairePretSocial(context);
-                },
-              ),
-            ),
-          ),
-
-          // Section "Suivi des Crédits" retirée ici
-
-          const SizedBox(height: 24),
-          const Divider(),
-          Text("my_documents".tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          _isUploading
-              ? const Center(child: CircularProgressIndicator())
-              : OutlinedButton.icon(
-                  onPressed: _associerRecu,
-                  icon: const Icon(Icons.upload_file),
-                  label: Text("associate_bank_receipt".tr()),
-                ),
+          // Vide ou autres éléments de portefeuille si nécessaire
         ],
       ),
     );
@@ -397,7 +297,29 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
           const SizedBox(height: 30),
           const Divider(),
 
-          Text("state_of_my_requests".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F8E9),
+              borderRadius: BorderRadius.circular(10),
+              border: const Border(
+                left: BorderSide(color: Color(0xFF8BC34A), width: 5),
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: ListTile(
+                title: Text("social_loan_request".tr()),
+                subtitle: Text("urgent_boost_need".tr()),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF8BC34A)),
+                onTap: () {
+                  _afficherFormulairePretSocial(context);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          Text("État de mes demandes de crédit et social", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           _mesDemandes.isEmpty
               ? Text("no_ongoing_loan_request".tr(), style: const TextStyle(color: Colors.grey))

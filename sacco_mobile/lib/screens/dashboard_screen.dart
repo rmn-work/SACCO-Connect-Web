@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
 import '../providers/auth_notifier.dart';
 import 'groupe_screen.dart';
@@ -31,6 +33,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
   bool _hasError = false;
+  bool _isUploading = false;
   Map<String, dynamic>? _dashboardData;
 
   late int _effectiveMembreId;
@@ -102,6 +105,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
       debugPrint("Erreur lors du rafraîchissement global: $e");
       // En cas de problème réseau, on retente un chargement standard
       await _chargerDonnees();
+    }
+  }
+
+  Future<void> _associerRecu() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        String fileName = result.files.single.name;
+
+        setState(() => _isUploading = true);
+
+        bool success = await ApiService.uploadRecu(
+          membreId: _effectiveMembreId,
+          filePath: filePath,
+          fileName: fileName,
+        );
+
+        if (mounted) {
+          setState(() => _isUploading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success ? "Reçu uploadé avec succès !" : "Échec de l'upload du reçu"),
+              backgroundColor: success ? Colors.green : Colors.red,
+            ),
+          );
+          if (success) _chargerDonnees();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Erreur lors de la sélection du fichier"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -264,6 +307,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildFinancialDashboardCards(primaryColor, secondaryColor),
                 const SizedBox(height: 20),
 
+                // --- DOCUMENTS & JUSTIFICATIFS INTÉGRÉS DANS LE DASHBOARD ---
+                Text("Documents", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                _isUploading
+                    ? const Center(child: CircularProgressIndicator())
+                    : OutlinedButton.icon(
+                        onPressed: _associerRecu,
+                        icon: const Icon(Icons.upload_file),
+                        label: Text("Associer un reçu bancaire ou preuve de paiement"),
+                      ),
+                const SizedBox(height: 20),
+
                 _buildMenuCard(
                   Icons.account_balance_wallet,
                   'my_compte_title'.tr(),
@@ -380,22 +435,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildFinancialDashboardCards(Color primaryColor, Color secondaryColor) {
-    // 1. Données Épargne & Prêts
     double soldeEpargne = _dashboardData?['solde_epargne']?.toDouble() ?? 0.0;
 
-    // 2. Données Caisse Sociale (Détails & Cumul)
     double totalCotisationsSociales = _dashboardData?['caisse_sociale_cotisations'] ?? _dashboardData?['total_cotisations_sociales']?.toDouble() ?? 0.0;
     double totalDecaissementsSociaux = _dashboardData?['caisse_sociale_decaissements'] ?? _dashboardData?['total_decaissements_sociaux']?.toDouble() ?? 0.0;
     double resteNetSocial = totalCotisationsSociales - totalDecaissementsSociaux;
 
-    // 3. Indicateurs Crédits
     double creditEnCours = _dashboardData?['credit_en_cours']?.toDouble() ?? 0.0;
     double creditRembourse = _dashboardData?['credit_rembourse']?.toDouble() ?? 0.0;
     double creditRestant = _dashboardData?['credit_restant']?.toDouble() ?? (creditEnCours - creditRembourse).clamp(0.0, double.infinity);
 
     return Column(
       children: [
-        // --- CARTE 1 : SOLDE TOTAL ÉPARGNE ---
         Card(
           elevation: 3,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -425,7 +476,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 16),
 
-        // --- CARTE 2 : CAISSE SOCIALE (3 PARTIES) ---
         Card(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -456,7 +506,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 16),
 
-        // --- CARTE 3 : INDICATEURS CRÉDITS (3 PARTIES) ---
         Card(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
