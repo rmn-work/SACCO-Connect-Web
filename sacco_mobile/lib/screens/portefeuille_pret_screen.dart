@@ -123,7 +123,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     final double maxLoan = (soldeEpargne * 3).toDouble();
 
     return DefaultTabController(
-      length: 3,
+      length: 2, // Réduit à 2 onglets (Crédits et Historique)
       child: Scaffold(
         appBar: AppBar(
           title: Text("space_responsible".tr()),
@@ -134,7 +134,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             tabs: [
-              Tab(icon: const Icon(Icons.account_balance_wallet), text: "tab_portefeuille".tr()),
               Tab(icon: const Icon(Icons.monetization_on), text: "tab_credit".tr()),
               Tab(icon: const Icon(Icons.history), text: "tab_historique".tr()),
             ],
@@ -142,23 +141,10 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
         ),
         body: TabBarView(
           children: [
-            _buildMonPortefeuilleTab(user, context),
             _buildDemandeCreditTab(user, maxLoan),
             _buildHistoriqueTab(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMonPortefeuilleTab(Map<String, dynamic> user, BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Vide ou autres éléments de portefeuille si nécessaire
-        ],
       ),
     );
   }
@@ -242,103 +228,107 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   }
 
   Widget _buildDemandeCreditTab(Map<String, dynamic> user, double maxLoan) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber)),
-            child: Text(
-              "${"loan_ceiling".tr()}\n${maxLoan.toStringAsFixed(0)} BIF",
-              style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+    return RefreshIndicator(
+      onRefresh: () async => _chargerDonnees(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber)),
+              child: Text(
+                "${"loan_ceiling".tr()}\n${maxLoan.toStringAsFixed(0)} BIF",
+                style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          Form(
-            key: _formCreditKey,
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _montantCreditController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: "desired_amount".tr(), border: const OutlineInputBorder()),
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return "enter_amount".tr();
-                    double? parsed = double.tryParse(val);
-                    if (parsed == null || parsed > maxLoan) return "exceeds_authorized_ceiling".tr();
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _motifCreditController,
-                  maxLines: 3,
-                  decoration: InputDecoration(labelText: "detailed_credit_reason".tr(), border: const OutlineInputBorder()),
-                  validator: (val) => val == null || val.isEmpty ? "specify_reason".tr() : null,
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
-                    onPressed: _soumettreDemandeCredit,
-                    child: Text("send_request".tr(), style: const TextStyle(fontSize: 16)),
+            Form(
+              key: _formCreditKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _montantCreditController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: "desired_amount".tr(), border: const OutlineInputBorder()),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return "enter_amount".tr();
+                      double? parsed = double.tryParse(val);
+                      if (parsed == null || parsed > maxLoan) return "exceeds_authorized_ceiling".tr();
+                      return null;
+                    },
                   ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _motifCreditController,
+                    maxLines: 3,
+                    decoration: InputDecoration(labelText: "detailed_credit_reason".tr(), border: const OutlineInputBorder()),
+                    validator: (val) => val == null || val.isEmpty ? "specify_reason".tr() : null,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
+                      onPressed: _soumettreDemandeCredit,
+                      child: Text("send_request".tr(), style: const TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+            const Divider(),
+
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F8E9),
+                borderRadius: BorderRadius.circular(10),
+                border: const Border(
+                  left: BorderSide(color: Color(0xFF8BC34A), width: 5),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
-          const Divider(),
-
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F8E9),
-              borderRadius: BorderRadius.circular(10),
-              border: const Border(
-                left: BorderSide(color: Color(0xFF8BC34A), width: 5),
               ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: ListTile(
-                title: Text("social_loan_request".tr()),
-                subtitle: Text("urgent_boost_need".tr()),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF8BC34A)),
-                onTap: () {
-                  _afficherFormulairePretSocial(context);
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          Text("État de mes demandes de crédit et social", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          _mesDemandes.isEmpty
-              ? Text("no_ongoing_loan_request".tr(), style: const TextStyle(color: Colors.grey))
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _mesDemandes.length,
-                  itemBuilder: (context, index) {
-                    final d = _mesDemandes[index];
-                    return Card(
-                      child: ListTile(
-                        title: Text("${d['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("${"requested_on".tr()}${d['date_demande'] ?? ''}"),
-                        trailing: _buildStatusBadge(d['status'] ?? ''),
-                      ),
-                    );
+              child: Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  title: Text("social_loan_request".tr()),
+                  subtitle: Text("urgent_boost_need".tr()),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF8BC34A)),
+                  onTap: () {
+                    _afficherFormulairePretSocial(context);
                   },
                 ),
-        ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            const Text("État de mes demandes de crédit et social", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _mesDemandes.isEmpty
+                ? Text("no_ongoing_loan_request".tr(), style: const TextStyle(color: Colors.grey))
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _mesDemandes.length,
+                    itemBuilder: (context, index) {
+                      final d = _mesDemandes[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text("${d['montant'] ?? d['montant_demande'] ?? 0} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text("${"requested_on".tr()}${d['date_demande'] ?? d['created_at'] ?? ''}"),
+                          trailing: _buildStatusBadge(d['status'] ?? ''),
+                        ),
+                      );
+                    },
+                  ),
+          ],
+        ),
       ),
     );
   }
@@ -348,20 +338,23 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
       return Center(child: Text("no_history_available".tr()));
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _historiqueEpargne.length,
-      itemBuilder: (context, index) {
-        final item = _historiqueEpargne[index];
-        return Card(
-          child: ListTile(
-            leading: const Icon(Icons.history, color: Colors.teal),
-            title: Text("${item['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text("${"date_label".tr()}${item['date_reunion'] ?? ''}"),
-            trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
-          ),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: () async => _chargerDonnees(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _historiqueEpargne.length,
+        itemBuilder: (context, index) {
+          final item = _historiqueEpargne[index];
+          return Card(
+            child: ListTile(
+              leading: const Icon(Icons.history, color: Colors.teal),
+              title: Text("${item['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text("${"date_label".tr()}${item['date_reunion'] ?? ''}"),
+              trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
+            ),
+          );
+        },
+      ),
     );
   }
 

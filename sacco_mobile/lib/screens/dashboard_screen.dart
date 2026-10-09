@@ -57,7 +57,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     }
 
-    // Force la synchronisation complète dès l'ouverture de l'écran principal
     await _rafraichirDonnees();
   }
 
@@ -88,10 +87,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Méthode de rafraîchissement complet (Pull-to-Refresh & Ouverture) avec synchro forcée
   Future<void> _rafraichirDonnees() async {
     try {
-      // Synchronisation avec le serveur distant
       await ApiService.refreshAllData(_effectiveMembreId);
       final data = await ApiService.getDashboardData(_effectiveMembreId);
       if (mounted) {
@@ -103,7 +100,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } catch (e) {
       debugPrint("Erreur lors du rafraîchissement global: $e");
-      // En cas de problème réseau, on retente un chargement standard
       await _chargerDonnees();
     }
   }
@@ -307,18 +303,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildFinancialDashboardCards(primaryColor, secondaryColor),
                 const SizedBox(height: 20),
 
-                // --- DOCUMENTS & JUSTIFICATIFS INTÉGRÉS DANS LE DASHBOARD ---
-                Text("Documents", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                _isUploading
-                    ? const Center(child: CircularProgressIndicator())
-                    : OutlinedButton.icon(
-                        onPressed: _associerRecu,
-                        icon: const Icon(Icons.upload_file),
-                        label: Text("Associer un reçu bancaire ou preuve de paiement"),
-                      ),
-                const SizedBox(height: 20),
-
                 _buildMenuCard(
                   Icons.account_balance_wallet,
                   'my_compte_title'.tr(),
@@ -340,6 +324,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   primaryColor,
                   ProfilScreen(membreId: _effectiveMembreId),
                 ),
+
+                // --- SECTION DOCUMENTS REDESIGNÉE & DÉPLACÉE SOUS LE PROFIL ---
+                const SizedBox(height: 8),
+                Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.folder_shared, color: primaryColor, size: 20),
+                            const SizedBox(width: 8),
+                            const Text(
+                              "Documents",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: _isUploading
+                              ? const Center(child: Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: CircularProgressIndicator(),
+                                ))
+                              : ElevatedButton.icon(
+                                  onPressed: _associerRecu,
+                                  icon: const Icon(Icons.upload_file, size: 18),
+                                  label: const Text("Associer un reçu bancaire ou preuve de paiement"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 if (_effectiveRole.toLowerCase() == 'admin') ...[
                   const Divider(height: 32),
