@@ -122,13 +122,14 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final telephone = getVal(['telephone', 'phone']);
     final userIdStr = getVal(['id', 'membre_id'], fallback: widget.membreId.toString());
 
-    // --- CORRECTION GESTION GROUPE ID ---
+    // --- SYNCHRONISATION GROUPE & NOM DU GROUPE ---
     final rawGroupe = rootData['groupe'] ?? rootData['group'];
     final Map<String, dynamic> groupe = rawGroupe is Map
         ? Map<String, dynamic>.from(rawGroupe)
         : {};
 
-    final groupeId = groupe['id']?.toString() ?? getVal(['groupe_id', 'group_id'], fallback: 'Non assigné');
+    final groupeId = groupe['id']?.toString() ?? getVal(['groupe_id', 'group_id'], fallback: '1');
+    final nomGroupe = groupe['nom'] ?? rootData['nom_groupe'] ?? 'Solidarité';
 
     final cni = getVal(['cni']);
     final age = getVal(['age']);
@@ -170,7 +171,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
             ),
             const SizedBox(height: 20),
 
-            // --- CORRECTION OVERFLOW SÉLECTEUR DE LANGUE ---
             Card(
               elevation: 1,
               margin: EdgeInsets.zero,
@@ -238,7 +238,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                   const SizedBox(height: 8),
 
                   Text("${'member_id'.tr()} : #00$userIdStr"),
-                  Text("${'group_id'.tr()} : #00$groupeId"),
+                  Text("${'group_id'.tr()} : #$groupeId - $nomGroupe"),
                   const Divider(height: 30),
 
                   Row(
