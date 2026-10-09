@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
 import '../providers/auth_notifier.dart';
-import 'groupe_screen.dart';
 import 'validation_prets_screen.dart';
 import 'rapports_financiers_screen.dart';
 import 'profil_screen.dart';
@@ -309,13 +308,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'my_compte_desc'.tr(),
                   primaryColor,
                   PortefeuillePretScreen(membreId: _effectiveMembreId),
-                ),
-                _buildMenuCard(
-                  Icons.groups,
-                  'group_title'.tr(),
-                  'group_desc'.tr(),
-                  primaryColor,
-                  GroupeScreen(membreId: _effectiveMembreId),
                 ),
                 _buildMenuCard(
                   Icons.person,
