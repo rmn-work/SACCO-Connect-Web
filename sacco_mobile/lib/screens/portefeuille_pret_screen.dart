@@ -199,19 +199,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.2,
-            children: [
-              _buildMetricCard("status_presence".tr(), "${user['status_presence'] ?? '-'}", Colors.blue),
-              _buildMetricCard("fixed_contribution".tr(), "5,000 BIF", Colors.orange),
-            ],
-          ),
-          const SizedBox(height: 24),
+          // Grille supérieure (status_presence et cotisation fixe) retirée ici
 
           Text("solidarity_social_loans".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
@@ -256,13 +244,8 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
 
-          Text("credit_tracking".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          _buildCreditRow("ongoing_credit".tr(), "${user['credit_en_cours'] ?? 0} BIF", Colors.black87),
-          _buildCreditRow("already_repaid".tr(), "${user['credit_rembourse'] ?? 0} BIF", Colors.green),
-          _buildCreditRow("remaining_to_pay".tr(), "${user['credit_restant'] ?? 0} BIF", Colors.orange.shade800),
+          // Section "Suivi des Crédits" retirée ici
 
           const SizedBox(height: 24),
           const Divider(),
@@ -457,39 +440,6 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildMetricCard(String title, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCreditRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 15, color: Colors.black54)),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-        ],
-      ),
     );
   }
 
