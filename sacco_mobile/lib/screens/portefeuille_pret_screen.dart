@@ -384,23 +384,28 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
               itemBuilder: (context, index) {
                 final item = _historiqueEpargne[index];
 
-                // Gestion robuste de la date pour l'historique
-                final rawDate = item['date_reunion'] ?? item['date'] ?? item['created_at'] ?? '';
-                String formattedDate = rawDate;
+                // Recherche élargie de la date parmi toutes les clés possibles
+                final rawDate = item['date'] ?? item['date_reunion'] ?? item['created_at'] ?? item['date_transaction'] ?? '';
+                String formattedDate = '';
                 if (rawDate.toString().isNotEmpty) {
                   try {
-                    final parsedDate = DateTime.parse(rawDate);
+                    final parsedDate = DateTime.parse(rawDate.toString());
                     formattedDate = "${parsedDate.day.toString().padLeft(2, '0')}/${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}";
                   } catch (_) {
                     formattedDate = rawDate.toString();
                   }
+                } else {
+                  formattedDate = "Date non spécifiée";
                 }
+
+                // Recherche élargie de la description ou du type d'opération
+                final descriptionText = item['description'] ?? item['type_operation'] ?? item['libelle'] ?? 'Opération diverse';
 
                 return Card(
                   child: ListTile(
                     leading: const Icon(Icons.history, color: Colors.teal),
                     title: Text("${item['montant'] ?? 0} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text("${"date_label".tr()} $formattedDate\nDescription : ${item['description'] ?? item['type_operation'] ?? 'N/A'}"),
+                    subtitle: Text("${"date_label".tr()} $formattedDate\nDescription : $descriptionText"),
                     isThreeLine: true,
                     trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
                   ),

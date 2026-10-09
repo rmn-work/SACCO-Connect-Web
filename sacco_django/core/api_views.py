@@ -219,7 +219,8 @@ def api_historique_membre(request, membreId):
             'id': t.id,
             'montant': float(t.montant),
             'type_operation': getattr(t, 'type_operation', ''),
-            'description': getattr(t, 'description', ''),
+            'description': getattr(t, 'description', '') or getattr(t, 'type_operation', ''),
+            'date': t.date.strftime('%Y-%m-%d') if hasattr(t, 'date') and t.date else (t.created_at.strftime('%Y-%m-%d') if hasattr(t, 'created_at') and t.created_at else ''),
         } for t in transactions]
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
