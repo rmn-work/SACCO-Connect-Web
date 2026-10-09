@@ -99,17 +99,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
         if (rootData[k] != null && rootData[k].toString().trim().isNotEmpty) {
           return rootData[k].toString();
         }
+        if (rootData['groupe'] is Map<String, dynamic> && rootData['groupe'][k] != null && rootData['groupe'][k].toString().trim().isNotEmpty) {
+          return rootData['groupe'][k].toString();
+        }
         if (rootData['membre'] is Map<String, dynamic> && rootData['membre'][k] != null && rootData['membre'][k].toString().trim().isNotEmpty) {
           return rootData['membre'][k].toString();
-        }
-        if (rootData['user'] is Map<String, dynamic> && rootData['user'][k] != null && rootData['user'][k].toString().trim().isNotEmpty) {
-          return rootData['user'][k].toString();
-        }
-        if (rootData['profile'] is Map<String, dynamic> && rootData['profile'][k] != null && rootData['profile'][k].toString().trim().isNotEmpty) {
-          return rootData['profile'][k].toString();
-        }
-        if (rootData['profil'] is Map<String, dynamic> && rootData['profil'][k] != null && rootData['profil'][k].toString().trim().isNotEmpty) {
-          return rootData['profil'][k].toString();
         }
       }
       return fallback;
@@ -122,7 +116,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final telephone = getVal(['telephone', 'phone']);
     final userIdStr = getVal(['id', 'membre_id'], fallback: widget.membreId.toString());
 
-    // --- SYNCHRONISATION GROUPE & NOM DU GROUPE ---
+    // --- SYNCHRONISATION GROUPE & CALENDRIER ---
     final rawGroupe = rootData['groupe'] ?? rootData['group'];
     final Map<String, dynamic> groupe = rawGroupe is Map
         ? Map<String, dynamic>.from(rawGroupe)
@@ -130,6 +124,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
     final groupeId = groupe['id']?.toString() ?? getVal(['groupe_id', 'group_id'], fallback: '1');
     final nomGroupe = groupe['nom'] ?? rootData['nom_groupe'] ?? 'Solidarité';
+
+    // Récupération sécurisée des dates et cotisations (racine ou objet groupe)
+    final derniereReunion = groupe['date_reunion_derniere'] ?? rootData['date_reunion_derniere'] ?? 'Non définie';
+    final prochaineReunion = groupe['date_reunion_prochaine'] ?? rootData['date_reunion_prochaine'] ?? 'À déterminer';
+    final montantHebdo = groupe['montant_hebdo'] ?? rootData['montant_hebdo'] ?? '5 000';
 
     final cni = getVal(['cni']);
     final age = getVal(['age']);
@@ -312,8 +311,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         children: [
                           Text("last_meeting".tr(), style: const TextStyle(color: Colors.grey)),
                           Text(
-                            groupe['date_reunion_derniere'] != null && groupe['date_reunion_derniere'].toString() != 'null' && groupe['date_reunion_derniere'].toString().trim().isNotEmpty
-                                ? groupe['date_reunion_derniere'].toString()
+                            derniere_reunion.toString() != 'null' && derniere_reunion.toString().trim().isNotEmpty
+                                ? derniere_reunion.toString()
                                 : 'not_defined'.tr(),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
@@ -324,8 +323,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         children: [
                           Text("next_meeting".tr(), style: const TextStyle(color: Colors.grey)),
                           Text(
-                            groupe['date_reunion_prochaine'] != null && groupe['date_reunion_prochaine'].toString() != 'null' && groupe['date_reunion_prochaine'].toString().trim().isNotEmpty
-                                ? groupe['date_reunion_prochaine'].toString()
+                            prochaine_reunion.toString() != 'null' && prochaine_reunion.toString().trim().isNotEmpty
+                                ? prochaine_reunion.toString()
                                 : 'to_determine'.tr(),
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                           ),
@@ -335,7 +334,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "${'fixed_contribution'.tr()} : ${groupe['montant_hebdo'] ?? '5 000'} BIF",
+                    "${'fixed_contribution'.tr()} : $montantHebdo BIF",
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
                   ),
                 ],

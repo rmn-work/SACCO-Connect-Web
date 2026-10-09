@@ -84,37 +84,30 @@ def api_profil_membre(request, membreId):
     try:
         membre = Membre.objects.get(id=membreId)
         groupe = getattr(membre, 'groupe', None)
-        nom_groupe = 'Non défini'
+        nom_groupe = 'Solidarité'
         if groupe:
-            for attr in ['nom', 'name', 'libelle', 'titre', 'designation']:
-                val = getattr(groupe, attr, None)
-                if val:
-                    nom_groupe = str(val)
-                    break
+            nom_groupe = getattr(groupe, 'nom', getattr(groupe, 'libelle', getattr(groupe, 'titre', 'Solidarité')))
 
-        derniere_reunion = 'Non définie'
-        prochaine_reunion = 'À déterminer'
-        if groupe:
-            for attr in ['date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion', 'derniere_reunion_date']:
-                val = getattr(groupe, attr, None)
-                if val:
-                    derniere_reunion = str(val)
-                    break
+        derniere_reunion = (
+                getattr(groupe, 'date_reunion_derniere', None) or
+                getattr(groupe, 'derniere_reunion', None) or
+                getattr(membre, 'date_reunion_derniere', None) or
+                'Non définie'
+        )
 
-            for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion',
-                         'prochaine_reunion_date']:
-                val = getattr(groupe, attr, None)
-                if val:
-                    prochaine_reunion = str(val)
-                    break
+        prochaine_reunion = (
+                getattr(groupe, 'date_reunion_prochaine', None) or
+                getattr(groupe, 'prochaine_reunion', None) or
+                getattr(membre, 'date_reunion_prochaine', None) or
+                'À déterminer'
+        )
 
-        montant_hebdo = '0'
-        if groupe:
-            for attr in ['montant_hebdo', 'cotisation_hebdomadaire', 'montant_cotisation', 'cotisation', 'montant']:
-                val = getattr(groupe, attr, None)
-                if val is not None:
-                    montant_hebdo = str(val)
-                    break
+        montant_hebdo = (
+                getattr(groupe, 'montant_hebdo', None) or
+                getattr(groupe, 'cotisation_hebdomadaire', None) or
+                getattr(membre, 'montant_hebdo', None) or
+                '5 000'
+        )
 
         data = {
             'id': membre.id,
@@ -130,13 +123,17 @@ def api_profil_membre(request, membreId):
             'maison': getattr(membre, 'maison', ''),
             'role': getattr(membre, 'role', 'MEMBRE'),
             'derniere_connexion': str(getattr(membre, 'last_login', 'Première session')),
+            'nom_groupe': nom_groupe,
+            'date_reunion_derniere': str(derniere_reunion),
+            'date_reunion_prochaine': str(prochaine_reunion),
+            'montant_hebdo': str(montant_hebdo),
 
             'groupe': {
                 'id': groupe.id if groupe else (membre.groupe_id or 1),
                 'nom': nom_groupe,
-                'date_reunion_derniere': derniere_reunion,
-                'date_reunion_prochaine': prochaine_reunion,
-                'montant_hebdo': montant_hebdo,
+                'date_reunion_derniere': str(derniere_reunion),
+                'date_reunion_prochaine': str(prochaine_reunion),
+                'montant_hebdo': str(montant_hebdo),
                 'president': getattr(groupe, 'president', 'N/D') if groupe else 'N/D',
                 'secretaire': getattr(groupe, 'secretaire', 'N/D') if groupe else 'N/D',
                 'admin_sys': getattr(groupe, 'admin_sys', 'N/D') if groupe else 'N/D',
@@ -144,10 +141,9 @@ def api_profil_membre(request, membreId):
         }
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
-        print(f"❌ [PROFIL] Membre ID {membreId} introuvable.")
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
     except Exception as e:
-        print(f"❌ [PROFIL] Erreur lors du chargement du profil : {e}")
+        print(f"❌ [PROFIL] Erreur : {e}")
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
