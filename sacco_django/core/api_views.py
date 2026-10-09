@@ -83,31 +83,47 @@ def api_dashboard_view(request, membreId):
 def api_profil_membre(request, membreId):
     try:
         membre = Membre.objects.get(id=membreId)
+
+        # Récupération sécurisée du groupe lié au membre
         groupe = getattr(membre, 'groupe', None)
-        nom_groupe = 'Solidarité'
+
+        # Diagnostic précis pour vos logs
+        print(
+            f"🔍 [DIAGNOSTIC PROFIL] Membre ID: {membre.id} | groupe_id brut: {getattr(membre, 'groupe_id', 'N/A')} | Objet groupe: {groupe}")
+
+        # 1. Extraction dynamique de l'ID du groupe
+        assigned_groupe_id = 1
+        if groupe and hasattr(groupe, 'id') and groupe.id:
+            assigned_groupe_id = groupe.id
+        elif hasattr(membre, 'groupe_id') and membre.groupe_id:
+            assigned_groupe_id = membre.groupe_id
+
+        # 2. Extraction dynamique du nom réel du groupe (sans valeur fixe par défaut trompeuse)
+        nom_groupe = 'Non assigné'
         if groupe:
-            nom_groupe = getattr(groupe, 'nom', getattr(groupe, 'libelle', getattr(groupe, 'titre', 'Solidarité')))
+            for attr in ['nom', 'name', 'libelle', 'titre', 'designation', 'intitule']:
+                val = getattr(groupe, attr, None)
+                if val and str(val).strip():
+                    nom_groupe = str(val).strip()
+                    break
 
-        derniere_reunion = (
-                getattr(groupe, 'date_reunion_derniere', None) or
-                getattr(groupe, 'derniere_reunion', None) or
-                getattr(membre, 'date_reunion_derniere', None) or
-                'Non définie'
-        )
+        # 3. Extraction dynamique des dates de réunion
+        derniere_reunion = 'Non définie'
+        if groupe:
+            for attr in ['date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion', 'derniere_reunion_date']:
+                val = getattr(groupe, attr, None)
+                if val and str(val).strip():
+                    derniere_reunion = str(val).strip()
+                    break
 
-        prochaine_reunion = (
-                getattr(groupe, 'date_reunion_prochaine', None) or
-                getattr(groupe, 'prochaine_reunion', None) or
-                getattr(membre, 'date_reunion_prochaine', None) or
-                'À déterminer'
-        )
-
-        montant_hebdo = (
-                getattr(groupe, 'montant_hebdo', None) or
-                getattr(groupe, 'cotisation_hebdomadaire', None) or
-                getattr(membre, 'montant_hebdo', None) or
-                '5 000'
-        )
+        prochaine_reunion = 'À déterminer'
+        if groupe:
+            for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion',
+                         'prochaine_reunion_date']:
+                val = getattr(groupe, attr, None)
+                if val and str(val).strip():
+                    prochaine_reunion = str(val).strip()
+                    break
 
         data = {
             'id': membre.id,
@@ -123,24 +139,25 @@ def api_profil_membre(request, membreId):
             'maison': getattr(membre, 'maison', ''),
             'role': getattr(membre, 'role', 'MEMBRE'),
             'derniere_connexion': str(getattr(membre, 'last_login', 'Première session')),
+            'groupe_id': assigned_groupe_id,
             'nom_groupe': nom_groupe,
-            'date_reunion_derniere': str(derniere_reunion),
-            'date_reunion_prochaine': str(prochaine_reunion),
-            'montant_hebdo': str(montant_hebdo),
+            'date_reunion_derniere': derniere_reunion,
+            'date_reunion_prochaine': prochaine_reunion,
 
             'groupe': {
-                'id': groupe.id if groupe else (membre.groupe_id or 1),
+                'id': assigned_groupe_id,
                 'nom': nom_groupe,
-                'date_reunion_derniere': str(derniere_reunion),
-                'date_reunion_prochaine': str(prochaine_reunion),
-                'montant_hebdo': str(montant_hebdo),
+                'date_reunion_derniere': derniere_reunion,
+                'date_reunion_prochaine': prochaine_reunion,
                 'president': getattr(groupe, 'president', 'N/D') if groupe else 'N/D',
                 'secretaire': getattr(groupe, 'secretaire', 'N/D') if groupe else 'N/D',
                 'admin_sys': getattr(groupe, 'admin_sys', 'N/D') if groupe else 'N/D',
             }
         }
+        print(f"📦 [PROFIL JSON] Données finales envoyées : {data}")
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
+        print(f"❌ [PROFIL] Membre ID {membreId} introuvable.")
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
     except Exception as e:
         print(f"❌ [PROFIL] Erreur : {e}")
