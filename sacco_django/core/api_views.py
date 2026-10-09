@@ -84,15 +84,6 @@ def api_profil_membre(request, membreId):
     try:
         membre = Membre.objects.get(id=membreId)
         groupe = getattr(membre, 'groupe', None)
-
-        # Diagnostic complet pour voir les attributs du groupe dans la console
-        if groupe:
-            print(f"🔍 [ADMIN DIAGNOSTIC] Groupe trouvé: {groupe}")
-            print(f"🔍 [ADMIN DIAGNOSTIC] Attributs disponibles: {dir(groupe)}")
-        else:
-            print(f"❌ [ADMIN DIAGNOSTIC] Aucun groupe rattaché au membre ID {membreId}")
-
-        # 1. Nom réel du groupe
         nom_groupe = 'Non assigné'
         if groupe:
             for attr in ['nom', 'name', 'libelle', 'titre', 'designation', 'intitule']:
@@ -103,25 +94,21 @@ def api_profil_membre(request, membreId):
             if nom_groupe == 'Non assigné':
                 nom_groupe = str(groupe)
 
-        # 2. Récupération dynamique de la dernière réunion (depuis le groupe ou le membre)
-        derniere_reunion = 'Non définie'
+        precedente_reunion = 'Non définie'
         for source in [groupe, membre]:
             if source:
-                for attr in ['date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion', 'precedente_reunion',
-                             'derniere_reunion_date']:
+                for attr in ['date_reunion_precedente', 'precedente_reunion', 'date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion']:
                     val = getattr(source, attr, None)
                     if val and str(val).strip():
-                        derniere_reunion = str(val).strip()
+                        precedente_reunion = str(val).strip()
                         break
-                if derniere_reunion != 'Non définie':
+                if precedente_reunion != 'Non définie':
                     break
 
-        # 3. Récupération dynamique de la prochaine réunion (depuis le groupe ou le membre)
         prochaine_reunion = 'À déterminer'
         for source in [groupe, membre]:
             if source:
-                for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion',
-                             'prochaine_reunion_date']:
+                for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion', 'prochaine_reunion_date']:
                     val = getattr(source, attr, None)
                     if val and str(val).strip():
                         prochaine_reunion = str(val).strip()
@@ -147,20 +134,19 @@ def api_profil_membre(request, membreId):
             'derniere_connexion': str(getattr(membre, 'last_login', 'Première session')),
             'groupe_id': assigned_groupe_id,
             'nom_groupe': nom_groupe,
-            'date_reunion_derniere': derniere_reunion,
+            'date_reunion_derniere': precedente_reunion,
             'date_reunion_prochaine': prochaine_reunion,
 
             'groupe': {
                 'id': assigned_groupe_id,
                 'nom': nom_groupe,
-                'date_reunion_derniere': derniere_reunion,
+                'date_reunion_derniere': precedente_reunion,
                 'date_reunion_prochaine': prochaine_reunion,
                 'president': getattr(groupe, 'president', 'N/D') if groupe else 'N/D',
                 'secretaire': getattr(groupe, 'secretaire', 'N/D') if groupe else 'N/D',
                 'admin_sys': getattr(groupe, 'admin_sys', 'N/D') if groupe else 'N/D',
             }
         }
-        print(f"📦 [PROFIL API ENVOYÉ] {data}")
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
