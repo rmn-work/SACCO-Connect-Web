@@ -123,7 +123,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     final double maxLoan = (soldeEpargne * 3).toDouble();
 
     return DefaultTabController(
-      length: 2, // Réduit à 2 onglets (Crédits et Historique)
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Text("space_responsible".tr()),
@@ -318,11 +318,24 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                     itemCount: _mesDemandes.length,
                     itemBuilder: (context, index) {
                       final d = _mesDemandes[index];
+                      // Récupération sécurisée et formatée de la date brute
+                      final rawDate = d['date_demande'] ?? d['created_at'] ?? d['date'] ?? '';
+                      String formattedDate = rawDate;
+                      if (rawDate.toString().isNotEmpty) {
+                        try {
+                          final parsedDate = DateTime.parse(rawDate);
+                          formattedDate = "${parsedDate.day.toString().padLeft(2, '0')}/${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}";
+                        } catch (_) {
+                          formattedDate = rawDate.toString();
+                        }
+                      }
+
                       return Card(
                         child: ListTile(
                           title: Text("${d['montant'] ?? d['montant_demande'] ?? 0} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text("${"requested_on".tr()}${d['date_demande'] ?? d['created_at'] ?? ''}"),
-                          trailing: _buildStatusBadge(d['status'] ?? ''),
+                          subtitle: Text("${"requested_on".tr()} $formattedDate\nMotif : ${d['motif'] ?? 'N/A'}"),
+                          isThreeLine: true,
+                          trailing: _buildStatusBadge(d['status'] ?? d['statut'] ?? ''),
                         ),
                       );
                     },
@@ -360,11 +373,14 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
 
   Widget _buildStatusBadge(String status) {
     Color color = Colors.orange;
-    if (status.toUpperCase() == 'VALIDE' || status.toUpperCase() == 'APPROUVÉ') {
+    String upperStatus = status.toUpperCase();
+
+    if (upperStatus == 'VALIDE' || upperStatus == 'APPROUVE' || upperStatus == 'APPROUVÉ') {
       color = Colors.green;
-    } else if (status.toUpperCase() == 'REFUSE') {
+    } else if (upperStatus == 'REFUSE' || upperStatus == 'REJETE' || upperStatus == 'REJETÉ') {
       color = Colors.red;
     }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
