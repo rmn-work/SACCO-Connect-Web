@@ -83,8 +83,6 @@ def api_dashboard_view(request, membreId):
 def api_profil_membre(request, membreId):
     try:
         membre = Membre.objects.get(id=membreId)
-
-        # Récupération des informations du groupe lié au membre (si existant)
         groupe = getattr(membre, 'groupe', None)
 
         data = {
@@ -115,8 +113,10 @@ def api_profil_membre(request, membreId):
         }
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
+        print(f"❌ [PROFIL] Membre ID {membreId} introuvable.")
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
     except Exception as e:
+        print(f"❌ [PROFIL] Erreur lors du chargement du profil : {e}")
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
