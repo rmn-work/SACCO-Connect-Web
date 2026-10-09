@@ -14,7 +14,8 @@ class PortefeuillePretScreen extends StatefulWidget {
 
 class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   bool _isLoading = true;
-  bool _voirToutesLesDemandes = false; // Variable d'état pour filtrer ou afficher toutes les demandes
+  bool _voirToutesLesDemandes = false; // Variable d'état pour les demandes de crédit
+  bool _voirToutHistorique = false;   // Variable d'état pour l'historique
   Map<String, dynamic>? _accountData;
   List<dynamic> _mesDemandes = [];
   List<dynamic> _historiqueEpargne = [];
@@ -372,20 +373,55 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
 
     return RefreshIndicator(
       onRefresh: () async => _chargerDonnees(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _historiqueEpargne.length,
-        itemBuilder: (context, index) {
-          final item = _historiqueEpargne[index];
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.history, color: Colors.teal),
-              title: Text("${item['montant']} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text("${"date_label".tr()}${item['date_reunion'] ?? ''}"),
-              trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _voirToutHistorique
+                  ? _historiqueEpargne.length
+                  : (_historiqueEpargne.length > 10 ? 10 : _historiqueEpargne.length),
+              itemBuilder: (context, index) {
+                final item = _historiqueEpargne[index];
+
+                // Gestion robuste de la date pour l'historique
+                final rawDate = item['date_reunion'] ?? item['date'] ?? item['created_at'] ?? '';
+                String formattedDate = rawDate;
+                if (rawDate.toString().isNotEmpty) {
+                  try {
+                    final parsedDate = DateTime.parse(rawDate);
+                    formattedDate = "${parsedDate.day.toString().padLeft(2, '0')}/${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}";
+                  } catch (_) {
+                    formattedDate = rawDate.toString();
+                  }
+                }
+
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.history, color: Colors.teal),
+                    title: Text("${item['montant'] ?? 0} BIF", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text("${"date_label".tr()} $formattedDate\nDescription : ${item['description'] ?? item['type_operation'] ?? 'N/A'}"),
+                    isThreeLine: true,
+                    trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+          if (_historiqueEpargne.length > 10) ...[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    _voirToutHistorique = !_voirToutHistorique;
+                  });
+                },
+                child: Text(_voirToutHistorique ? "Voir moins" : "Voir toutes les anciennes transactions (${_historiqueEpargne.length})"),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
