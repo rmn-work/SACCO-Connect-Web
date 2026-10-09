@@ -141,13 +141,17 @@ def api_demande_credit(request, membreId):
         try:
             data = json.loads(request.body)
             membre = Membre.objects.get(id=membreId)
+            montant = data.get('montant') or data.get('montant_demande', 0)
+            motif = data.get('motif') or data.get('detailed_credit_reason', '')
+
             pret = Pret.objects.create(
                 membre=membre,
-                montant=data.get('montant', 0),
-                motif=data.get('motif', ''),
+                montant=montant,
+                motif=motif,
                 statut='EN_ATTENTE'
             )
-            return JsonResponse({'success': True, 'message': 'Demande de crédit enregistrée', 'pret_id': pret.id}, status=201)
+            return JsonResponse({'success': True, 'message': 'Demande de crédit enregistrée', 'pret_id': pret.id},
+                                status=201)
         except Membre.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
         except Exception as e:
@@ -161,13 +165,17 @@ def api_demande_sociale(request, membreId):
         try:
             data = json.loads(request.body)
             membre = Membre.objects.get(id=membreId)
+            montant = data.get('montant_demande') or data.get('montant', 0)
+            raw_motif = data.get('motif') or data.get('reason_social', '')
+
             pret = Pret.objects.create(
                 membre=membre,
-                montant=data.get('montant_demande', 0),
-                motif=f"[Social] {data.get('motif', '')}",
+                montant=montant,
+                motif=f"[Social] {raw_motif}",
                 statut='EN_ATTENTE'
             )
-            return JsonResponse({'success': True, 'message': 'Demande sociale enregistrée', 'pret_id': pret.id}, status=201)
+            return JsonResponse({'success': True, 'message': 'Demande sociale enregistrée', 'pret_id': pret.id},
+                                status=201)
         except Membre.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
         except Exception as e:
