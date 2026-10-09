@@ -83,17 +83,41 @@ def api_dashboard_view(request, membreId):
 def api_profil_membre(request, membreId):
     try:
         membre = Membre.objects.get(id=membreId)
+
+        # Récupération des informations du groupe lié au membre (si existant)
+        groupe = getattr(membre, 'groupe', None)
+
         data = {
             'id': membre.id,
             'nom': membre.nom,
             'prenom': membre.prenom,
             'telephone': membre.telephone,
+            'cni': getattr(membre, 'cni', ''),
+            'age': getattr(membre, 'age', ''),
+            'sexe': getattr(membre, 'sexe', ''),
             'colline': getattr(membre, 'colline', ''),
             'quartier': getattr(membre, 'quartier', ''),
+            'avenue': getattr(membre, 'avenue', ''),
+            'maison': getattr(membre, 'maison', ''),
+            'role': getattr(membre, 'role', 'MEMBRE'),
+            'derniere_connexion': str(getattr(membre, 'last_login', 'Première session')),
+
+            'groupe': {
+                'id': groupe.id if groupe else (membre.groupe_id or 1),
+                'nom': groupe.nom if groupe else 'Solidarité',
+                'date_reunion_derniere': getattr(groupe, 'date_reunion_derniere', None) or 'Non définie',
+                'date_reunion_prochaine': getattr(groupe, 'date_reunion_prochaine', None) or 'À déterminer',
+                'montant_hebdo': getattr(groupe, 'montant_hebdo', '5 000'),
+                'president': getattr(groupe, 'president', 'N/D'),
+                'secretaire': getattr(groupe, 'secretaire', 'N/D'),
+                'admin_sys': getattr(groupe, 'admin_sys', 'N/D'),
+            }
         }
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
 @csrf_exempt
