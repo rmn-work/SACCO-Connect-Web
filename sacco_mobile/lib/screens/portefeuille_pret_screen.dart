@@ -205,10 +205,8 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
+            childAspectRatio: 2.2,
             children: [
-              _buildMetricCard("total_savings".tr(), "${user['solde_epargne'] ?? 0} BIF", Colors.teal),
-              _buildMetricCard("loan_to_repay".tr(), "${user['solde_pret'] ?? 0} BIF", Colors.red),
               _buildMetricCard("status_presence".tr(), "${user['status_presence'] ?? '-'}", Colors.blue),
               _buildMetricCard("fixed_contribution".tr(), "5,000 BIF", Colors.orange),
             ],
