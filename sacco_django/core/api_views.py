@@ -153,8 +153,10 @@ def api_demande_credit(request, membreId):
             return JsonResponse({'success': True, 'message': 'Demande de crédit enregistrée', 'pret_id': pret.id},
                                 status=201)
         except Membre.DoesNotExist:
+            print(f"❌ Erreur : Membre ID {membreId} introuvable.")
             return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
         except Exception as e:
+            print(f"❌ Erreur validation formulaire / JSON (Crédit) : {e}")
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
 
@@ -177,8 +179,10 @@ def api_demande_sociale(request, membreId):
             return JsonResponse({'success': True, 'message': 'Demande sociale enregistrée', 'pret_id': pret.id},
                                 status=201)
         except Membre.DoesNotExist:
+            print(f"❌ Erreur : Membre ID {membreId} introuvable.")
             return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
         except Exception as e:
+            print(f"❌ Erreur validation formulaire / JSON (Social) : {e}")
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
 
