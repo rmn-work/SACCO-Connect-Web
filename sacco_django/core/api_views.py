@@ -84,11 +84,37 @@ def api_profil_membre(request, membreId):
     try:
         membre = Membre.objects.get(id=membreId)
         groupe = getattr(membre, 'groupe', None)
-
-        # Récupération sécurisée du nom du groupe selon l'attribut existant dans le modèle
-        nom_groupe = 'Solidarité'
+        nom_groupe = 'Non défini'
         if groupe:
-            nom_groupe = getattr(groupe, 'nom', getattr(groupe, 'libelle', getattr(groupe, 'titre', 'Solidarité')))
+            for attr in ['nom', 'name', 'libelle', 'titre', 'designation']:
+                val = getattr(groupe, attr, None)
+                if val:
+                    nom_groupe = str(val)
+                    break
+
+        derniere_reunion = 'Non définie'
+        prochaine_reunion = 'À déterminer'
+        if groupe:
+            for attr in ['date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion', 'derniere_reunion_date']:
+                val = getattr(groupe, attr, None)
+                if val:
+                    derniere_reunion = str(val)
+                    break
+
+            for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion',
+                         'prochaine_reunion_date']:
+                val = getattr(groupe, attr, None)
+                if val:
+                    prochaine_reunion = str(val)
+                    break
+
+        montant_hebdo = '0'
+        if groupe:
+            for attr in ['montant_hebdo', 'cotisation_hebdomadaire', 'montant_cotisation', 'cotisation', 'montant']:
+                val = getattr(groupe, attr, None)
+                if val is not None:
+                    montant_hebdo = str(val)
+                    break
 
         data = {
             'id': membre.id,
@@ -108,12 +134,12 @@ def api_profil_membre(request, membreId):
             'groupe': {
                 'id': groupe.id if groupe else (membre.groupe_id or 1),
                 'nom': nom_groupe,
-                'date_reunion_derniere': getattr(groupe, 'date_reunion_derniere', None) or 'Non définie',
-                'date_reunion_prochaine': getattr(groupe, 'date_reunion_prochaine', None) or 'À déterminer',
-                'montant_hebdo': getattr(groupe, 'montant_hebdo', '5 000'),
-                'president': getattr(groupe, 'president', 'N/D'),
-                'secretaire': getattr(groupe, 'secretaire', 'N/D'),
-                'admin_sys': getattr(groupe, 'admin_sys', 'N/D'),
+                'date_reunion_derniere': derniere_reunion,
+                'date_reunion_prochaine': prochaine_reunion,
+                'montant_hebdo': montant_hebdo,
+                'president': getattr(groupe, 'president', 'N/D') if groupe else 'N/D',
+                'secretaire': getattr(groupe, 'secretaire', 'N/D') if groupe else 'N/D',
+                'admin_sys': getattr(groupe, 'admin_sys', 'N/D') if groupe else 'N/D',
             }
         }
         return JsonResponse({'success': True, 'data': data})
