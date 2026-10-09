@@ -125,7 +125,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final groupeId = groupe['id']?.toString() ?? getVal(['groupe_id', 'group_id'], fallback: '1');
     final nomGroupe = groupe['nom'] ?? rootData['nom_groupe'] ?? 'Solidarité';
 
-    // Récupération sécurisée des dates et cotisations (racine ou objet groupe)
+    // Déclaration correcte des variables pour le calendrier
     final derniereReunion = groupe['date_reunion_derniere'] ?? rootData['date_reunion_derniere'] ?? 'Non définie';
     final prochaineReunion = groupe['date_reunion_prochaine'] ?? rootData['date_reunion_prochaine'] ?? 'À déterminer';
     final montantHebdo = groupe['montant_hebdo'] ?? rootData['montant_hebdo'] ?? '5 000';
