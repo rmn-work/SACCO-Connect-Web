@@ -85,6 +85,11 @@ def api_profil_membre(request, membreId):
         membre = Membre.objects.get(id=membreId)
         groupe = getattr(membre, 'groupe', None)
 
+        # Récupération sécurisée du nom du groupe selon l'attribut existant dans le modèle
+        nom_groupe = 'Solidarité'
+        if groupe:
+            nom_groupe = getattr(groupe, 'nom', getattr(groupe, 'libelle', getattr(groupe, 'titre', 'Solidarité')))
+
         data = {
             'id': membre.id,
             'nom': membre.nom,
@@ -102,7 +107,7 @@ def api_profil_membre(request, membreId):
 
             'groupe': {
                 'id': groupe.id if groupe else (membre.groupe_id or 1),
-                'nom': groupe.nom if groupe else 'Solidarité',
+                'nom': nom_groupe,
                 'date_reunion_derniere': getattr(groupe, 'date_reunion_derniere', None) or 'Non définie',
                 'date_reunion_prochaine': getattr(groupe, 'date_reunion_prochaine', None) or 'À déterminer',
                 'montant_hebdo': getattr(groupe, 'montant_hebdo', '5 000'),
