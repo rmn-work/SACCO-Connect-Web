@@ -37,6 +37,7 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+      debugPrint("Erreur chargement rapports financiers: $e");
     }
   }
 
@@ -49,7 +50,10 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('reports_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          'reports_title'.tr(),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -58,7 +62,10 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text('global_health'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'global_health'.tr(),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 16),
 
                 _buildRapportCard('total_savings_collected'.tr(), '$epargne FBU', Icons.account_balance, Colors.teal),
@@ -67,7 +74,10 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
                 _buildRapportCard('penalties_collected'.tr(), '$penalites FBU', Icons.warning_amber_rounded, Colors.redAccent),
 
                 const SizedBox(height: 24),
-                Text('admin_actions'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'admin_actions'.tr(),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 10),
                 ListTile(
                   tileColor: Colors.orange.shade50,
@@ -98,15 +108,25 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            CircleAvatar(backgroundColor: couleur.withOpacity(0.1), radius: 24, child: Icon(icone, color: couleur, size: 28)),
+            CircleAvatar(
+              backgroundColor: couleur.withValues(alpha: 0.1),
+              radius: 24,
+              child: Icon(icone, color: couleur, size: 28),
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(titre, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                  Text(
+                    titre,
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
                   const SizedBox(height: 4),
-                  Text(valeur, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                  Text(
+                    valeur,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                  ),
                 ],
               ),
             ),

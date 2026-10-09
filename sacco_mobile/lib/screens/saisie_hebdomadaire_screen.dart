@@ -17,7 +17,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
   DateTime dateReunion = DateTime.now();
   DateTime dateProchaineReunion = DateTime.now().add(const Duration(days: 7));
 
-  // Liste dynamique des membres rechargée depuis le serveur
   List<Map<String, dynamic>> membres = [];
   bool _isLoadingMembres = true;
 
@@ -30,7 +29,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
     _chargerMembres();
   }
 
-  /// Chargement des membres du groupe depuis le serveur
   Future<void> _chargerMembres() async {
     setState(() => _isLoadingMembres = true);
 
@@ -113,7 +111,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- SECTION 1: DATE DE LA RÉUNION ---
             Card(
               elevation: 2,
               child: ListTile(
@@ -133,8 +130,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // --- SECTION 2: LISTE DES MEMBRES ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -150,7 +145,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
               ],
             ),
             const SizedBox(height: 10),
-
             if (_isLoadingMembres)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 40.0),
@@ -243,7 +237,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                   );
                 },
               ),
-
             const SizedBox(height: 15),
             if (membres.isNotEmpty)
               Center(
@@ -266,7 +259,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
 
                           if (mounted) {
                             setState(() => _isSaving = false);
-
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(globalSuccess ? "meeting_save_success".tr() : "Erreur lors de l'enregistrement"),
@@ -284,8 +276,6 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                       ),
               ),
             const Divider(height: 40),
-
-            // --- SECTION 3: CALENDRIER DES RÉUNIONS ---
             Text(
               "calendar_meetings".tr(),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00897B)),

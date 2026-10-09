@@ -52,30 +52,34 @@ def api_login_view(request):
 
 @csrf_exempt
 def api_dashboard_view(request, membreId):
+    print(f"🔍 [DJANGO API] Appel de api_dashboard_view pour le membre ID: {membreId}")
     try:
         membre = Membre.objects.get(id=membreId)
-        is_active = getattr(membre, 'is_active', True)
+        is_active = getattr(membre, 'is_active', 1) == 1
+
+        # Récupération des données via les propriétés intelligentes du modèle Membres
+        credits_dict = membre.calculer_credits
+
         data = {
             'nom_complet': f"{membre.nom or ''} {membre.prenom or ''}".strip(),
-            'solde_epargne': float(getattr(membre, 'solde_epargne', 0) or 0),
+            'solde_epargne': float(membre.solde_epargne or 0.0),
             'statut': 'Actif' if is_active else 'Inactif',
+            'groupe_id': membre.groupe_id if membre.groupe_id else 1,
+
+            # Caisse Sociale
+            'caisse_sociale_cotisations': float(membre.total_cotisation_sociale),
+            'caisse_sociale_decaissements': float(membre.total_decaissements_social),
+            'caisse_sociale_nette': float(membre.solde_caisse_sociale),
+
+            # Indicateurs de Crédits
+            'credit_en_cours': float(credits_dict['en_cours']),
+            'credit_rembourse': float(credits_dict['rembourse']),
+            'credit_restant': float(credits_dict['restant']),
         }
+        print(f"📦 [DJANGO API] Données prêtes à être envoyées : {data}")
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
-
-
-@csrf_exempt
-def api_portefeuille_view(request, membreId):
-    try:
-        membre = Membre.objects.get(id=membreId)
-        data = {
-            'solde_epargne': float(getattr(membre, 'solde_epargne', 0) or 0),
-            'solde_pret': float(getattr(membre, 'solde_pret', 0) or 0),
-            'caisse_sociale': float(getattr(membre, 'caisse_sociale', 0) or 0),
-        }
-        return JsonResponse({'success': True, 'data': data})
-    except Membre.DoesNotExist:
+        print(f"❌ [DJANGO API] Membre ID {membreId} introuvable.")
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
 
 
@@ -358,3 +362,29 @@ def api_appliquer_penalite(request, creditId):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
+
+
+@csrf_exempt
+def api_portefeuille_view(request, membreId):
+    try:
+        membre = Membre.objects.get(id=membreId)
+        is_active = getattr(membre, 'is_active', 1) == 1
+        credits_dict = membre.calculer_credits
+
+        data = {
+            'nom_complet': f"{membre.nom or ''} {membre.prenom or ''}".strip(),
+            'solde_epargne': float(membre.solde_epargne or 0.0),
+            'solde_pret': float(membre.solde_pret or 0.0),
+            'status_presence': membre.status_presence or 'N/A',
+            'statut': 'Actif' if is_active else 'Inactif',
+            'groupe_id': membre.groupe_id if membre.groupe_id else 1,
+            'caisse_sociale': float(membre.solde_caisse_sociale),
+            'total_cotisations_sociales': float(membre.total_cotisation_sociale),
+            'total_decaissements_sociaux': float(membre.total_decaissements_social),
+            'credit_en_cours': float(credits_dict['en_cours']),
+            'credit_rembourse': float(credits_dict['rembourse']),
+            'credit_restant': float(credits_dict['restant']),
+        }
+        return JsonResponse({'success': True, 'data': data})
+    except Membre.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)

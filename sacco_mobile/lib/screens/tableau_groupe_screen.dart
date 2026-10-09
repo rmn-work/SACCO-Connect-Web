@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../services/api_service.dart';
 
 class TableauGroupeScreen extends StatefulWidget {
   final int groupId;

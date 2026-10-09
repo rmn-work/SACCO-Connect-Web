@@ -261,7 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 24),
 
                 _buildSectionTitle('my_personal_portfolio'.tr()),
-                _buildSoldeCard(primaryColor, secondaryColor),
+                _buildFinancialDashboardCards(primaryColor, secondaryColor),
                 const SizedBox(height: 20),
 
                 _buildMenuCard(
@@ -379,50 +379,124 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSoldeCard(Color primaryColor, Color secondaryColor) {
-    double solde = _dashboardData?['solde_epargne']?.toDouble() ?? 0.0;
-    double pret = _dashboardData?['pret_a_rembourser']?.toDouble() ?? 0.0;
+  Widget _buildFinancialDashboardCards(Color primaryColor, Color secondaryColor) {
+    // 1. Données Épargne & Prêts
+    double soldeEpargne = _dashboardData?['solde_epargne']?.toDouble() ?? 0.0;
 
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [primaryColor, primaryColor.withValues(alpha: 0.85)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('total_savings_balance'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 14)),
-            const SizedBox(height: 6),
-            Text(
-              'amount_fbu'.tr(namedArgs: {'montant': _formaterMontant(solde)}),
-              style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+    // 2. Données Caisse Sociale (Détails & Cumul)
+    double totalCotisationsSociales = _dashboardData?['caisse_sociale_cotisations'] ?? _dashboardData?['total_cotisations_sociales']?.toDouble() ?? 0.0;
+    double totalDecaissementsSociaux = _dashboardData?['caisse_sociale_decaissements'] ?? _dashboardData?['total_decaissements_sociaux']?.toDouble() ?? 0.0;
+    double resteNetSocial = totalCotisationsSociales - totalDecaissementsSociaux;
+
+    // 3. Indicateurs Crédits
+    double creditEnCours = _dashboardData?['credit_en_cours']?.toDouble() ?? 0.0;
+    double creditRembourse = _dashboardData?['credit_rembourse']?.toDouble() ?? 0.0;
+    double creditRestant = _dashboardData?['credit_restant']?.toDouble() ?? (creditEnCours - creditRembourse).clamp(0.0, double.infinity);
+
+    return Column(
+      children: [
+        // --- CARTE 1 : SOLDE TOTAL ÉPARGNE ---
+        Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [primaryColor, primaryColor.withValues(alpha: 0.85)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
             ),
-            const Divider(color: Colors.white24, height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('loan_to_repay'.tr(), style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                const Text('Solde Total Épargne', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 6),
                 Text(
-                  'amount_fbu'.tr(namedArgs: {'montant': _formaterMontant(pret)}),
-                  style: TextStyle(
-                    color: secondaryColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  '${_formaterMontant(soldeEpargne)} FBU',
+                  style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+
+        // --- CARTE 2 : CAISSE SOCIALE (3 PARTIES) ---
+        Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.volunteer_activism, color: Colors.teal, size: 20),
+                    SizedBox(width: 8),
+                    Text('Caisse Sociale (Détails & Cumul)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const Divider(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSubMetric("Total Cotisations", '${_formaterMontant(totalCotisationsSociales)} FBU', Colors.blue),
+                    _buildSubMetric("Total Décaissements", '${_formaterMontant(totalDecaissementsSociaux)} FBU', Colors.orange),
+                    _buildSubMetric("Reste Net", '${_formaterMontant(resteNetSocial)} FBU', Colors.teal),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // --- CARTE 3 : INDICATEURS CRÉDITS (3 PARTIES) ---
+        Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.trending_up, color: Colors.indigo, size: 20),
+                    SizedBox(width: 8),
+                    Text('Indicateurs Crédits', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const Divider(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSubMetric("Crédit en Cours", '${_formaterMontant(creditEnCours)} FBU', Colors.indigo),
+                    _buildSubMetric("Remboursé", '${_formaterMontant(creditRembourse)} FBU', Colors.green),
+                    _buildSubMetric("Restant", '${_formaterMontant(creditRestant)} FBU', secondaryColor),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubMetric(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+      ],
     );
   }
 

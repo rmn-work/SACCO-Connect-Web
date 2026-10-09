@@ -69,13 +69,10 @@ class _HistoriqueTransactionsScreenState extends State<HistoriqueTransactionsScr
                     final tx = _transactions[index];
                     final type = tx['type'] ?? tx['libelle'] ?? 'COTISATION';
 
-                    // Vérification de plusieurs clés possibles pour le montant
                     final dynamic rawMontant = tx['montant'] ?? tx['valeur'] ?? tx['amount'] ?? tx['montant_verse'] ?? 0;
                     final montant = num.tryParse(rawMontant.toString()) ?? 0;
 
-                    // Vérification de plusieurs clés possibles pour la date
                     final date = tx['date'] ?? tx['created_at'] ?? tx['date_creation'] ?? 'N/A';
-
                     final statut = tx['statut'] ?? tx['status'] ?? 'VALIDE';
 
                     return Card(
@@ -84,7 +81,7 @@ class _HistoriqueTransactionsScreenState extends State<HistoriqueTransactionsScr
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: _getIconColor(type.toString()).withOpacity(0.15),
+                          backgroundColor: _getIconColor(type.toString()).withValues(alpha: 0.15),
                           child: Icon(_getIconData(type.toString()), color: _getIconColor(type.toString())),
                         ),
                         title: Text(type.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),

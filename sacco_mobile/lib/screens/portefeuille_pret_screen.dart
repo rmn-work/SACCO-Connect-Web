@@ -27,6 +27,8 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
   final _montantCreditController = TextEditingController();
   final _motifCreditController = TextEditingController();
 
+  final Color primaryColor = const Color(0xFF1A529B); // Harmonisé
+
   @override
   void initState() {
     super.initState();
@@ -94,12 +96,67 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     }
   }
 
+  void _soumettrePretSocial() async {
+    if (_formSocialKey.currentState!.validate()) {
+      int montant = int.parse(_montantSocialController.text.trim());
+      String motif = _motifSocialController.text.trim();
+
+      bool success = await ApiService.demanderPretSocial(
+        membreId: widget.membreId,
+        montant: montant,
+        motif: motif,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? "Demande de prêt social envoyée !" : "Échec de la demande"),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+        if (success) {
+          _montantSocialController.clear();
+          _motifSocialController.clear();
+          _chargerDonnees();
+        }
+      }
+    }
+  }
+
+  void _soumettreDemandeCredit() async {
+    if (_formCreditKey.currentState!.validate()) {
+      int montant = int.parse(_montantCreditController.text.trim());
+      String motif = _motifCreditController.text.trim();
+
+      bool success = await ApiService.demanderCredit(
+        membreId: widget.membreId,
+        montant: montant,
+        motif: motif,
+        tauxInteretApplique: 5.0,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? "Demande de crédit envoyée !" : "Échec de l'envoi"),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+        if (success) {
+          _montantCreditController.clear();
+          _motifCreditController.clear();
+          _chargerDonnees();
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: const Color(0xFF009688)),
+          child: CircularProgressIndicator(color: primaryColor),
         ),
       );
     }
@@ -112,7 +169,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text("space_responsible".tr()),
-          backgroundColor: const Color(0xFF009688),
+          backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           bottom: TabBar(
             indicatorColor: Colors.white,
@@ -348,7 +405,7 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF009688), foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
                     onPressed: _soumettreDemandeCredit,
                     child: Text("send_request".tr(), style: const TextStyle(fontSize: 16)),
                   ),
@@ -425,80 +482,36 @@ class _PortefeuillePretScreenState extends State<PortefeuillePretScreen> {
     );
   }
 
-  Widget _buildCreditRow(String title, String value, Color valueColor) {
+  Widget _buildCreditRow(String label, String value, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: valueColor, fontSize: 16)),
+          Text(label, style: const TextStyle(fontSize: 15, color: Colors.black54)),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
         ],
       ),
     );
   }
 
   Widget _buildStatusBadge(String status) {
-    Color badgeColor = Colors.orange;
-    if (status == 'APPROUVÉ') badgeColor = Colors.green;
-    if (status == 'REJETÉ') badgeColor = Colors.red;
-
+    Color color = Colors.orange;
+    if (status.toUpperCase() == 'VALIDE' || status.toUpperCase() == 'APPROUVÉ') {
+      color = Colors.green;
+    } else if (status.toUpperCase() == 'REFUSE') {
+      color = Colors.red;
+    }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeColor),
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(status, style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 12)),
+      child: Text(
+        status.isEmpty ? 'EN ATTENTE' : status,
+        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+      ),
     );
-  }
-
-  void _soumettrePretSocial() async {
-    if (_formSocialKey.currentState!.validate()) {
-      bool success = await ApiService.demanderPretSocial(
-        membreId: widget.membreId,
-        montant: int.parse(_montantSocialController.text),
-        motif: _motifSocialController.text,
-      );
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("social_request_sent".tr())));
-        _montantSocialController.clear();
-        _motifSocialController.clear();
-        _chargerDonnees();
-      }
-    }
-  }
-
-  void _soumettreDemandeCredit() async {
-    String rawMontant = _montantCreditController.text.replaceAll(' ', '');
-    double parsedMontant = double.tryParse(rawMontant) ?? 0.0;
-
-    if (parsedMontant <= 0) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("enter_valid_amount".tr())),
-        );
-      }
-      return;
-    }
-
-    if (_formCreditKey.currentState!.validate()) {
-      bool success = await ApiService.demanderCredit(
-        membreId: widget.membreId,
-        montant: parsedMontant.toInt(),
-        motif: _motifCreditController.text,
-        tauxInteretApplique: 0.0,
-      );
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("credit_request_sent".tr())),
-        );
-        _montantCreditController.clear();
-        _motifCreditController.clear();
-        _chargerDonnees();
-      }
-    }
   }
 }

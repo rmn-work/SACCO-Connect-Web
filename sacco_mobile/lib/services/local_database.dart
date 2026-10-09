@@ -74,7 +74,19 @@ class LocalDatabase {
     return null;
   }
 
-  static Future<void> addToSyncQueue(String endpoint, String method, Map<String, dynamic> payload, {String action = 'API_SYNC'}) async {
+  /// Vide le cache local (utile lors de la déconnexion)
+  static Future<void> clearCache() async {
+    final db = await database;
+    await db.delete('app_cache');
+  }
+
+  // --- Gestion de la File d'attente (Sync Queue) ---
+  static Future<void> addToSyncQueue(
+    String endpoint,
+    String method,
+    Map<String, dynamic> payload, {
+    String action = 'API_SYNC',
+  }) async {
     final db = await database;
     await db.insert('sync_queue', {
       'action': action,
@@ -95,6 +107,14 @@ class LocalDatabase {
     await db.delete('sync_queue', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Permet de connaître le nombre d'éléments en attente de synchronisation
+  static Future<int> getPendingSyncCount() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM sync_queue');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  // --- Gestion des Cotisations ---
   static Future<int> insertCotisationLocal({
     required int membreId,
     required double montant,

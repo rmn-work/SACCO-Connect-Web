@@ -24,7 +24,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
     super.initState();
     _chargerProfil();
 
-    // Actualise l'écran (et donc le QR code dynamique) toutes les 15 secondes
     _qrTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       if (mounted) {
         setState(() {});
@@ -91,7 +90,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
       );
     }
 
-    // --- EXTRACTION ROBUSTE MULTI-NIVEAUX ---
     final Map<String, dynamic> rootData = _profilData!.containsKey('data')
         ? _profilData!['data']
         : _profilData!;
@@ -123,7 +121,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
     final telephone = getVal(['telephone', 'phone']);
     final userIdStr = getVal(['id', 'membre_id'], fallback: widget.membreId.toString());
-    final groupeId = getVal(['groupe_id', 'group_id']);
+
+    // --- CORRECTION GESTION GROUPE ID ---
+    final rawGroupe = rootData['groupe'] ?? rootData['group'];
+    final Map<String, dynamic> groupe = rawGroupe is Map
+        ? Map<String, dynamic>.from(rawGroupe)
+        : {};
+
+    final groupeId = groupe['id']?.toString() ?? getVal(['groupe_id', 'group_id'], fallback: 'Non assigné');
+
     final cni = getVal(['cni']);
     final age = getVal(['age']);
     final sexe = getVal(['sexe', 'gender']);
@@ -134,18 +140,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final role = getVal(['role', 'is_superuser'], fallback: 'MEMBRE').toUpperCase();
     final lastLogin = getVal(['last_login', 'derniere_connexion'], fallback: 'first_session'.tr());
 
-    // --- CORRECTION : Extraction et conversion sécurisée du groupe ---
-    final rawGroupe = rootData['groupe'] ?? rootData['group'];
-    final Map<String, dynamic> groupe = rawGroupe is Map
-        ? Map<String, dynamic>.from(rawGroupe)
-        : {};
-
-    // Logs de débogage pour vérifier la réception des dates
-    debugPrint("Données du groupe reçues : $groupe");
-    debugPrint("Date dernière réunion : ${groupe['date_reunion_derniere']}");
-    debugPrint("Date prochaine réunion : ${groupe['date_reunion_prochaine']}");
-
-    // --- GÉNÉRATION DU TOKEN QR DYNAMIQUE ---
     final int timeWindow = DateTime.now().millisecondsSinceEpoch ~/ 30000;
     final String dynamicQrData = "SACCO_MEMBER_${userIdStr}_T$timeWindow";
 
@@ -160,7 +154,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- BANDEAU DE CONNEXION ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -177,7 +170,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
             ),
             const SizedBox(height: 20),
 
-            // --- SECTION SÉLECTEUR DE LANGUE ---
+            // --- CORRECTION OVERFLOW SÉLECTEUR DE LANGUE ---
             Card(
               elevation: 1,
               margin: EdgeInsets.zero,
@@ -187,15 +180,20 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.language, color: Color(0xFF1A529B)),
-                        const SizedBox(width: 12),
-                        Text(
-                          "language_label".tr(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.language, color: Color(0xFF1A529B)),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              "language_label".tr(),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     DropdownButton<Locale>(
                       value: context.locale,
@@ -204,11 +202,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       items: const [
                         DropdownMenuItem(
                           value: Locale('fr'),
-                          child: Text("🇫🇷 Français"),
+                          child: Text("🇫🇷 FR"),
                         ),
                         DropdownMenuItem(
                           value: Locale('rn'),
-                          child: Text("🇧🇮 Kirundi"),
+                          child: Text("🇧🇮 RN"),
                         ),
                       ],
                       onChanged: (Locale? newLocale) {
@@ -223,7 +221,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
             ),
             const SizedBox(height: 20),
 
-            // --- CARTE DE PROFIL ---
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -290,7 +287,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
             ),
             const SizedBox(height: 20),
 
-            // --- ENCADRÉ CALENDRIER & REUNION ---
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -347,7 +343,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
             ),
             const SizedBox(height: 24),
 
-            // --- BADGE DE PRÉSENCE NUMÉRIQUE DYNAMIQUE ---
             Text("📲 ${'digital_badge'.tr()}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Text("badge_instruction".tr(), style: const TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 12),
@@ -368,7 +363,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
             const SizedBox(height: 24),
             const Divider(),
 
-            // --- RESPONSABLES DU GROUPE ---
             Text("👥 ${'group_leaders'.tr()}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(

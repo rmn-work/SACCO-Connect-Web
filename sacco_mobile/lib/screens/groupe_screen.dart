@@ -32,7 +32,9 @@ class _GroupeScreenState extends State<GroupeScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       debugPrint("Erreur groupe: $e");
     }
   }
@@ -44,7 +46,10 @@ class _GroupeScreenState extends State<GroupeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('group_screen_title'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          'group_screen_title'.tr(),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -71,9 +76,15 @@ class _GroupeScreenState extends State<GroupeScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${'solidarity_group'.tr()} #$groupeId', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(
+                                '${'solidarity_group'.tr()} #$groupeId',
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
                               const SizedBox(height: 4),
-                              Text('${'presence_status'.tr()} : $presence', style: TextStyle(color: Colors.grey[700])),
+                              Text(
+                                '${'presence_status'.tr()} : $presence',
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
                             ],
                           ),
                         ],
@@ -81,7 +92,10 @@ class _GroupeScreenState extends State<GroupeScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text('group_rules'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    'group_rules'.tr(),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 10),
                   _buildRuleTile('rule_1'.tr()),
                   _buildRuleTile('rule_2'.tr()),
@@ -100,7 +114,12 @@ class _GroupeScreenState extends State<GroupeScreen> {
         children: [
           Icon(Icons.check_circle, color: primaryColor, size: 18),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
         ],
       ),
     );

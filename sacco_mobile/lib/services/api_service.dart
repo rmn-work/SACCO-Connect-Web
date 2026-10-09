@@ -55,7 +55,6 @@ class ApiService {
       debugPrint("RESPONSE BODY: ${response.body}");
       debugPrint("-------------------------------------------------------");
 
-      // Vérification et décodage sécurisé pour éviter le crash en cas de page HTML (404/500)
       Map<String, dynamic> data = {};
       try {
         data = jsonDecode(response.body);
@@ -67,7 +66,6 @@ class ApiService {
       }
 
       if (response.statusCode == 200) {
-        // Extraction et sauvegarde des cookies de session Django le cas échéant
         String? rawCookie = response.headers['set-cookie'];
         if (rawCookie != null) {
           String cleanCookies = "";
@@ -215,6 +213,27 @@ class ApiService {
   }
 
   // ==========================================
+  // NOTIFICATIONS (FCM)
+  // ==========================================
+  static Future<bool> enregistrerFcmToken(String token) async {
+    const endpoint = '/api/auth/fcm-token/';
+    final payload = {"fcm_token": token};
+
+    try {
+      final response = await _client.post(
+        Uri.parse(_url(endpoint)),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 15));
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint("Erreur lors de l'enregistrement du token FCM : $e");
+      return false;
+    }
+  }
+
+  // ==========================================
   // MEMBRE & PORTFEUILLE
   // ==========================================
   static Future<Map<String, dynamic>?> getPortefeuille(int membreId) async {
@@ -250,6 +269,9 @@ class ApiService {
         headers: _headers,
       ).timeout(const Duration(seconds: 15));
 
+      debugPrint("📥 [FLUTTER API] Status Code : ${response.statusCode}");
+      debugPrint("📥 [FLUTTER API] Body reçu : ${response.body}");
+
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         Map<String, dynamic> data = {};
@@ -262,8 +284,10 @@ class ApiService {
         return data;
       }
     } catch (e) {
-      debugPrint("Mode Hors-ligne : Récupération dashboard depuis cache ($e)");
+      debugPrint("🚨 [FLUTTER API] Erreur getDashboardData : $e");
     }
+
+    debugPrint("⚠️ [FLUTTER API] Utilisation des données du cache local pour le dashboard.");
     return await LocalDatabase.getCachedData(cacheKey) as Map<String, dynamic>?;
   }
 

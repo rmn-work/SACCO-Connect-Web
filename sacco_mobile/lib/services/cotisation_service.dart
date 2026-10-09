@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'local_database.dart';
 import 'api_service.dart';
 
@@ -30,7 +31,7 @@ class CotisationService {
       ApiService.syncPendingRequests();
       return true;
     } catch (e) {
-      print("Erreur lors de l'enregistrement de la cotisation : $e");
+      debugPrint("Erreur lors de l'enregistrement de la cotisation : $e");
       return false;
     }
   }
