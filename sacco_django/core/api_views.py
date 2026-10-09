@@ -143,11 +143,13 @@ def api_demande_credit(request, membreId):
             membre = Membre.objects.get(id=membreId)
             montant = data.get('montant') or data.get('montant_demande', 0)
             motif = data.get('motif') or data.get('detailed_credit_reason', '')
+            taux = data.get('taux_interet_applique') or data.get('taux_interet', 5.0)
 
             pret = Pret.objects.create(
                 membre=membre,
                 montant=montant,
                 motif=motif,
+                taux_interet=taux,
                 statut='EN_ATTENTE'
             )
             return JsonResponse({'success': True, 'message': 'Demande de crédit enregistrée', 'pret_id': pret.id},
@@ -169,11 +171,13 @@ def api_demande_sociale(request, membreId):
             membre = Membre.objects.get(id=membreId)
             montant = data.get('montant_demande') or data.get('montant', 0)
             raw_motif = data.get('motif') or data.get('reason_social', '')
+            taux = data.get('taux_interet', 0.0)
 
             pret = Pret.objects.create(
                 membre=membre,
                 montant=montant,
                 motif=f"[Social] {raw_motif}",
+                taux_interet=taux,
                 statut='EN_ATTENTE'
             )
             return JsonResponse({'success': True, 'message': 'Demande sociale enregistrée', 'pret_id': pret.id},
