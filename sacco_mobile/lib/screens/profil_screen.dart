@@ -125,7 +125,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final groupeId = groupe['id']?.toString() ?? getVal(['groupe_id', 'group_id'], fallback: '1');
     final nomGroupe = groupe['nom'] ?? rootData['nom_groupe'] ?? 'Solidarité';
 
-    // Déclaration correcte des variables pour le calendrier
+    // Noms de variables uniformisés en camelCase
     final derniereReunion = groupe['date_reunion_derniere'] ?? rootData['date_reunion_derniere'] ?? 'Non définie';
     final prochaineReunion = groupe['date_reunion_prochaine'] ?? rootData['date_reunion_prochaine'] ?? 'À déterminer';
     final montantHebdo = groupe['montant_hebdo'] ?? rootData['montant_hebdo'] ?? '5 000';
@@ -311,8 +311,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         children: [
                           Text("last_meeting".tr(), style: const TextStyle(color: Colors.grey)),
                           Text(
-                            derniere_reunion.toString() != 'null' && derniere_reunion.toString().trim().isNotEmpty
-                                ? derniere_reunion.toString()
+                            derniereReunion.toString() != 'null' && derniereReunion.toString().trim().isNotEmpty
+                                ? derniereReunion.toString()
                                 : 'not_defined'.tr(),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
@@ -323,8 +323,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         children: [
                           Text("next_meeting".tr(), style: const TextStyle(color: Colors.grey)),
                           Text(
-                            prochaine_reunion.toString() != 'null' && prochaine_reunion.toString().trim().isNotEmpty
-                                ? prochaine_reunion.toString()
+                            prochaineReunion.toString() != 'null' && prochaineReunion.toString().trim().isNotEmpty
+                                ? prochaineReunion.toString()
                                 : 'to_determine'.tr(),
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                           ),
