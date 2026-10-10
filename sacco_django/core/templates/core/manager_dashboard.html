@@ -958,6 +958,84 @@
                     </a>
                 </div>
 
+                <!-- ================= SECTION : TRANSACTIONS EN LIGNE EN ATTENTE DE VALIDATION ================= -->
+                <div class="no-print bg-white border border-amber-200 rounded-2xl p-6 shadow-sm mb-8 bg-gradient-to-r from-amber-50/40 to-white">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-amber-100 gap-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 bg-amber-100 text-amber-700 rounded-xl">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">Paiements en Ligne en Attente de Confirmation</h3>
+                                <p class="text-xs text-gray-500">Versements effectués via LumiCash, EcoCash ou e-Inoti nécessitant votre validation</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+                            {{ transactions_attente|length }} paiement(s) en attente
+                        </span>
+                    </div>
+
+                    {% if transactions_attente %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-amber-100/50 text-gray-700 text-xs uppercase border-b font-semibold">
+                                    <th class="p-3">Membre</th>
+                                    <th class="p-3">Opérateur</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3 text-right">Montant</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-amber-100 text-sm">
+                                {% for ta in transactions_attente %}
+                                <tr class="hover:bg-amber-50/50 transition">
+                                    <td class="p-3 font-bold text-slate-900">
+                                        {{ ta.membre.nom }} {{ ta.membre.prenom }}
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
+                                            {{ ta.provider|default:"LUMICASH" }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 font-medium text-gray-700 text-xs">
+                                        {{ ta.get_type_operation_display|default:ta.type_operation }}
+                                    </td>
+                                    <td class="p-3 text-right font-extrabold text-emerald-700">
+                                        {{ ta.montant|floatformat:0 }} BIF
+                                    </td>
+                                    <td class="p-3 text-gray-500 text-xs">
+                                        {{ ta.date_transaction|date:"d/m/Y H:i" }}
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <form method="POST" action="{% url 'core:gestion_paiements_attente' %}" class="inline-flex items-center gap-2">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="transaction_id" value="{{ ta.id }}">
+                                            <button type="submit" name="action" value="valider" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition" onclick="return confirm('Confirmer la validation de ce paiement ?');">
+                                                ✓ Valider
+                                            </button>
+                                            <button type="submit" name="action" value="rejeter" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition" onclick="return confirm('Voulez-vous vraiment rejeter ce paiement ?');">
+                                                ✕ Rejeter
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-gray-500 text-sm italic">
+                        ✓ Aucun paiement en ligne en attente de confirmation pour le moment.
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- ================= FIN DE LA SECTION PAIEMENTS EN ATTENTE ================= -->
+
+                <!-- 4 Cartes de Résumé Financier -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
                         <p class="text-xs text-green-600 font-semibold uppercase tracking-wide">Total Dépôts</p>
@@ -977,6 +1055,7 @@
                     </div>
                 </div>
 
+                <!-- Formulaire de Recherche et Filtre -->
                 <form method="GET" action="{% url 'core:manager_dashboard' %}" class="no-print bg-gray-50 p-4 rounded-2xl border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
                     <input type="hidden" name="tab" value="transactions">
                     <div>
@@ -1000,6 +1079,7 @@
                     </div>
                 </form>
 
+                <!-- Tableau Historique Général -->
                 <div class="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
