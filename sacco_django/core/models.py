@@ -498,11 +498,21 @@ class TransactionHistory(models.Model):
         ('Remboursement Crédit', 'Remboursement Crédit'),
     ]
 
-    membre = models.ForeignKey(Membres, on_delete=models.CASCADE, related_name='transactions')
+    STATUT_CHOICES = [
+        ('EN_ATTENTE', 'En attente de validation'),
+        ('VALIDE', 'Validé'),
+        ('REJETE', 'Rejeté'),
+    ]
+
+    membre = models.ForeignKey('Membres', on_delete=models.CASCADE, related_name='transactions')
     montant = models.DecimalField(max_digits=12, decimal_places=2)
     type_operation = models.CharField(max_length=50, choices=TYPE_CHOICES, default='DEPOT')
-    statut = models.CharField(max_length=20, default='ACTIF')
-    description = models.CharField(max_length=255, blank=True, null=True)
+    provider = models.CharField(max_length=20, null=True, blank=True)
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='EN_ATTENTE')
+    valide_par = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name='transactions_validees')
+    date_validation = models.DateTimeField(null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
     date_transaction = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -510,7 +520,7 @@ class TransactionHistory(models.Model):
 
     def __str__(self):
         nom_complet = f"{self.membre.nom or ''} {self.membre.prenom or ''}".strip()
-        return f"{self.type_operation} - {nom_complet} - {self.montant} BIF"
+        return f"{self.type_operation} - {nom_complet} - {self.montant} BIF ({self.statut})"
 
     @property
     def motif(self):

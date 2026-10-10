@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from .models import Membre, Pret, TransactionHistory, Groupe
+from .models import Membre, Pret, TransactionHistory, Groupe, TicketSupport, MessageTicket
 from django.utils import timezone
 
 
@@ -593,3 +593,107 @@ def api_credits_en_retard(request):
     except Exception as e:
         print(f"❌ [ERREUR CREDITS EN RETARD] {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def api_credit_scoring_view(request, membreId):
+    try:
+        membre = Membre.objects.filter(id=membreId).first()
+        if not membre:
+            return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
+
+        scoring_data = calculer_credit_scoring(membre)
+
+        return JsonResponse({'success': True, 'data': scoring_data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def api_tickets_membre_view(request, membreId):
+    membre = Membre.objects.filter(id=membreId).first()
+    if not membre:
+        return JsonResponse({'success': False, 'message': 'Membre introuvable'}, status=404)
+
+    if request.method == 'GET':
+        try:
+            tickets = TicketSupport.objects.filter(membre=membre).order_by('-date_creation')
+            data = [{
+                'id': t.id,
+                'sujet': t.sujet,
+                'date_creation': t.date_creation.strftime('%Y-%m-%d %H:%M'),
+            } for t in tickets]
+            return JsonResponse({'success': True, 'data': data})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            sujet = data.get('sujet', '').strip()
+            contenu = data.get('contenu', '').strip()
+
+            if not sujet or not contenu:
+                return JsonResponse({'success': False, 'message': 'Le sujet et le contenu sont obligatoires.'}, status=400)
+
+            ticket = TicketSupport.objects.create(sujet=sujet, membre=membre)
+            MessageTicket.objects.create(ticket=ticket, expediteur_membre=membre, contenu=contenu)
+
+            return JsonResponse({'success': True, 'message': 'Ticket créé avec succès.', 'ticket_id': ticket.id})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée.'}, status=405)
+
+
+@csrf_exempt
+def api_initier_paiement_en_ligne(request):
+    """
+    Simule/Initie un paiement en ligne via LumiCash, Ecocash ou e-Inoti (Bancobu).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Méthode non autorisée.'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        membre_id = data.get('membre_id')
+        provider = data.get('provider')  # 'LUMICASH', 'ECOCASH', 'E_INOTI'
+        phone_number = data.get('phone_number')  # Numéro de compte/téléphone
+        montant = float(data.get('montant', 0))
+        type_operation = data.get('type_operation', 'EPARGNE')  # 'EPARGNE', 'REMBOURSEMENT', 'COTISATION'
+
+        membre = Membre.objects.filter(id=membre_id).first()
+        if not membre:
+            return JsonResponse({'success': False, 'message': 'Membre introuvable.'}, status=404)
+
+        if montant <= 0:
+            return JsonResponse({'success': False, 'message': 'Le montant doit être supérieur à 0 BIF.'}, status=400)
+
+        # Génération d'une référence de transaction unique
+        ref_tx = f"{provider[:3]}-{membre_id}-{TransactionHistory.objects.count() + 1001}"
+
+        # Ici se place l'appel aux Webhooks/APIs officielles des opérateurs (Ecocash, Lumicash, Bancobu e-Inoti)
+        # Pour le moment, nous validons directement l'opération et mettons à jour les soldes du membre.
+
+        if type_operation == 'EPARGNE':
+            membre.solde_epargne = (membre.solde_epargne or 0) + montant
+            membre.save()
+
+        transaction = TransactionHistory.objects.create(
+            membre=membre,
+            type_operation='DEPOT',
+            montant=montant,
+            provider=provider,
+            statut='EN_ATTENTE',
+            description = f"Paiement en ligne via {provider} ({phone_number}) - Ref: {ref_tx}"
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Paiement de {montant:,.0f} BIF via {provider} effectué avec succès !',
+            'transaction_id': transaction.id,
+            'reference': ref_tx
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f"Erreur de traitement : {str(e)}"}, status=400)

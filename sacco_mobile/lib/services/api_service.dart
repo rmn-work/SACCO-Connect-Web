@@ -627,6 +627,147 @@ class ApiService {
       return true;
     }
   }
+  // ==========================================
+  // ASSISTANT IA & CONSEILS FINANCIERS
+  // ==========================================
+  static Future<String> poserQuestionAssistant(String message) async {
+    const endpoint = '/api/ai-assistant/';
+    final payload = {"message": message};
+
+    try {
+      final response = await _client.post(
+        Uri.parse(_url(endpoint)),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['reply'] ?? "Réponse vide de l'assistant.";
+      } else {
+        return "Erreur du serveur (${response.statusCode}).";
+      }
+    } catch (e) {
+      debugPrint("Erreur réseau assistant IA : $e");
+      return "Erreur de connexion avec l'assistant virtuel.";
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getCreditScoring(int membreId) async {
+    final String cacheKey = 'scoring_$membreId';
+    try {
+      final response = await _client.get(
+        Uri.parse(_url('/api/membres/$membreId/scoring/')),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final result = (decoded is Map) ? Map<String, dynamic>.from(decoded['data'] ?? decoded) : null;
+        if (result != null) await LocalDatabase.cacheData(cacheKey, result);
+        return result;
+      }
+    } catch (e) {
+      debugPrint("Erreur chargement scoring : $e");
+    }
+    return await LocalDatabase.getCachedData(cacheKey) as Map<String, dynamic>?;
+  }
+
+  // ==========================================
+  // TICKETS DE SUPPORT & CONTACT
+  // ==========================================
+  static Future<List<dynamic>> getTicketsMembre(int membreId) async {
+    final endpoint = '/api/membres/$membreId/tickets/';
+    try {
+      final response = await _client.get(
+        Uri.parse(_url(endpoint)),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['success'] == true) {
+          return decoded['data'] ?? [];
+        }
+      }
+    } catch (e) {
+      debugPrint("Erreur récupération tickets : $e");
+    }
+    return [];
+  }
+
+  static Future<bool> creerTicketSupport({
+    required int membreId,
+    required String sujet,
+    required String contenu,
+  }) async {
+    final endpoint = '/api/membres/$membreId/tickets/';
+    final payload = {
+      "sujet": sujet,
+      "contenu": contenu,
+    };
+
+    try {
+      final response = await _client.post(
+        Uri.parse(_url(endpoint)),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        return decoded['success'] == true;
+      }
+    } catch (e) {
+      debugPrint("Erreur création ticket : $e");
+    }
+    return false;
+  }
+
+  // ==========================================
+  // PAIEMENTS EN LIGNE (LUMICASH, ECOCASH, E-INOTI)
+  // ==========================================
+  static Future<Map<String, dynamic>> initierPaiementEnLigne({
+    required int membreId,
+    required String provider, // 'LUMICASH', 'ECOCASH', 'E_INOTI'
+    required String phoneNumber,
+    required double montant,
+    required String typeOperation, // 'EPARGNE', 'REMBOURSEMENT', 'COTISATION'
+  }) async {
+    const endpoint = '/api/paiement/initier/';
+    final payload = {
+      "membre_id": membreId,
+      "provider": provider,
+      "phone_number": phoneNumber,
+      "montant": montant,
+      "type_operation": typeOperation,
+    };
+
+    try {
+      final response = await _client.post(
+        Uri.parse(_url(endpoint)),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        return Map<String, dynamic>.from(decoded);
+      } else {
+        final decoded = jsonDecode(response.body);
+        return {
+          "success": false,
+          "message": decoded['message'] ?? "Erreur serveur (${response.statusCode})"
+        };
+      }
+    } catch (e) {
+      debugPrint("Erreur paiement en ligne : $e");
+      return {
+        "success": false,
+        "message": "Erreur de connexion lors du traitement du paiement."
+      };
+    }
+  }
 
   // ==========================================
   // GESTION DES REMBOURSEMENTS

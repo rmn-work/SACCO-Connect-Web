@@ -3075,3 +3075,82 @@ def recu_transaction_pdf_view(request, transaction_id):
 
     doc.build(elements)
     return response
+
+
+def valider_transaction_view(request, transaction_id):
+    user_role = request.session.get('user_role', '').lower()
+    if user_role not in ['president', 'secretaire', 'admin']:
+        messages.error(request, "Vous n'avez pas l'autorisation d'effectuer cette action.")
+        return redirect('core:dashboard')
+
+    transaction = get_object_or_404(TransactionHistory, id=transaction_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'valider' and transaction.statut == 'EN_ATTENTE':
+            transaction.statut = 'VALIDE'
+            transaction.valide_par = request.user if request.user.is_authenticated else None
+            transaction.date_validation = timezone.now()
+            transaction.save()
+            membre = transaction.membre
+            if transaction.type_operation == 'EPARGNE':
+                membre.solde_epargne = (membre.solde_epargne or 0) + transaction.montant
+                membre.save()
+
+            messages.success(request, f"La transaction #{transaction.id} de {transaction.montant} BIF a été confirmée.")
+
+        elif action == 'rejeter':
+            transaction.statut = 'REJETE'
+            transaction.save()
+            messages.info(request, f"La transaction #{transaction.id} a été rejetée.")
+
+    return redirect('core:liste_transactions_en_attente')
+
+
+def gestion_paiements_en_attente(request):
+    user_role = str(request.session.get('user_role', '')).lower()
+    user_type = str(request.session.get('user_type', '')).lower()
+    is_admin = request.user.is_authenticated and request.user.is_superuser
+
+    # Récupération du membre lié au User connecté (si existant)
+    membre = getattr(request.user, 'membre', None) or getattr(request.user, 'membres', None)
+    membre_role = str(membre.role).lower() if membre and hasattr(membre, 'role') else ''
+
+    roles_autorises = ['president', 'secretaire', 'admin', 'partenaire']
+
+    if not (is_admin or user_role in roles_autorises or user_type in roles_autorises or membre_role in roles_autorises):
+        messages.error(request, "Vous n'avez pas l'autorisation d'accéder à cette page.")
+        return redirect('core:dashboard')
+
+    if request.method == 'POST':
+        transaction_id = request.POST.get('transaction_id')
+        action = request.POST.get('action')
+
+        transaction = get_object_or_404(TransactionHistory, id=transaction_id)
+
+        if transaction.statut == 'EN_ATTENTE':
+            if action == 'valider':
+                transaction.statut = 'VALIDE'
+                transaction.valide_par = request.user if request.user.is_authenticated else None
+                transaction.date_validation = timezone.now()
+                transaction.save()
+
+                membre_obj = transaction.membre
+                if transaction.type_operation in ['DEPOT', 'EPARGNE']:
+                    membre_obj.solde_epargne = (membre_obj.solde_epargne or 0) + transaction.montant
+                    membre_obj.save()
+
+                messages.success(request, f"La transaction #{transaction.id} de {transaction.montant:,.0f} BIF a été validée.")
+
+            elif action == 'rejeter':
+                transaction.statut = 'REJETE'
+                transaction.valide_par = request.user if request.user.is_authenticated else None
+                transaction.date_validation = timezone.now()
+                transaction.save()
+                messages.info(request, f"La transaction #{transaction.id} a été rejetée.")
+
+        return redirect('core:gestion_paiements_attente')
+
+    transactions_attente = TransactionHistory.objects.filter(statut='EN_ATTENTE').order_by('-date_transaction')
+    return render(request, 'core/paiements_attente.html', {'transactions': transactions_attente})

@@ -49,12 +49,26 @@
                     <a href="{% url 'core:partner_deposit' %}" class="text-gray-700 hover:text-blue-600 font-medium">Nouveau Dépôt</a>
                     <a href="{% url 'core:prets_statistiques' %}" class="text-gray-700 hover:text-blue-600 font-medium">Statistiques Prêts</a>
                     <a href="{% url 'core:presences_statistiques' %}" class="text-gray-700 hover:text-blue-600 font-medium">Statistiques de Présence</a>
+
+                    {% if request.session.user_role in 'president,secretaire,admin,partenaire' or request.session.user_type == 'partenaire' or request.user.is_superuser %}
+                        <a href="{% url 'core:gestion_paiements_attente' %}" class="text-gray-700 hover:text-blue-600 font-medium">
+                            Transactions en ligne
+                        </a>
+                    {% endif %}
+
                     <a href="{% url 'core:contact_public' %}" class="text-gray-700 hover:text-blue-600 font-medium">Contact</a>
                 {% else %}
                     <!-- LIENS MEMBRE CLASSIQUE -->
                     <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600 font-medium">Tableau de bord</a>
                     <a href="{% url 'core:profile' %}" class="text-gray-700 hover:text-blue-600 font-medium">Mon Profil</a>
                     <a href="{% url 'core:request_loan' %}" class="text-gray-700 hover:text-blue-600 font-medium">Demander un prêt</a>
+
+                    {% if request.session.user_role in 'president,secretaire,admin,partenaire' or request.session.user_type == 'partenaire' or request.user.is_superuser %}
+                        <a href="{% url 'core:gestion_paiements_attente' %}" class="text-gray-700 hover:text-blue-600 font-medium">
+                            Transactions en ligne
+                        </a>
+                    {% endif %}
+
                     <a href="{% url 'core:contact_public' %}" class="text-gray-700 hover:text-blue-600 font-medium">Contact</a>
                 {% endif %}
 

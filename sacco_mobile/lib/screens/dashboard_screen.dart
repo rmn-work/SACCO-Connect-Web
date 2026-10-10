@@ -13,6 +13,9 @@ import 'portefeuille_pret_screen.dart';
 import 'saisie_hebdomadaire_screen.dart';
 import 'scanner_presence_screen.dart';
 import 'inscription_screen.dart';
+import 'assistant_conseil_screen.dart';
+import 'contact_support_screen.dart';
+import 'paiement_en_ligne_screen.dart'; // Import de l'écran de paiement en ligne
 
 class DashboardScreen extends StatefulWidget {
   final int membreId;
@@ -321,6 +324,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'my_profile_desc'.tr(),
                   primaryColor,
                   ProfilScreen(membreId: _effectiveMembreId),
+                ),
+                _buildMenuCard(
+                  Icons.smart_toy,
+                  'Assistant & Santé Financière',
+                  'Consultez votre score de crédit et discutez avec l\'IA',
+                  primaryColor,
+                  AssistantConseilScreen(membreId: _effectiveMembreId),
+                ),
+                _buildMenuCard(
+                  Icons.support_agent,
+                  'Support & Réclamations',
+                  'Envoyez un message ou suivez vos tickets',
+                  primaryColor,
+                  ContactSupportScreen(membreId: _effectiveMembreId),
+                ),
+                _buildMenuCard(
+                  Icons.payments,
+                  'Paiement en Ligne (LumiCash, EcoCash, e-Inoti)',
+                  'Faites un dépôt d\'épargne ou remboursement en ligne',
+                  Colors.green.shade700,
+                  PaiementEnLigneScreen(membreId: _effectiveMembreId),
                 ),
 
                 // --- SECTION DOCUMENTS ---

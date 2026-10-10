@@ -1,0 +1,113 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- En-tête de la page -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Validation des Paiements en Ligne</h1>
+                <p class="text-sm text-gray-600 mt-1">Vérifiez et validez ou rejetez les versements en attente effectués par les membres.</p>
+            </div>
+            <div>
+                <a href="{% url 'core:dashboard' %}" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition">
+                    ← Retour au Tableau de bord
+                </a>
+            </div>
+        </div>
+
+        <!-- Messages d'alerte Django -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl border text-sm font-medium {% if message.tags == 'error' %}bg-red-50 text-red-700 border-red-200{% elif message.tags == 'success' %}bg-emerald-50 text-emerald-700 border-emerald-200{% else %}bg-blue-50 text-blue-700 border-blue-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Tableau des transactions en attente -->
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-base font-bold text-gray-800">Transactions en attente de confirmation</h3>
+                <span class="px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                    {{ transactions|length }} en attente
+                </span>
+            </div>
+
+            {% if transactions %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-3 text-left">Date</th>
+                                <th class="px-6 py-3 text-left">Membre</th>
+                                <th class="px-6 py-3 text-left">Opérateur</th>
+                                <th class="px-6 py-3 text-left">Type</th>
+                                <th class="px-6 py-3 text-right">Montant</th>
+                                <th class="px-6 py-3 text-left">Description / Détails</th>
+                                <th class="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for tx in transactions %}
+                            <tr class="hover:bg-gray-50/80 transition">
+                                <td class="px-6 py-4 text-gray-500 whitespace-nowrap text-xs">
+                                    {{ tx.date_transaction|date:"d/m/Y H:i" }}
+                                </td>
+                                <td class="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">
+                                    {{ tx.membre.nom }} {{ tx.membre.prenom }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
+                                        {{ tx.provider|default:"N/A" }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-700 whitespace-nowrap text-xs font-medium">
+                                    {{ tx.get_type_operation_display }}
+                                </td>
+                                <td class="px-6 py-4 text-right font-extrabold text-emerald-600 whitespace-nowrap">
+                                    {{ tx.montant|floatformat:0 }} BIF
+                                </td>
+                                <td class="px-6 py-4 text-gray-600 text-xs max-w-xs truncate">
+                                    {{ tx.description|default:"-" }}
+                                </td>
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    <form method="POST" class="inline-flex items-center gap-2">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="transaction_id" value="{{ tx.id }}">
+
+                                        <button type="submit" name="action" value="valider"
+                                                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition"
+                                                onclick="return confirm('Confirmer la validation de ce paiement ?');">
+                                            Valider
+                                        </button>
+
+                                        <button type="submit" name="action" value="rejeter"
+                                                class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-sm transition"
+                                                onclick="return confirm('Êtes-vous sûr de vouloir rejeter ce paiement ?');">
+                                            Rejeter
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-16 px-4">
+                    <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                        ✓
+                    </div>
+                    <h3 class="text-base font-bold text-gray-800">Tout est à jour !</h3>
+                    <p class="text-sm text-gray-500 mt-1">Aucun paiement en ligne en attente de validation pour le moment.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -96,6 +96,7 @@ urlpatterns = [
     path('services/security-pin/', views.security_pin_view, name='security_pin'),
     path('manager/toggle-status/', views.admin_toggle_status, name='admin_toggle_status'),
     path('manager/planifier-reunion/', views.admin_planifier_reunion_view, name='admin_planifier_reunion'),
+    path('paiements/attente/', views.gestion_paiements_en_attente, name='gestion_paiements_attente'),
 
     # --- Exports ---
     path('export/members/pdf/', views.export_members_pdf, name='export_members_pdf'),
@@ -131,6 +132,9 @@ urlpatterns = [
     path('api/membres/<int:membreId>/demande-sociale/', api_views.api_demande_sociale, name='api_demande_sociale'),
     path('api/membres/<int:membreId>/mes-demandes-prets/', api_views.api_mes_demandes_prets, name='api_mes_demandes_prets'),
     path('api/membres/<int:membreId>/historique/', api_views.api_historique_membre, name='api_historique_membre'),
+    path('api/membres/<int:membreId>/scoring/', api_views.api_credit_scoring_view, name='api_credit_scoring'),
+    path('api/membres/<int:membreId>/tickets/', api_views.api_tickets_membre_view, name='api_tickets_membre'),
+    path('api/paiement/initier/', api_views.api_initier_paiement_en_ligne, name='api_initier_paiement'),
 
     # Administration & Back-Office
     path('api/admin/enregistrer-remboursement/', api_views.api_enregistrer_remboursement, name='api_enregistrer_remboursement'),

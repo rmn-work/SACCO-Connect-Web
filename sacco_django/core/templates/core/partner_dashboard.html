@@ -5,7 +5,7 @@
 <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- En-tête et Informations du Partenaire (Style Membre) -->
+        <!-- En-tête et Informations du Partenaire -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-100">
                 <div>
@@ -20,7 +20,7 @@
             </div>
 
             <!-- Bloc Heure en temps réel (Burundi) -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between mt-4">
                 <div class="flex items-center space-x-3">
                     <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -35,8 +35,8 @@
                 </div>
             </div>
 
-            <!-- Carte Taux BRB (Bandeau d'information) -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mt-4 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <!-- Carte Taux BRB -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mt-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div class="flex items-center space-x-3">
                     <div class="p-2.5 bg-green-50 text-green-600 rounded-xl">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,8 +57,8 @@
                 </div>
             </div>
 
-            <!-- Formulaire de modification du taux d'intérêt intégré proprement dans l'en-tête -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mt-4 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <!-- Formulaire de modification du taux d'intérêt -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mt-4">
                 <form action="{% if groupe_selectionne %}{% url 'core:modifier_taux_groupe' groupe_selectionne.id %}{% else %}#{% endif %}" method="POST" class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gray-50/80 border border-gray-200 p-4 rounded-xl">
                     {% csrf_token %}
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
@@ -188,6 +188,31 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- ================= RUBRIQUE : TRANSACTIONS EN LIGNE (ACCÈS BUREAU / ADMIN) ================= -->
+        {% if request.session.user_role in 'president,secretaire,admin' or request.user.is_superuser %}
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-8 bg-gradient-to-r from-amber-50/40 to-white">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-amber-100 text-amber-700 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Transactions en Ligne (LumiCash, EcoCash, e-Inoti)</h3>
+                        <p class="text-xs text-gray-500">Gérez, vérifiez et validez les versements en attente effectués par les membres</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{% url 'core:gestion_paiements_attente' %}" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2">
+                        <span>Valider les paiements en attente</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- ================= SECTION : RÉPERTOIRE DES CRÉDITS DÉJÀ VERSÉS ================= -->
         <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-8">
