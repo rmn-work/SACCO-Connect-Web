@@ -407,7 +407,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     'financial_reports_title'.tr(),
                     'financial_reports_desc'.tr(),
                     secondaryColor,
-                    RapportsFinanciersScreen(membreId: _effectiveMembreId),
+                    RapportsFinanciersScreen(
+                      membreId: _effectiveMembreId,
+                      groupId: userGroupId,
+                    ),
                   ),
                   _buildMenuCard(
                     Icons.assignment_turned_in,

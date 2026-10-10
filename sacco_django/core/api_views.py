@@ -414,28 +414,33 @@ def api_rapports(request):
     try:
         from django.db.models import Sum
 
-        total_membres = Membre.objects.count()
-        total_prets = Pret.objects.count()
-        prets_actifs = Pret.objects.filter(statut__in=['ATTRIBUE', 'APPROUVE']).count()
+        groupe_id = request.GET.get('groupe_id')
+        membres = Membre.objects.all()
+        prets = Pret.objects.all()
 
-        print(f"🔍 [RAPPORTS] Total membres : {total_membres}, Total prêts : {total_prets}")
+        if groupe_id:
+            membres = membres.filter(groupe_id=groupe_id)
+            prets = prets.filter(membre__groupe_id=groupe_id)
+
+        total_membres = membres.count()
+        total_prets = prets.count()
+        prets_actifs = prets.filter(statut__in=['ATTRIBUE', 'APPROUVE']).count()
         total_epargne = 0.0
         if hasattr(Membre, 'solde_epargne'):
-            total_epargne = Membre.objects.aggregate(sum_epargne=Sum('solde_epargne'))['sum_epargne'] or 0.0
+            total_epargne = membres.aggregate(sum_epargne=Sum('solde_epargne'))['sum_epargne'] or 0.0
         elif hasattr(Membre, 'epargne'):
-            total_epargne = Membre.objects.aggregate(sum_epargne=Sum('epargne'))['sum_epargne'] or 0.0
+            total_epargne = membres.aggregate(sum_epargne=Sum('epargne'))['sum_epargne'] or 0.0
 
-        total_credits_actifs = \
-        Pret.objects.filter(statut__in=['ATTRIBUE', 'APPROUVE']).aggregate(sum_montant=Sum('montant'))[
-            'sum_montant'] or 0.0
+        total_credits_actifs = prets.filter(statut__in=['ATTRIBUE', 'APPROUVE']).aggregate(sum_montant=Sum('montant'))[
+                                   'sum_montant'] or 0.0
 
         total_social = 0.0
         if hasattr(Membre, 'solde_caisse_sociale'):
-            total_social = Membre.objects.aggregate(sum_social=Sum('solde_caisse_sociale'))['sum_social'] or 0.0
+            total_social = membres.aggregate(sum_social=Sum('solde_caisse_sociale'))['sum_social'] or 0.0
 
         penalites_percues = 0.0
         if hasattr(Pret, 'penalite'):
-            penalites_percues = Pret.objects.aggregate(sum_penalite=Sum('penalite'))['sum_penalite'] or 0.0
+            penalites_percues = prets.aggregate(sum_penalite=Sum('penalite'))['sum_penalite'] or 0.0
 
         data = {
             'total_membres': total_membres,

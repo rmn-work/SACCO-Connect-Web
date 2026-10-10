@@ -548,11 +548,18 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>?> getRapportsGlobaux() async {
-    final String cacheKey = 'rapports_globaux';
+  static Future<Map<String, dynamic>?> getRapportsGlobaux({int? membreId, int? groupId}) async {
+    final String cacheKey = groupId != null ? 'rapports_groupe_$groupId' : 'rapports_globaux';
     try {
+      String path = '/api/admin/rapports/';
+      if (groupId != null) {
+        path += "?groupe_id=$groupId";
+      } else if (membreId != null) {
+        path += "?membre_id=$membreId";
+      }
+
       final response = await _client.get(
-        Uri.parse(_url('/api/admin/rapports/')),
+        Uri.parse(_url(path)),
         headers: _headers,
       ).timeout(const Duration(seconds: 15));
 
@@ -563,7 +570,7 @@ class ApiService {
         return result;
       }
     } catch (e) {
-      debugPrint("Hors-ligne : Chargement rapports locaux");
+      debugPrint("Hors-ligne : Chargement rapports locaux ($e)");
     }
     return await LocalDatabase.getCachedData(cacheKey) as Map<String, dynamic>?;
   }

@@ -5,8 +5,13 @@ import 'gestion_penalites_screen.dart';
 
 class RapportsFinanciersScreen extends StatefulWidget {
   final int membreId;
+  final int? groupId; // Ajout du groupe
 
-  const RapportsFinanciersScreen({super.key, required this.membreId});
+  const RapportsFinanciersScreen({
+    super.key,
+    required this.membreId,
+    this.groupId,
+  });
 
   @override
   State<RapportsFinanciersScreen> createState() => _RapportsFinanciersScreenState();
@@ -26,7 +31,11 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
 
   Future<void> _chargerRapports() async {
     try {
-      final stats = await ApiService.getRapportsGlobaux();
+      // On passe le groupId pour filtrer les rapports de ce groupe uniquement
+      final stats = await ApiService.getRapportsGlobaux(
+        membreId: widget.membreId,
+        groupId: widget.groupId,
+      );
       if (mounted) {
         setState(() {
           _stats = stats;
@@ -51,7 +60,7 @@ class _RapportsFinanciersScreenState extends State<RapportsFinanciersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'reports_title'.tr(),
+          widget.groupId != null ? 'Rapports du Groupe #${widget.groupId}' : 'reports_title'.tr(),
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryColor,
