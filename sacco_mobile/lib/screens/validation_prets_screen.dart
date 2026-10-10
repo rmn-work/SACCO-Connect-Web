@@ -29,10 +29,12 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
         setState(() {
           _demandesEnAttente = data.map((p) => {
             'id': p['id'],
-            'membre': '${p['nom']} ${p['prenom']}',
+            'membre': '${p['nom'] ?? ''} ${p['prenom'] ?? ''}'.trim(),
             'montant': p['montant'],
-            'type': p['type_pret'],
-            'date': p['date_demande'] ?? 'N/A'
+            'type': p['type_pret'] ?? 'CREDIT',
+            'motif': p['motif'] ?? '',
+            'date': p['date_demande'] ?? 'N/A',
+            'statut': p['statut'] ?? 'EN_ATTENTE',
           }).toList();
           _isLoading = false;
         });
@@ -53,7 +55,7 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
         idDemande,
         estApprouve,
         widget.membreId,
-        typeDemande
+        typeDemande,
       );
 
       if (success) {
@@ -140,6 +142,13 @@ class _ValidationPretsScreenState extends State<ValidationPretsScreen> {
                                 fontSize: 18,
                               ),
                             ),
+                            if (demande['motif'].isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                "Motif : ${demande['motif']}",
+                                style: const TextStyle(color: Colors.black87, fontSize: 14),
+                              ),
+                            ],
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
