@@ -54,7 +54,7 @@ from .forms import (
 from .models import (
     Membres as Membre, Groupes as Groupe, Groupes, HistoriqueEpargne, TransactionHistory, Pret, Partenaire,
     CollaborateurPartenaire, DemandeCredit, TicketSupport, MessageTicket, User, Transaction, MembreForm, Presence,
-    DecaissementSocial, JournalLog
+    DecaissementSocial, JournalLog, CompteMarchand
 )
 
 # ==============================================================================
@@ -3112,8 +3112,6 @@ def gestion_paiements_en_attente(request):
     user_role = str(request.session.get('user_role', '')).lower()
     user_type = str(request.session.get('user_type', '')).lower()
     is_admin = request.user.is_authenticated and request.user.is_superuser
-
-    # Récupération du membre lié au User connecté (si existant)
     membre = getattr(request.user, 'membre', None) or getattr(request.user, 'membres', None)
     membre_role = str(membre.role).lower() if membre and hasattr(membre, 'role') else ''
 
@@ -3154,3 +3152,40 @@ def gestion_paiements_en_attente(request):
 
     transactions_attente = TransactionHistory.objects.filter(statut='EN_ATTENTE').order_by('-date_transaction')
     return render(request, 'core/paiements_attente.html', {'transactions': transactions_attente})
+
+
+@login_required
+def paiement_en_ligne_web_view(request):
+    membre = getattr(request.user, 'membre', None) or getattr(request.user, 'membres', None)
+    if not membre:
+        membre = Membre.objects.filter(telephone=request.user.username).first()
+
+    comptes = CompteMarchand.objects.filter(is_active=True)
+
+    if request.method == 'POST':
+        provider = request.POST.get('provider')
+        phone_number = request.POST.get('phone_number')
+        montant = float(request.POST.get('montant', 0))
+        type_operation = request.POST.get('type_operation', 'DEPOT')
+
+        if montant <= 0:
+            messages.error(request, "Le montant doit être supérieur à 0 BIF.")
+            return redirect('core:paiement_en_ligne_web')
+
+        TransactionHistory.objects.create(
+            membre=membre,
+            type_operation=type_operation,
+            montant=montant,
+            provider=provider,
+            statut='EN_ATTENTE',
+            description=f"Paiement en ligne via {provider} ({phone_number})"
+        )
+
+        messages.success(request, f"Votre demande de paiement de {montant:,.0f} BIF via {provider} a été initiée et est en attente de confirmation.")
+        return redirect('core:dashboard')
+
+    context = {
+        'membre': membre,
+        'comptes': comptes,
+    }
+    return render(request, 'core/paiement_en_ligne_web.html', context)

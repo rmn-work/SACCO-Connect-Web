@@ -63,11 +63,12 @@
                     <a href="{% url 'core:profile' %}" class="text-gray-700 hover:text-blue-600 font-medium">Mon Profil</a>
                     <a href="{% url 'core:request_loan' %}" class="text-gray-700 hover:text-blue-600 font-medium">Demander un prêt</a>
 
-                    {% if request.session.user_role in 'president,secretaire,admin,partenaire' or request.session.user_type == 'partenaire' or request.user.is_superuser %}
-                        <a href="{% url 'core:gestion_paiements_attente' %}" class="text-gray-700 hover:text-blue-600 font-medium">
-                            Transactions en ligne
-                        </a>
-                    {% endif %}
+<!--                    {% if request.session.user_role in 'president,secretaire,admin,partenaire' or request.session.user_type == 'partenaire' or request.user.is_superuser %}-->
+<!--                        <a href="{% url 'core:gestion_paiements_attente' %}" class="text-gray-700 hover:text-blue-600 font-medium">-->
+<!--                            Transactions en ligne-->
+<!--                        </a>-->
+<!--                    {% endif %}-->
+                    <a href="{% url 'core:paiement_en_ligne_web' %}" class="text-gray-700 hover:text-blue-600 font-medium">Effectuer un paiement en ligne</a>
 
                     <a href="{% url 'core:contact_public' %}" class="text-gray-700 hover:text-blue-600 font-medium">Contact</a>
                 {% endif %}

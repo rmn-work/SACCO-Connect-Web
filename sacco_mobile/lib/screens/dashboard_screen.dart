@@ -311,6 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildFinancialDashboardCards(primaryColor, secondaryColor),
                 const SizedBox(height: 20),
 
+                // --- MENUS PRINCIPAUX RÉAGENCÉS ---
                 _buildMenuCard(
                   Icons.account_balance_wallet,
                   'my_compte_title'.tr(),
@@ -326,20 +327,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ProfilScreen(membreId: _effectiveMembreId),
                 ),
                 _buildMenuCard(
-                  Icons.smart_toy,
-                  'Assistant & Santé Financière',
-                  'Consultez votre score de crédit et discutez avec l\'IA',
-                  primaryColor,
-                  AssistantConseilScreen(membreId: _effectiveMembreId),
-                ),
-                _buildMenuCard(
-                  Icons.support_agent,
-                  'Support & Réclamations',
-                  'Envoyez un message ou suivez vos tickets',
-                  primaryColor,
-                  ContactSupportScreen(membreId: _effectiveMembreId),
-                ),
-                _buildMenuCard(
                   Icons.payments,
                   'Paiement en Ligne (LumiCash, EcoCash, e-Inoti)',
                   'Faites un dépôt d\'épargne ou remboursement en ligne',
@@ -348,9 +335,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
 
                 // --- SECTION DOCUMENTS ---
-                const SizedBox(height: 8),
                 Card(
                   elevation: 1,
+                  margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -395,6 +382,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
+                ),
+
+                _buildMenuCard(
+                  Icons.smart_toy,
+                  'Assistant & Santé Financière',
+                  'Consultez votre score de crédit et discutez avec l\'IA',
+                  primaryColor,
+                  AssistantConseilScreen(membreId: _effectiveMembreId),
+                ),
+                _buildMenuCard(
+                  Icons.support_agent,
+                  'Support & Réclamations',
+                  'Envoyez un message ou suivez vos tickets',
+                  primaryColor,
+                  ContactSupportScreen(membreId: _effectiveMembreId),
                 ),
                 const SizedBox(height: 20),
 

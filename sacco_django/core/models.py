@@ -5,7 +5,6 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import AbstractUser, User
 from django import forms
-
 # ==============================================================================
 # MODÈLE UTILISATEUR ET PARTENAIRES
 # ==============================================================================
@@ -589,6 +588,22 @@ class ParametreSysteme(models.Model):
 
     def __str__(self):
         return f"{self.cle} = {self.valeur}"
+
+
+class CompteMarchand(models.Model):
+    PROVIDER_CHOICES = [
+        ('LUMICASH', 'LumiCash'),
+        ('ECOCASH', 'EcoCash'),
+        ('E_INOTI', 'e-Inoti (Bancobu)'),
+    ]
+
+    provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, unique=True, verbose_name="Opérateur")
+    numero_compte = models.CharField(max_length=100, verbose_name="Numéro de compte / Code Marchand")
+    libelle_compte = models.CharField(max_length=150, verbose_name="Nom du titulaire / Compte")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+
+    def __str__(self):
+        return f"{self.get_provider_display()} - {self.numero_compte}"
 
 
 # ==============================================================================

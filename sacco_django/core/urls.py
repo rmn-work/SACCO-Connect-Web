@@ -146,4 +146,5 @@ urlpatterns = [
     path('api/credits/<int:creditId>/appliquer-penalite/', api_views.api_appliquer_penalite, name='api_appliquer_penalite'),
     path('groupes/<int:groupId>/membres/', api_views.api_groupe_membres_view, name='api_groupe_membres'),
     path('api/groupes/<int:groupId>/membres/', api_views.api_groupe_membres_view, name='api_groupe_membres'),
+    path('paiement/en-ligne/', views.paiement_en_ligne_web_view, name='paiement_en_ligne_web'),
 ]

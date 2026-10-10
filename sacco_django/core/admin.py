@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Membres, Presences, Amendes, DecaissementSocial, DemandesSociales, Groupes, HistoriqueEpargne,
-    HistoriqueSocial, JournalPrets, Logs, TransactionHistory, Pret, Partenaire
+    HistoriqueSocial, JournalPrets, Logs, TransactionHistory, Pret, Partenaire, CompteMarchand
 )
 
 @admin.register(Partenaire)
@@ -59,3 +59,8 @@ class PretAdmin(admin.ModelAdmin):
     list_display = ('id', 'membre', 'montant', 'statut', 'date_demande')
     list_filter = ('statut', 'date_demande')
     search_fields = ('membre__nom', 'membre__prenom')
+
+@admin.register(CompteMarchand)
+class CompteMarchandAdmin(admin.ModelAdmin):
+    list_display = ('provider', 'numero_compte', 'libelle_compte', 'is_active')
+    list_filter = ('provider', 'is_active')

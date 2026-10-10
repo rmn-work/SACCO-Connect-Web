@@ -3,8 +3,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from .models import Membre, Pret, TransactionHistory, Groupe, TicketSupport, MessageTicket
+from .models import Membre, Pret, TransactionHistory, Groupe, TicketSupport, MessageTicket, CompteMarchand
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 
 
 @csrf_exempt
@@ -669,11 +670,7 @@ def api_initier_paiement_en_ligne(request):
         if montant <= 0:
             return JsonResponse({'success': False, 'message': 'Le montant doit être supérieur à 0 BIF.'}, status=400)
 
-        # Génération d'une référence de transaction unique
         ref_tx = f"{provider[:3]}-{membre_id}-{TransactionHistory.objects.count() + 1001}"
-
-        # Ici se place l'appel aux Webhooks/APIs officielles des opérateurs (Ecocash, Lumicash, Bancobu e-Inoti)
-        # Pour le moment, nous validons directement l'opération et mettons à jour les soldes du membre.
 
         if type_operation == 'EPARGNE':
             membre.solde_epargne = (membre.solde_epargne or 0) + montant
@@ -697,3 +694,40 @@ def api_initier_paiement_en_ligne(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': f"Erreur de traitement : {str(e)}"}, status=400)
+
+
+@login_required
+def paiement_en_ligne_web_view(request):
+    membre = getattr(request.user, 'membre', None) or getattr(request.user, 'membres', None)
+    if not membre:
+        membre = Membre.objects.filter(telephone=request.user.username).first()
+
+    comptes = CompteMarchand.objects.filter(is_active=True)
+
+    if request.method == 'POST':
+        provider = request.POST.get('provider')  # 'LUMICASH', 'ECOCASH', 'E_INOTI'
+        phone_number = request.POST.get('phone_number')
+        montant = float(request.POST.get('montant', 0))
+        type_operation = request.POST.get('type_operation', 'DEPOT')
+
+        if montant <= 0:
+            messages.error(request, "Le montant doit être supérieur à 0 BIF.")
+            return redirect('core:paiement_en_ligne_web')
+
+        TransactionHistory.objects.create(
+            membre=membre,
+            type_operation=type_operation,
+            montant=montant,
+            provider=provider,
+            statut='EN_ATTENTE',
+            description=f"Paiement en ligne via {provider} ({phone_number})"
+        )
+
+        messages.success(request, f"Votre demande de paiement de {montant:,.0f} BIF via {provider} a été initiée et est en attente de confirmation par le bureau.")
+        return redirect('core:profile')
+
+    context = {
+        'membre': membre,
+        'comptes': comptes,
+    }
+    return render(request, 'core/paiement_en_ligne_web.html', context)
