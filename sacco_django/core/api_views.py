@@ -415,24 +415,33 @@ def api_rapports(request):
         from django.db.models import Sum
 
         groupe_id = request.GET.get('groupe_id')
+        print(f"🔍 [API RAPPORTS] groupe_id reçu : '{groupe_id}' (Type: {type(groupe_id)})")
+
         membres = Membre.objects.all()
         prets = Pret.objects.all()
 
-        if groupe_id:
-            membres = membres.filter(groupe_id=groupe_id)
-            prets = prets.filter(membre__groupe_id=groupe_id)
+        if groupe_id and groupe_id != 'null' and groupe_id != 'undefined':
+            try:
+                g_id = int(groupe_id)
+                membres = membres.filter(groupe_id=g_id)
+                prets = prets.filter(membre__groupe_id=g_id)
+            except ValueError:
+                membres = membres.filter(groupe_id=groupe_id)
+                prets = prets.filter(membre__groupe_id=groupe_id)
+
+        print(f"🔍 [API RAPPORTS] Membres filtrés : {membres.count()}, Prêts filtrés : {prets.count()}")
 
         total_membres = membres.count()
         total_prets = prets.count()
         prets_actifs = prets.filter(statut__in=['ATTRIBUE', 'APPROUVE']).count()
+
         total_epargne = 0.0
         if hasattr(Membre, 'solde_epargne'):
             total_epargne = membres.aggregate(sum_epargne=Sum('solde_epargne'))['sum_epargne'] or 0.0
         elif hasattr(Membre, 'epargne'):
             total_epargne = membres.aggregate(sum_epargne=Sum('epargne'))['sum_epargne'] or 0.0
 
-        total_credits_actifs = prets.filter(statut__in=['ATTRIBUE', 'APPROUVE']).aggregate(sum_montant=Sum('montant'))[
-                                   'sum_montant'] or 0.0
+        total_credits_actifs = prets.filter(statut__in=['ATTRIBUE', 'APPROUVE']).aggregate(sum_montant=Sum('montant'))['sum_montant'] or 0.0
 
         total_social = 0.0
         if hasattr(Membre, 'solde_caisse_sociale'):
@@ -441,6 +450,8 @@ def api_rapports(request):
         penalites_percues = 0.0
         if hasattr(Pret, 'penalite'):
             penalites_percues = prets.aggregate(sum_penalite=Sum('penalite'))['sum_penalite'] or 0.0
+
+        print(f"🔍 [API RAPPORTS] Totaux calculés -> Épargne: {total_epargne}, Crédits: {total_credits_actifs}")
 
         data = {
             'total_membres': total_membres,
