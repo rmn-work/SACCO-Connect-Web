@@ -33,7 +33,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
     setState(() => _isLoadingMembres = true);
 
     try {
-      final uri = Uri.parse("${ApiService.baseUrl}/groupes/${widget.groupId}/membres/");
+      final uri = Uri.parse("${ApiService.baseUrl}/api/groupes/${widget.groupId}/membres/");
       final response = await http.get(
         uri,
         headers: {
