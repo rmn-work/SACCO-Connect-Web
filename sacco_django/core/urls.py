@@ -140,4 +140,5 @@ urlpatterns = [
     path('api/admin/rapports/', api_views.api_rapports, name='api_rapports'),
     path('api/admin/credits-en-retard/', api_views.api_credits_en_retard, name='api_credits_en_retard'),
     path('api/credits/<int:creditId>/appliquer-penalite/', api_views.api_appliquer_penalite, name='api_appliquer_penalite'),
+    path('groupes/<int:groupId>/membres/', api_views.api_groupe_membres_view, name='api_groupe_membres'),
 ]

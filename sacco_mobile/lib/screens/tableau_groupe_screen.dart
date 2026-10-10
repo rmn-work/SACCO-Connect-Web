@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:http/http.dart' as http;
+import '../services/api_service.dart';
 
 class TableauGroupeScreen extends StatefulWidget {
   final int groupId;
@@ -23,33 +26,73 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
   }
 
   Future<void> _recupererDonneesGroupe() async {
+    setState(() => _isLoading = true);
+
     try {
-      await Future.delayed(const Duration(milliseconds: 800));
+      // Synchronisation avec l'API Django du groupe
+      final uri = Uri.parse("${ApiService.baseUrl}/groupes/${widget.groupId}/membres/");
+      final response = await http.get(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+      );
 
-      final dataMock = [
-        {"nom": "NKURUNZIZA", "prenom": "Raphael", "epargne": 0, "caisse": 0, "presence": "A", "actif": 1},
-        {"nom": "PRESIDENT", "prenom": "Officiel", "epargne": 0, "caisse": 0, "presence": "A", "actif": 1},
-        {"nom": "SECRETAIRE", "prenom": "Officiel", "epargne": 0, "caisse": 0, "presence": "A", "actif": 1},
-      ];
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        List<dynamic> listRaw = [];
 
-      double total = 0;
-      int actifs = 0;
-      for (var m in dataMock) {
-        final epargneValeur = m['epargne'] as num? ?? 0;
-        total += epargneValeur.toDouble();
-
-        if (m['actif'] == 1) {
-          actifs++;
+        if (decoded is List) {
+          listRaw = decoded;
+        } else if (decoded is Map && decoded.containsKey('data')) {
+          listRaw = decoded['data'];
         }
-      }
 
-      if (mounted) {
-        setState(() {
-          _membres = dataMock;
-          _epargneTotaleGroupe = total;
-          _membresActifs = actifs;
-          _isLoading = false;
-        });
+        double totalEpargne = 0;
+        int actifs = 0;
+
+        List<Map<String, dynamic>> membresFormates = listRaw.map((m) {
+          String nomComplet = "${m['nom'] ?? ''} ${m['prenom'] ?? ''}".trim();
+          if (nomComplet.isEmpty) {
+            nomComplet = m['nom_complet'] ?? m['username'] ?? "Membre #${m['id']}";
+          }
+
+          double epargne = (m['epargne'] ?? m['solde_epargne'] ?? 0.0).toDouble();
+          double caisse = (m['caisse'] ?? m['solde_caisse_sociale'] ?? 0.0).toDouble();
+          String presence = m['presence'] ?? 'P';
+          int estActif = (m['actif'] ?? 1);
+
+          totalEpargne += epargne;
+          if (estActif == 1) {
+            actifs++;
+          }
+
+          return {
+            "nom": m['nom'] ?? 'N/A',
+            "prenom": m['prenom'] ?? 'N/A',
+            "epargne": epargne,
+            "caisse": caisse,
+            "presence": presence,
+            "actif": estActif,
+          };
+        }).toList();
+
+        if (mounted) {
+          setState(() {
+            _membres = membresFormates;
+            _epargneTotaleGroupe = totalEpargne;
+            _membresActifs = actifs;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Erreur de chargement du tableau (${response.statusCode})")),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -73,10 +116,7 @@ class _TableauGroupeScreenState extends State<TableauGroupeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() => _isLoading = true);
-              _recupererDonneesGroupe();
-            },
+            onPressed: _recupererDonneesGroupe,
           )
         ],
       ),

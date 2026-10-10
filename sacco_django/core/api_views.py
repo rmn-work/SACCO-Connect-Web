@@ -352,10 +352,13 @@ def api_prets_en_attente(request):
         prets = Pret.objects.filter(statut='EN_ATTENTE').order_by('-id')
         data = [{
             'id': p.id,
-            'membre': f"{p.membre.nom} {p.membre.prenom}".strip() if p.membre else "Inconnu",
+            'nom': p.membre.nom if p.membre else "Inconnu",
+            'prenom': p.membre.prenom if p.membre else "",
             'membre_id': p.membre_id,
             'montant': float(p.montant),
+            'type_pret': "SOCIAL" if "[Social]" in getattr(p, 'motif', '') else "CREDIT",
             'motif': getattr(p, 'motif', ''),
+            'date_demande': p.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(p, 'created_at') and p.created_at else '',
             'statut': p.statut
         } for p in prets]
         return JsonResponse({'success': True, 'data': data})
@@ -401,13 +404,31 @@ def api_valider_presence_qr(request):
 @csrf_exempt
 def api_rapports(request):
     try:
+        from django.db.models import Sum
+
         total_membres = Membre.objects.count()
         total_prets = Pret.objects.count()
         prets_actifs = Pret.objects.filter(statut__in=['ATTRIBUE', 'APPROUVE']).count()
+        total_epargne = Membre.objects.aggregate(sum_epargne=Sum('solde_epargne'))['sum_epargne'] or 0.0
+        total_credits_actifs = \
+        Pret.objects.filter(statut__in=['ATTRIBUE', 'APPROUVE']).aggregate(sum_montant=Sum('montant'))[
+            'sum_montant'] or 0.0
+        total_social = 0.0
+        if hasattr(Membre, 'solde_caisse_sociale'):
+            total_social = Membre.objects.aggregate(sum_social=Sum('solde_caisse_sociale'))['sum_social'] or 0.0
+
+        penalites_percues = 0.0
+        if hasattr(Pret, 'penalite'):
+            penalites_percues = Pret.objects.aggregate(sum_penalite=Sum('penalite'))['sum_penalite'] or 0.0
+
         data = {
             'total_membres': total_membres,
             'total_prets': total_prets,
             'prets_actifs': prets_actifs,
+            'total_epargne': float(total_epargne),
+            'total_credits_actifs': float(total_credits_actifs),
+            'total_social': float(total_social),
+            'penalites_percues': float(penalites_percues),
         }
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
@@ -495,3 +516,19 @@ def api_modifier_calendrier_groupe(request, groupId):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
+
+
+@csrf_exempt
+def api_groupe_membres_view(request, groupId):
+    try:
+        membres = Membre.objects.filter(groupe_id=groupId)
+        data = [{
+            'id': m.id,
+            'nom': m.nom,
+            'prenom': m.prenom,
+            'epargne_defaut': float(getattr(m, 'epargne_defaut', 5000.0)),
+            'caisse_defaut': float(getattr(m, 'caisse_defaut', 500.0)),
+        } for m in membres]
+        return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)

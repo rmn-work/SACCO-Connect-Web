@@ -19,9 +19,9 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
 
   List<Map<String, dynamic>> membres = [];
   bool _isLoadingMembres = true;
-
   bool _isSaving = false;
   bool _isUpdatingCalendar = false;
+  bool _toutSelectionner = true;
 
   @override
   void initState() {
@@ -63,7 +63,8 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
               return {
                 "id": m['id'] ?? m['membre_id'],
                 "nom": nomComplet,
-                "presence": "P",
+                "selectionne": true,
+                "presence": "P", // "P" pour Présent, "ABS" pour Absent, "EXC" pour Excusé
                 "epargne": (m['epargne_defaut'] ?? 5000.0).toDouble(),
                 "caisse": (m['caisse_defaut'] ?? 500.0).toDouble(),
                 "amende": false,
@@ -98,11 +99,20 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
     }
   }
 
+  void _basculerTousLesMembres(bool? valeur) {
+    setState(() {
+      _toutSelectionner = valeur ?? true;
+      for (var membre in membres) {
+        membre['selectionne'] = _toutSelectionner;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${"weekly_entry".tr()} - Groupe #${widget.groupId}"),
+        title: Text("Saisie Hebdomadaire - Groupe #${widget.groupId}"),
         backgroundColor: const Color(0xFF00897B),
         foregroundColor: Colors.white,
       ),
@@ -144,6 +154,15 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 5),
+            if (membres.isNotEmpty)
+              CheckboxListTile(
+                title: const Text("Tout sélectionner / désélectionner", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                value: _toutSelectionner,
+                onChanged: _basculerTousLesMembres,
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
             const SizedBox(height: 10),
             if (_isLoadingMembres)
               const Padding(
@@ -170,31 +189,54 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     child: ExpansionTile(
-                      leading: const Icon(Icons.person, color: Colors.grey),
+                      leading: Checkbox(
+                        value: membre['selectionne'],
+                        onChanged: (val) {
+                          setState(() {
+                            membre['selectionne'] = val ?? false;
+                          });
+                        },
+                      ),
                       title: Text(membre['nom'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text("${"savings".tr()} : ${membre['epargne']} BIF"),
+                      subtitle: Text("${"savings".tr()} : ${membre['epargne']} BIF | Statut : ${membre['presence']}"),
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text("${"presence".tr()} :", style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 6),
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
-                                  Text("${"presence".tr()} : ", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Radio<String>(
-                                    value: "P",
-                                    groupValue: membre['presence'],
-                                    onChanged: (val) => setState(() => membre['presence'] = val!),
+                                  ChoiceChip(
+                                    label: const Text("Présent (P)"),
+                                    selected: membre['presence'] == 'P',
+                                    selectedColor: Colors.green.shade100,
+                                    onSelected: (selected) {
+                                      if (selected) setState(() => membre['presence'] = 'P');
+                                    },
                                   ),
-                                  const Text("P"),
-                                  Radio<String>(
-                                    value: "A",
-                                    groupValue: membre['presence'],
-                                    onChanged: (val) => setState(() => membre['presence'] = val!),
+                                  ChoiceChip(
+                                    label: const Text("Absent (ABS)"),
+                                    selected: membre['presence'] == 'ABS',
+                                    selectedColor: Colors.red.shade100,
+                                    onSelected: (selected) {
+                                      if (selected) setState(() => membre['presence'] = 'ABS');
+                                    },
                                   ),
-                                  const Text("A"),
+                                  ChoiceChip(
+                                    label: const Text("Excusé (EXC)"),
+                                    selected: membre['presence'] == 'EXC',
+                                    selectedColor: Colors.orange.shade100,
+                                    onSelected: (selected) {
+                                      if (selected) setState(() => membre['presence'] = 'EXC');
+                                    },
+                                  ),
                                 ],
                               ),
+                              const Divider(height: 20),
                               Row(
                                 children: [
                                   Expanded(child: Text("${"savings".tr()} (BIF) :")),
@@ -248,7 +290,9 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
                           String dateStr = dateReunion.toIso8601String().split('T')[0];
                           bool globalSuccess = true;
 
-                          for (var membre in membres) {
+                          final membresSelectionnes = membres.where((m) => m['selectionne'] == true).toList();
+
+                          for (var membre in membresSelectionnes) {
                             bool success = await CotisationService.enregistrerCotisation(
                               membreId: membre['id'],
                               montant: membre['epargne'],

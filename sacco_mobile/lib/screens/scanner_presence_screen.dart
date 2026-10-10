@@ -34,7 +34,7 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
 
   Future<void> _traiterEmargementMembres(String qrData) async {
     try {
-      // Envoi du token/payload dynamique du QR code au serveur pour validation sécurisée
+      // Envoi du QR code au serveur pour marquer automatiquement comme PRÉSENT (P)
       final ApiResponse response = await ApiService.validerPresenceQr(
         qrToken: qrData,
         adminId: widget.adminId,
@@ -67,6 +67,12 @@ class _ScannerPresenceScreenState extends State<ScannerPresenceScreen> {
             Text('success_title'.tr(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 12),
+            const Text(
+              "Statut enregistré : PRÉSENT (P)\nLes absents ou excusés devront être saisis manuellement via le registre de groupe.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
