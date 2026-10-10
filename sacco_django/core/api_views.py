@@ -472,18 +472,24 @@ def api_credits_en_retard(request):
 
 
 @csrf_exempt
-def api_appliquer_penalite(request, creditId):
+def api_appliquer_penalite(request, credit_id):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            taux = float(data.get('taux_penalite_mensuel', 0))
-            pret = Pret.objects.get(id=creditId)
-            if hasattr(pret, 'penalite'):
-                pret.penalite = float(getattr(pret, 'penalite', 0) or 0) + (float(pret.montant) * taux / 100)
-                pret.save()
+            taux_ou_montant = float(data.get('taux_penalite_mensuel', 0.0))
+            mois_retard = int(data.get('mois_retard', 1))
+            credit = Pret.objects.get(id=credit_id)
+
+            if taux_ou_montant < 0:
+                montant_penalite = abs(taux_ou_montant) * mois_retard
+            else:
+                reste_a_payer = getattr(credit, 'reste_a_payer', credit.montant)
+                montant_penalite = (reste_a_payer * (taux_ou_montant / 100.0)) * mois_retard
+
+            credit.penalite = getattr(credit, 'penalite', 0.0) + montant_penalite
+            credit.save()
+
             return JsonResponse({'success': True, 'message': 'Pénalité appliquée avec succès !'})
-        except Pret.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Crédit introuvable'}, status=404)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)

@@ -73,43 +73,75 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
   }
 
   void _ouvrirDialoguePenalite(Map<String, dynamic> credit) {
-    final tauxController = TextEditingController(text: "5");
+    final valeurController = TextEditingController(text: "5");
     final moisController = TextEditingController(text: (credit['mois_retard'] ?? 1).toString());
     final nomMembre = credit['nom'] ?? 'member'.tr();
+    bool estPourcentage = true; // Par défaut en %
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${'penalize'.tr()} $nomMembre'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: tauxController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'penalty_rate'.tr(), border: const OutlineInputBorder()),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: moisController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'number_of_months'.tr(), border: const OutlineInputBorder()),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: Text('${'penalize'.tr()} $nomMembre'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Sélecteur du type de saisie (Pourcentage ou Montant fixe)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ChoiceChip(
+                    label: const Text("Taux (%)"),
+                    selected: estPourcentage,
+                    onSelected: (val) => setStateDialog(() => estPourcentage = true),
+                  ),
+                  const SizedBox(width: 10),
+                  ChoiceChip(
+                    label: const Text("Montant (FBU)"),
+                    selected: !estPourcentage,
+                    onSelected: (val) => setStateDialog(() => estPourcentage = false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: valeurController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: estPourcentage ? 'penalty_rate'.tr() : 'Montant de la pénalité (FBU)',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: moisController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'number_of_months'.tr(),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('cancel'.tr())),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () {
+                double valeurSaisie = double.tryParse(valeurController.text) ?? 0.0;
+                int mois = int.tryParse(moisController.text) ?? 1;
+
+                Navigator.pop(context);
+
+                // Si l'utilisateur choisit un montant fixe, on bascule la valeur en négatif pour l'interprétation backend
+                double tauxFinal = estPourcentage ? valeurSaisie : -valeurSaisie;
+
+                _appliquerPenaliteBase(credit['id'], tauxFinal, mois);
+              },
+              child: Text('apply'.tr(), style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('cancel'.tr())),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
-            onPressed: () {
-              double taux = double.tryParse(tauxController.text) ?? 0.0;
-              int mois = int.tryParse(moisController.text) ?? 1;
-              Navigator.pop(context);
-              _appliquerPenaliteBase(credit['id'], taux, mois);
-            },
-            child: Text('apply'.tr(), style: const TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
