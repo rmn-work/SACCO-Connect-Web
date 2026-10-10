@@ -4,7 +4,13 @@ import '../services/api_service.dart';
 
 class GestionPenalitesScreen extends StatefulWidget {
   final int membreId;
-  const GestionPenalitesScreen({super.key, required this.membreId});
+  final int? groupId; // Ajout du paramètre
+
+  const GestionPenalitesScreen({
+    super.key,
+    required this.membreId,
+    this.groupId,
+  });
 
   @override
   State<GestionPenalitesScreen> createState() => _GestionPenalitesScreenState();
@@ -27,7 +33,8 @@ class _GestionPenalitesScreenState extends State<GestionPenalitesScreen> {
   Future<void> _chargerCreditsEnRetard() async {
     setState(() => _isLoading = true);
     try {
-      final data = await ApiService.getCreditsEnRetard();
+      // Passer le groupId à l'API
+      final data = await ApiService.getCreditsEnRetard(groupId: widget.groupId);
       if (mounted) {
         setState(() {
           _creditsEnRetard = List<Map<String, dynamic>>.from(data);

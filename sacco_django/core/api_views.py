@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from .models import Membre, Pret, TransactionHistory, Groupe
+from django.utils import timezone
 
 
 @csrf_exempt
@@ -558,4 +559,37 @@ def api_groupe_membres_view(request, groupId):
         } for m in membres]
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def api_credits_en_retard(request):
+    try:
+        groupe_id = request.GET.get('groupe_id')
+        prets = Pret.objects.filter(statut__in=['ATTRIBUE', 'APPROUVE'])
+
+        if groupe_id and groupe_id != 'null' and groupe_id != 'undefined':
+            prets = prets.filter(membre__groupe_id=groupe_id)
+
+        now = timezone.now().date()
+
+        if hasattr(Pret, 'date_echeance') and hasattr(Pret, 'mois_retard'):
+            prets = prets.filter(
+                models.Q(date_echeance__lt=now) | models.Q(mois_retard__gt=0)
+            )
+        elif hasattr(Pret, 'date_echeance'):
+            prets = prets.filter(date_echeance__lt=now)
+        elif hasattr(Pret, 'mois_retard'):
+            prets = prets.filter(mois_retard__gt=0)
+
+        data = [{
+            'id': p.id,
+            'nom': f"{p.membre.nom} {p.membre.prenom}" if p.membre else "Inconnu",
+            'reste_a_payer': float(getattr(p, 'reste_a_payer', p.montant)),
+            'mois_retard': int(getattr(p, 'mois_retard', 1)),
+        } for p in prets]
+
+        return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        print(f"❌ [ERREUR CREDITS EN RETARD] {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)}, status=400)

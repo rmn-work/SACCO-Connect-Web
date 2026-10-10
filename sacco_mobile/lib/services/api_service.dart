@@ -575,11 +575,16 @@ class ApiService {
     return await LocalDatabase.getCachedData(cacheKey) as Map<String, dynamic>?;
   }
 
-  static Future<List<dynamic>> getCreditsEnRetard() async {
-    final String cacheKey = 'credits_en_retard';
+  static Future<List<dynamic>> getCreditsEnRetard({int? groupId}) async {
+    String cacheKey = groupId != null ? 'credits_en_retard_$groupId' : 'credits_en_retard';
     try {
+      String url = Config.getEndpoint('/api/admin/credits-en-retard/');
+      if (groupId != null) {
+        url += "?groupe_id=$groupId";
+      }
+
       final response = await _client.get(
-        Uri.parse(_url('/api/admin/credits-en-retard/')),
+        Uri.parse(url),
         headers: _headers,
       ).timeout(const Duration(seconds: 15));
 
