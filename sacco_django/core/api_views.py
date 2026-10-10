@@ -349,7 +349,14 @@ def api_enregistrer_remboursement(request):
 @csrf_exempt
 def api_prets_en_attente(request):
     try:
-        prets = Pret.objects.filter(statut='EN_ATTENTE').order_by('-id')
+        tous_les_prets = Pret.objects.all()
+        print(f"🔍 [DIAGNOSTIC PRÊTS] Total de prêts en BDD : {tous_les_prets.count()}")
+        for p in tous_les_prets:
+            print(f"   - Prêt ID {p.id} | Statut en BDD: '{p.statut}' | Montant: {p.montant}")
+
+        prets = Pret.objects.filter(statut__iexact='EN_ATTENTE').order_by('-id')
+        print(f"🔍 [DIAGNOSTIC PRÊTS] Prêts filtrés 'EN_ATTENTE' : {prets.count()}")
+
         data = [{
             'id': p.id,
             'nom': p.membre.nom if p.membre else "Inconnu",
@@ -363,6 +370,7 @@ def api_prets_en_attente(request):
         } for p in prets]
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
+        print(f"❌ [ERREUR PRETS] {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
