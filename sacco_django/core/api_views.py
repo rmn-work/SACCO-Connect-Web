@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from .models import Membre, Pret, TransactionHistory
+from .models import Membre, Pret, TransactionHistory, Groupe
 
 
 @csrf_exempt
@@ -35,13 +35,17 @@ def api_login_view(request):
                 membre.save()
 
             login(request, user)
+            role_utilisateur = getattr(membre, 'role', 'MEMBRE')
+            if not role_utilisateur or str(role_utilisateur).strip() == '':
+                role_utilisateur = 'MEMBRE'
 
             return JsonResponse({
                 'success': True,
                 'message': 'Connexion réussie',
                 'membre_id': membre.id,
                 'user_id': user.id,
-                'username': f"{membre.nom} {membre.prenom}".strip()
+                'username': f"{membre.nom} {membre.prenom}".strip(),
+                'role': str(role_utilisateur).lower()
             })
         else:
             return JsonResponse({'success': False, 'message': 'Code PIN ou identifiants incorrects'}, status=400)
@@ -64,7 +68,8 @@ def api_dashboard_view(request, membreId):
             'solde_epargne': float(membre.solde_epargne or 0.0),
             'statut': 'Actif' if is_active else 'Inactif',
             'groupe_id': membre.groupe_id if membre.groupe_id else 1,
-            'nom_groupe': getattr(membre.groupe, 'nom', 'Solidarité') if hasattr(membre, 'groupe') and membre.groupe else 'Solidarité',
+            'nom_groupe': getattr(membre.groupe, 'nom', 'Solidarité') if hasattr(membre,
+                                                                                 'groupe') and membre.groupe else 'Solidarité',
 
             'caisse_sociale_cotisations': float(membre.total_cotisation_sociale),
             'caisse_sociale_decaissements': float(membre.total_decaissements_social),
@@ -97,7 +102,8 @@ def api_profil_membre(request, membreId):
         precedente_reunion = 'Non définie'
         for source in [groupe, membre]:
             if source:
-                for attr in ['date_reunion_precedente', 'precedente_reunion', 'date_reunion_derniere', 'derniere_reunion', 'date_derniere_reunion']:
+                for attr in ['date_reunion_precedente', 'precedente_reunion', 'date_reunion_derniere',
+                             'derniere_reunion', 'date_derniere_reunion']:
                     val = getattr(source, attr, None)
                     if val and str(val).strip():
                         precedente_reunion = str(val).strip()
@@ -108,7 +114,8 @@ def api_profil_membre(request, membreId):
         prochaine_reunion = 'À déterminer'
         for source in [groupe, membre]:
             if source:
-                for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion', 'prochaine_reunion_date']:
+                for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion',
+                             'prochaine_reunion_date']:
                     val = getattr(source, attr, None)
                     if val and str(val).strip():
                         prochaine_reunion = str(val).strip()
@@ -255,7 +262,8 @@ def api_mes_demandes_prets(request, membreId):
             'montant': float(p.montant),
             'statut': getattr(p, 'statut', 'EN_ATTENTE'),
             'motif': getattr(p, 'motif', ''),
-            'date_demande': p.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(p, 'created_at') and p.created_at else '',
+            'date_demande': p.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(p,
+                                                                                  'created_at') and p.created_at else '',
         } for p in prets]
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
@@ -271,7 +279,8 @@ def api_historique_membre(request, membreId):
             'montant': float(t.montant),
             'type_operation': getattr(t, 'type_operation', ''),
             'description': getattr(t, 'description', '') or getattr(t, 'type_operation', ''),
-            'date': t.date.strftime('%Y-%m-%d') if hasattr(t, 'date') and t.date else (t.created_at.strftime('%Y-%m-%d') if hasattr(t, 'created_at') and t.created_at else ''),
+            'date': t.date.strftime('%Y-%m-%d') if hasattr(t, 'date') and t.date else (
+                t.created_at.strftime('%Y-%m-%d') if hasattr(t, 'created_at') and t.created_at else ''),
         } for t in transactions]
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
@@ -300,7 +309,8 @@ def api_inscription_membre(request):
                 pin=data.get('pin')
             )
 
-            return JsonResponse({'success': True, 'message': 'Inscription réussie !', 'membre_id': membre.id}, status=201)
+            return JsonResponse({'success': True, 'message': 'Inscription réussie !', 'membre_id': membre.id},
+                                status=201)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
@@ -451,7 +461,8 @@ def api_portefeuille_view(request, membreId):
             'status_presence': membre.status_presence or 'N/A',
             'statut': 'Actif' if is_active else 'Inactif',
             'groupe_id': membre.groupe_id if membre.groupe_id else 1,
-            'nom_groupe': getattr(membre.groupe, 'nom', 'Solidarité') if hasattr(membre, 'groupe') and membre.groupe else 'Solidarité',
+            'nom_groupe': getattr(membre.groupe, 'nom', 'Solidarité') if hasattr(membre,
+                                                                                 'groupe') and membre.groupe else 'Solidarité',
             'caisse_sociale': float(membre.solde_caisse_sociale),
             'total_cotisations_sociales': float(membre.total_cotisation_sociale),
             'total_decaissements_sociaux': float(membre.total_decaissements_social),
@@ -462,3 +473,25 @@ def api_portefeuille_view(request, membreId):
         return JsonResponse({'success': True, 'data': data})
     except Membre.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Membre non trouvé'}, status=404)
+
+
+@csrf_exempt
+def api_modifier_calendrier_groupe(request, groupId):
+    if request.method == 'PUT' or request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            nouvelle_date = data.get('date_reunion_prochaine')
+
+            groupe = Groupe.objects.get(id=groupId)
+            for attr in ['date_reunion_prochaine', 'prochaine_reunion', 'date_prochaine_reunion']:
+                if hasattr(groupe, attr):
+                    setattr(groupe, attr, nouvelle_date)
+                    break
+            groupe.save()
+
+            return JsonResponse({'success': True, 'message': 'Calendrier mis à jour avec succès !'})
+        except Groupe.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Groupe introuvable'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)

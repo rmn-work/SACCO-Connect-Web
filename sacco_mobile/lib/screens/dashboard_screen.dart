@@ -52,7 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) {
       setState(() {
         _effectiveMembreId = int.tryParse(storedId ?? '') ?? widget.membreId;
-        _effectiveRole = storedRole ?? widget.role;
+        _effectiveRole = (storedRole ?? widget.role).trim().toLowerCase();
       });
     }
 
@@ -245,7 +245,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    String roleKey = 'role_${_effectiveRole.toLowerCase()}';
+    String displayRoleText = _effectiveRole.toUpperCase();
+    if (_effectiveRole == 'president') {
+      displayRoleText = 'PRÉSIDENT(E)';
+    } else if (_effectiveRole == 'secretaire') {
+      displayRoleText = 'SECRÉTAIRE';
+    } else if (_effectiveRole == 'admin') {
+      displayRoleText = 'ADMINISTRATEUR';
+    }
 
     return Stack(
       children: [
@@ -285,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${'role_label'.tr()} : ${roleKey.tr().toUpperCase()}',
+                        '${'role_label'.tr()} : $displayRoleText',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
                       ),
                       const SizedBox(height: 2),
@@ -317,7 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ProfilScreen(membreId: _effectiveMembreId),
                 ),
 
-                // --- SECTION DOCUMENTS REDESIGNÉE & DÉPLACÉE SOUS LE PROFIL ---
+                // --- SECTION DOCUMENTS ---
                 const SizedBox(height: 8),
                 Card(
                   elevation: 1,
@@ -368,7 +375,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                if (_effectiveRole.toLowerCase() == 'admin') ...[
+                if (_effectiveRole == 'admin') ...[
                   const Divider(height: 32),
                   _buildSectionTitle('system_admin_title'.tr()),
                   _buildMenuCard(
@@ -385,7 +392,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Colors.redAccent,
                     ActionsPlaceholderScreen(title: 'sacco_config_title'.tr()),
                   ),
-                ] else if (_effectiveRole.toLowerCase() == 'president' || _effectiveRole.toLowerCase() == 'secretaire') ...[
+                ] else if (_effectiveRole == 'president' || _effectiveRole == 'secretaire') ...[
                   const Divider(height: 32),
                   _buildSectionTitle('executive_space_title'.tr()),
                   _buildMenuCard(
@@ -426,7 +433,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     primaryColor,
                     TableauGroupeScreen(groupId: userGroupId),
                   ),
-
                   _buildMenuCard(
                     Icons.edit_document,
                     'register_member_title'.tr(),
@@ -434,7 +440,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     primaryColor,
                     const InscriptionScreen(),
                   ),
-
                   _buildMenuCard(
                     Icons.list_alt,
                     'meeting_register_title'.tr(),
