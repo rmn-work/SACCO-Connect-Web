@@ -415,18 +415,6 @@ def api_rapports(request):
         from django.db.models import Sum
 
         groupe_id = request.GET.get('groupe_id')
-        print(f"\n==================== DIAGNOSTIC RAPPORTS FINANCIERS ====================")
-        print(f"🔍 [API RAPPORTS] groupe_id reçu dans l'URL : '{groupe_id}'")
-
-        total_membres_bdd = Membre.objects.count()
-        total_prets_bdd = Pret.objects.count()
-        print(f"📊 [DIAGNOSTIC] Total absolu de membres en BDD : {total_membres_bdd}")
-        print(f"📊 [DIAGNOSTIC] Total absolu de prêts en BDD : {total_prets_bdd}")
-
-        for m in Membre.objects.all()[:5]:
-            g_id = getattr(m, 'groupe_id', getattr(m, 'groupe', 'Inconnu'))
-            print(f"   -> Membre ID {m.id} ({m.nom}) | Groupe ID: {g_id} | Épargne: {getattr(m, 'solde_epargne', 'N/A')}")
-
         membres = Membre.objects.all()
         prets = Pret.objects.all()
 
@@ -434,30 +422,24 @@ def api_rapports(request):
             membres = membres.filter(groupe_id=groupe_id)
             prets = prets.filter(membre__groupe_id=groupe_id)
 
-        print(f"🎯 [DIAGNOSTIC] Membres après filtre groupe '{groupe_id}' : {membres.count()}")
-        print(f"🎯 [DIAGNOSTIC] Prêts après filtre groupe '{groupe_id}' : {prets.count()}")
-
         total_membres = membres.count()
         total_prets = prets.count()
         prets_actifs = prets.filter(statut__in=['ATTRIBUE', 'APPROUVE']).count()
         total_epargne = 0.0
         if hasattr(Membre, 'solde_epargne'):
             total_epargne = membres.aggregate(sum_epargne=Sum('solde_epargne'))['sum_epargne'] or 0.0
-        elif hasattr(Membre, 'epargne'):
-            total_epargne = membres.aggregate(sum_epargne=Sum('epargne'))['sum_epargne'] or 0.0
 
         total_credits_actifs = prets.filter(statut__in=['ATTRIBUE', 'APPROUVE']).aggregate(sum_montant=Sum('montant'))['sum_montant'] or 0.0
-
         total_social = 0.0
-        if hasattr(Membre, 'solde_caisse_sociale'):
-            total_social = membres.aggregate(sum_social=Sum('solde_caisse_sociale'))['sum_social'] or 0.0
+        if hasattr(Membre, 'caisse_sociale'):
+            total_social = membres.aggregate(sum_social=Sum('caisse_sociale'))['sum_social'] or 0.0
+        elif hasattr(Membre, 'solde_pret_social'):
+            total_social = membres.aggregate(sum_social=Sum('solde_pret_social'))['sum_social'] or 0.0
 
+        # Pénalités perçues
         penalites_percues = 0.0
         if hasattr(Pret, 'penalite'):
             penalites_percues = prets.aggregate(sum_penalite=Sum('penalite'))['sum_penalite'] or 0.0
-
-        print(f"💰 [DIAGNOSTIC RÉSULTATS] Épargne: {total_epargne} | Crédits: {total_credits_actifs} | Social: {total_social}")
-        print(f"========================================================================\n")
 
         data = {
             'total_membres': total_membres,
