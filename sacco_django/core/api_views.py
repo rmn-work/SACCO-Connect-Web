@@ -417,10 +417,18 @@ def api_rapports(request):
         total_membres = Membre.objects.count()
         total_prets = Pret.objects.count()
         prets_actifs = Pret.objects.filter(statut__in=['ATTRIBUE', 'APPROUVE']).count()
-        total_epargne = Membre.objects.aggregate(sum_epargne=Sum('solde_epargne'))['sum_epargne'] or 0.0
+
+        print(f"🔍 [RAPPORTS] Total membres : {total_membres}, Total prêts : {total_prets}")
+        total_epargne = 0.0
+        if hasattr(Membre, 'solde_epargne'):
+            total_epargne = Membre.objects.aggregate(sum_epargne=Sum('solde_epargne'))['sum_epargne'] or 0.0
+        elif hasattr(Membre, 'epargne'):
+            total_epargne = Membre.objects.aggregate(sum_epargne=Sum('epargne'))['sum_epargne'] or 0.0
+
         total_credits_actifs = \
         Pret.objects.filter(statut__in=['ATTRIBUE', 'APPROUVE']).aggregate(sum_montant=Sum('montant'))[
             'sum_montant'] or 0.0
+
         total_social = 0.0
         if hasattr(Membre, 'solde_caisse_sociale'):
             total_social = Membre.objects.aggregate(sum_social=Sum('solde_caisse_sociale'))['sum_social'] or 0.0
@@ -440,6 +448,7 @@ def api_rapports(request):
         }
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
+        print(f"❌ [ERREUR RAPPORTS] {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
