@@ -11,7 +11,6 @@ import 'rapports_financiers_screen.dart';
 import 'profil_screen.dart';
 import 'portefeuille_pret_screen.dart';
 import 'saisie_hebdomadaire_screen.dart';
-import 'tableau_groupe_screen.dart';
 import 'scanner_presence_screen.dart';
 import 'inscription_screen.dart';
 
@@ -430,25 +429,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const Divider(height: 32),
                   _buildSectionTitle('secretariat_space_title'.tr()),
                   _buildMenuCard(
-                    Icons.table_chart,
-                    'group_table_title'.tr(),
-                    'group_table_desc'.tr(),
-                    primaryColor,
-                    TableauGroupeScreen(groupId: userGroupId),
-                  ),
-                  _buildMenuCard(
                     Icons.edit_document,
                     'register_member_title'.tr(),
                     'register_member_desc'.tr(),
                     primaryColor,
                     const InscriptionScreen(),
-                  ),
-                  _buildMenuCard(
-                    Icons.list_alt,
-                    'meeting_register_title'.tr(),
-                    'meeting_register_desc'.tr(),
-                    primaryColor,
-                    ActionsPlaceholderScreen(title: 'meeting_register_title'.tr()),
                   ),
                 ],
               ],
