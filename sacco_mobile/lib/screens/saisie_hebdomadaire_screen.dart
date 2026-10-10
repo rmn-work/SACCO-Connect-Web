@@ -33,7 +33,16 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
     setState(() => _isLoadingMembres = true);
 
     try {
-      final uri = Uri.parse("${ApiService.baseUrl}/api/groupes/${widget.groupId}/membres/");
+      // Nettoyage des slashes pour éviter le double slash //
+      String baseUrl = ApiService.baseUrl;
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+      }
+
+      final urlString = "$baseUrl/api/groupes/${widget.groupId}/membres/";
+      debugPrint("🔍 [DIAGNOSTIC URL] URL finale générée : $urlString");
+
+      final uri = Uri.parse(urlString);
       final response = await http.get(
         uri,
         headers: {
@@ -41,6 +50,8 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
           "Accept": "application/json",
         },
       );
+
+      debugPrint("🔍 [DIAGNOSTIC URL] Status Code reçu : ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -83,7 +94,7 @@ class _SaisieHebdomadaireScreenState extends State<SaisieHebdomadaireScreen> {
         }
       }
     } catch (e) {
-      debugPrint("Erreur réseau lors du chargement des membres : $e");
+      debugPrint("🚨 Erreur réseau lors du chargement des membres : $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
